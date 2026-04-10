@@ -1,7 +1,16 @@
 node_modules/
 dist/
 build/
+
+# Env files
 .env
-.DS_Store
+.env.*
+!.env.example
+
+# Logs
 *.log
+*.err.log
+
+# OS / Editor
+.DS_Store
 .vscode/

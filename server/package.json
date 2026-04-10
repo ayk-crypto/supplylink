@@ -1,0 +1,27 @@
+{
+  "name": "supplylink-server",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "cross-env NODE_ENV=development nodemon src/index.js",
+    "start": "cross-env NODE_ENV=production node src/index.js",
+    "build": "node -e \"console.log('Server build step is not required for this JavaScript setup.')\"",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "morgan": "^1.10.0",
+    "pg": "^8.15.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.25.0",
+    "cross-env": "^7.0.3",
+    "eslint": "^9.25.0",
+    "globals": "^16.0.0",
+    "nodemon": "^3.1.10"
+  }
+}
