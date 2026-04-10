@@ -1,31 +1,21 @@
-import cors from "cors";
 import express from "express";
-import helmet from "helmet";
+import cors from "cors";
 import morgan from "morgan";
-import { env } from "./config/env.js";
-import apiRoutes from "./routes/index.js";
-import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
+import healthRoutes from "./routes/health.routes.js";
+import dbRoutes from "./routes/db.routes.js";
+import notFound from "./middlewares/notFound.js";
+import errorHandler from "./middlewares/errorHandler.js";
 
 const app = express();
 
-app.use(
-  cors({
-    origin: env.clientUrl
-  })
-);
-app.use(helmet());
-app.use(morgan(env.nodeEnv === "production" ? "combined" : "dev"));
 app.use(express.json());
+app.use(cors());
+app.use(morgan("dev"));
 
-app.get("/", (request, response) => {
-  void request;
-  response.status(200).json({
-    message: "SupplyLink API is running."
-  });
-});
+app.use("/api/health", healthRoutes);
+app.use("/api/db-test", dbRoutes);
 
-app.use("/api", apiRoutes);
-app.use(notFoundHandler);
+app.use(notFound);
 app.use(errorHandler);
 
 export default app;
