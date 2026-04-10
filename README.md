@@ -2,8 +2,8 @@
 
 SupplyLink is a multi-tenant SaaS foundation for vendor-ledger, ordering,
 invoicing, quotations, customer management, and delivery route planning. The
-current step focuses on architecture, shared conventions, and database
-groundwork rather than implementing business workflows.
+current step includes the auth foundation plus the first real vendor
+management endpoints for platform and vendor-level administration.
 
 ## Structure
 
@@ -82,6 +82,13 @@ without leaking ledger, order, pricing, or route data across tenants.
 - `POST /api/v1/auth/login`
 - `GET /api/v1/auth/me`
 - `POST /api/v1/auth/logout`
+- `GET /api/v1/vendors/me`
+- `PATCH /api/v1/vendors/me`
+- `GET /api/v1/vendors/me/members`
+- `GET /api/v1/vendors`
+- `GET /api/v1/vendors/:vendorId`
+- `PATCH /api/v1/vendors/:vendorId`
+- `GET /api/v1/vendors/:vendorId/members`
 
 ## Auth Foundation
 
@@ -110,6 +117,54 @@ curl -X POST http://localhost:4000/api/v1/auth/register ^
   -H "Content-Type: application/json" ^
   -d "{\"fullName\":\"Vendor Admin\",\"email\":\"owner@example.com\",\"password\":\"Password123!\",\"roleCode\":\"vendor_admin\",\"vendor\":{\"legalName\":\"Acme Supplies LLC\",\"displayName\":\"Acme Supplies\",\"slug\":\"acme-supplies\"}}"
 ```
+
+## Vendor Management
+
+Module 3 replaces the placeholder vendor route with authenticated vendor
+management endpoints. Vendor users are scoped through active
+`vendor_memberships`; `super_admin` users can list and manage any vendor.
+
+Vendor admins can inspect and update their own vendor profile:
+
+```bash
+curl http://localhost:4000/api/v1/vendors/me ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl -X PATCH http://localhost:4000/api/v1/vendors/me ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"displayName\":\"Acme Supply Co\",\"contactPhone\":\"+1-555-0100\"}"
+```
+
+Vendor admins can view their own member list:
+
+```bash
+curl http://localhost:4000/api/v1/vendors/me/members ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+```
+
+Super admins can list, inspect, update, and view members for any vendor:
+
+```bash
+curl "http://localhost:4000/api/v1/vendors?page=1&pageSize=20&search=acme&status=active" ^
+  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%"
+
+curl http://localhost:4000/api/v1/vendors/%VENDOR_ID% ^
+  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%"
+
+curl -X PATCH http://localhost:4000/api/v1/vendors/%VENDOR_ID% ^
+  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"status\":\"active\",\"slug\":\"acme-supply-co\"}"
+
+curl http://localhost:4000/api/v1/vendors/%VENDOR_ID%/members ^
+  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%"
+```
+
+The current schema supports vendor profile fields such as legal/display name,
+slug, status, contact email/phone, currency code, timezone, and timestamps.
+Address fields are not present in the current vendor table yet, so this module
+does not expose or migrate address data.
 
 ## Local URLs
 

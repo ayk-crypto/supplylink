@@ -2,10 +2,10 @@ import AppError from "../core/errors/AppError.js";
 
 function resolveVendorId(request, options = {}) {
   return (
-    request.tenant?.vendorId ||
     request.params?.vendorId ||
     request.query?.vendorId ||
     request.body?.vendorId ||
+    request.tenant?.vendorId ||
     request.auth?.currentVendorId ||
     options.vendorId ||
     null

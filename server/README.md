@@ -26,6 +26,13 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - `POST /api/v1/auth/login`
 - `GET /api/v1/auth/me`
 - `POST /api/v1/auth/logout`
+- `GET /api/v1/vendors/me`
+- `PATCH /api/v1/vendors/me`
+- `GET /api/v1/vendors/me/members`
+- `GET /api/v1/vendors`
+- `GET /api/v1/vendors/:vendorId`
+- `PATCH /api/v1/vendors/:vendorId`
+- `GET /api/v1/vendors/:vendorId/members`
 - `GET /api/v1/system/health`
 - `GET /api/v1/system/overview`
 - `GET /api/v1/system/modules`
@@ -42,3 +49,11 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - Passwords are hashed with bcrypt before storage
 - Vendor team membership is modeled in `vendor_memberships`
 - Vendor roles remain tenant-aware through `user_roles.vendor_id` plus membership records
+
+## Vendor Management Notes
+
+- `GET /api/v1/vendors/me` lets authenticated vendor users fetch the selected/current vendor profile.
+- `PATCH /api/v1/vendors/me` lets `vendor_admin` users update safe profile fields for their own vendor.
+- `GET /api/v1/vendors/me/members` lets `vendor_admin` users view active tenant membership details.
+- `GET /api/v1/vendors`, `GET /api/v1/vendors/:vendorId`, `PATCH /api/v1/vendors/:vendorId`, and `GET /api/v1/vendors/:vendorId/members` are platform-admin friendly routes; listing and cross-vendor updates require `super_admin`.
+- The current vendor table has no address columns, so address fields are intentionally not exposed until a future migration adds them.
