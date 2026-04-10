@@ -15,10 +15,36 @@ dotenv.config({
   override: true
 });
 
+function toNumber(value, fallback) {
+  const parsedValue = Number(value);
+
+  return Number.isFinite(parsedValue) ? parsedValue : fallback;
+}
+
+function toBoolean(value, fallback = false) {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+
+  return ["1", "true", "yes", "on"].includes(value.toLowerCase());
+}
+
 const env = {
   NODE_ENV: nodeEnv,
-  PORT: Number(process.env.PORT) || 5000,
-  DATABASE_URL: process.env.DATABASE_URL || ""
+  APP_NAME: process.env.APP_NAME || "SupplyLink API",
+  APP_VERSION: process.env.APP_VERSION || "0.1.0",
+  PORT: toNumber(process.env.PORT, 4000),
+  API_PREFIX: process.env.API_PREFIX || "/api",
+  API_VERSION: process.env.API_VERSION || "v1",
+  CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173",
+  DATABASE_URL: process.env.DATABASE_URL || "",
+  LOG_LEVEL: process.env.LOG_LEVEL || "info",
+  ENABLE_DB_SSL: toBoolean(process.env.ENABLE_DB_SSL, false),
+  JWT_SECRET:
+    process.env.JWT_SECRET ||
+    (nodeEnv === "production" ? "" : "development-only-jwt-secret"),
+  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",
+  BCRYPT_SALT_ROUNDS: toNumber(process.env.BCRYPT_SALT_ROUNDS, 12)
 };
 
 export default env;

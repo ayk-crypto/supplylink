@@ -1,10 +1,15 @@
+import { sendError } from "../core/http/apiResponse.js";
+
 const notFound = (request, response, next) => {
-  void request;
   void next;
 
-  response.status(404).json({
-    success: false,
-    message: "Route not found"
+  sendError(response, {
+    statusCode: 404,
+    message: `Route not found: ${request.method} ${request.originalUrl}`,
+    code: "ROUTE_NOT_FOUND",
+    meta: {
+      requestId: request.context?.requestId || null
+    }
   });
 };
 
