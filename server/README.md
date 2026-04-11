@@ -77,6 +77,16 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - `PATCH /api/v1/subscriptions/:subscriptionId`
 - `GET /api/v1/subscriptions/admin/vendors/:vendorId/overview`
 - `PATCH /api/v1/subscriptions/admin/vendors/:vendorId/status`
+- `GET /api/v1/reports/summary`
+- `GET /api/v1/reports/orders`
+- `GET /api/v1/reports/invoices`
+- `GET /api/v1/reports/payments`
+- `GET /api/v1/reports/customer-statement/:customerId`
+- `GET /api/v1/reports/exports/orders.csv`
+- `GET /api/v1/reports/exports/invoices.csv`
+- `GET /api/v1/reports/exports/payments.csv`
+- `GET /api/v1/reports/exports/customer-statement/:customerId.csv`
+- `GET /api/v1/reports/admin/overview`
 - `GET /api/v1/system/health`
 - `GET /api/v1/system/overview`
 - `GET /api/v1/system/modules`
@@ -91,6 +101,7 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - Payment relationship and ledger idempotency guards live in [server/src/database/migrations/006_payments_relationship_and_ledger_guards.sql](/d:/supplylink/server/src/database/migrations/006_payments_relationship_and_ledger_guards.sql)
 - Route planning extensions live in [server/src/database/migrations/007_route_planning_foundation.sql](/d:/supplylink/server/src/database/migrations/007_route_planning_foundation.sql)
 - Subscription administration uses the existing `subscriptions` and `vendors.status` schema from the foundation migration.
+- Reports and exports read from the existing transactional tables and do not add reporting tables.
 - Run `npm run db:migrate` inside the `server` workspace after setting `DATABASE_URL`
 
 ## Auth Notes
@@ -451,4 +462,60 @@ curl -X PATCH http://localhost:4000/api/v1/subscriptions/admin/vendors/%VENDOR_I
   -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%" ^
   -H "Content-Type: application/json" ^
   -d "{\"status\":\"suspended\",\"reason\":\"Billing hold\"}"
+```
+
+## Report And Export Notes
+
+- Reports are read-only and vendor-scoped by default.
+- `vendor_admin` and `vendor_staff` users can load reports only for their current vendor.
+- `super_admin` users can load vendor-scoped reports by providing a selected vendor context, such as a `vendorId` query parameter, and can load the limited platform overview.
+- CSV exports use the same filters and tenant isolation as the JSON report endpoints.
+- CSV export size is capped at 5000 rows per request for this first reporting foundation.
+- Customer statements are built from `ledger_entries` and include opening balance, running balance, and ending balance.
+- No PDF, scheduled report, charting, or BI aggregation layer is included yet.
+
+Example vendor report requests:
+
+```bash
+curl "http://localhost:4000/api/v1/reports/summary?dateFrom=2026-04-01&dateTo=2026-04-30" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/reports/orders?page=1&pageSize=20&dateFrom=2026-04-01&dateTo=2026-04-30&status=confirmed" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/reports/invoices?customerId=%CUSTOMER_ID%&status=issued" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/reports/payments?paymentMethod=bank_transfer&dateFrom=2026-04-01" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/reports/customer-statement/%CUSTOMER_ID%?dateFrom=2026-04-01&dateTo=2026-04-30" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+```
+
+Example CSV export requests:
+
+```bash
+curl "http://localhost:4000/api/v1/reports/exports/orders.csv?dateFrom=2026-04-01&dateTo=2026-04-30" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -o orders-report.csv
+
+curl "http://localhost:4000/api/v1/reports/exports/invoices.csv?status=issued" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -o invoices-report.csv
+
+curl "http://localhost:4000/api/v1/reports/exports/payments.csv?customerId=%CUSTOMER_ID%" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -o payments-report.csv
+
+curl "http://localhost:4000/api/v1/reports/exports/customer-statement/%CUSTOMER_ID%.csv?dateFrom=2026-04-01" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -o customer-statement.csv
+```
+
+Example super admin overview request:
+
+```bash
+curl http://localhost:4000/api/v1/reports/admin/overview ^
+  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%"
 ```

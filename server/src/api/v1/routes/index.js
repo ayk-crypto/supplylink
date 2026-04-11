@@ -12,6 +12,7 @@ import ledgerRoutes from "../../../modules/ledger/ledger.routes.js";
 import paymentsRoutes from "../../../modules/ledger/payments.routes.js";
 import routesRoutes from "../../../modules/routes/routes.routes.js";
 import subscriptionsRoutes from "../../../modules/subscriptions/subscriptions.routes.js";
+import reportsRoutes from "../../../modules/reports/reports.routes.js";
 
 const router = Router();
 
@@ -28,5 +29,6 @@ router.use("/ledger", ledgerRoutes);
 router.use("/payments", paymentsRoutes);
 router.use("/routes", routesRoutes);
 router.use("/subscriptions", subscriptionsRoutes);
+router.use("/reports", reportsRoutes);
 
 export default router;

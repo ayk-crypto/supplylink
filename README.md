@@ -133,6 +133,16 @@ without leaking ledger, order, pricing, or route data across tenants.
 - `PATCH /api/v1/subscriptions/:subscriptionId`
 - `GET /api/v1/subscriptions/admin/vendors/:vendorId/overview`
 - `PATCH /api/v1/subscriptions/admin/vendors/:vendorId/status`
+- `GET /api/v1/reports/summary`
+- `GET /api/v1/reports/orders`
+- `GET /api/v1/reports/invoices`
+- `GET /api/v1/reports/payments`
+- `GET /api/v1/reports/customer-statement/:customerId`
+- `GET /api/v1/reports/exports/orders.csv`
+- `GET /api/v1/reports/exports/invoices.csv`
+- `GET /api/v1/reports/exports/payments.csv`
+- `GET /api/v1/reports/exports/customer-statement/:customerId.csv`
+- `GET /api/v1/reports/admin/overview`
 
 ## Auth Foundation
 
@@ -582,6 +592,60 @@ The current schema supports subscription `planCode`, status, billing cycle,
 period dates, trial end, and metadata. Notes are stored inside subscription
 metadata because there is no dedicated `notes` column. Vendor account status
 uses the existing schema values: `draft`, `active`, `suspended`, and `archived`.
+
+## Reports And Exports
+
+Module 12 adds vendor-scoped reports and CSV exports built from the existing
+transactional tables. Vendor admins and staff can report only on their current
+vendor data; `super_admin` can use vendor-scoped reports with a selected vendor
+context and can also access the limited platform overview.
+
+Vendor users can load summary, order, invoice, payment, and customer statement
+reports:
+
+```bash
+curl "http://localhost:4000/api/v1/reports/summary?dateFrom=2026-04-01&dateTo=2026-04-30" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/reports/orders?page=1&pageSize=20&dateFrom=2026-04-01&dateTo=2026-04-30&status=confirmed" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/reports/invoices?customerId=%CUSTOMER_ID%&status=issued" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/reports/payments?paymentMethod=bank_transfer&dateFrom=2026-04-01" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/reports/customer-statement/%CUSTOMER_ID%?dateFrom=2026-04-01&dateTo=2026-04-30" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+```
+
+CSV exports use the same filters and tenant isolation:
+
+```bash
+curl "http://localhost:4000/api/v1/reports/exports/orders.csv?dateFrom=2026-04-01&dateTo=2026-04-30" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -o orders-report.csv
+
+curl "http://localhost:4000/api/v1/reports/exports/invoices.csv?status=issued" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -o invoices-report.csv
+
+curl "http://localhost:4000/api/v1/reports/exports/payments.csv?customerId=%CUSTOMER_ID%" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -o payments-report.csv
+
+curl "http://localhost:4000/api/v1/reports/exports/customer-statement/%CUSTOMER_ID%.csv?dateFrom=2026-04-01" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -o customer-statement.csv
+```
+
+Super admins can load a deliberately small platform overview:
+
+```bash
+curl http://localhost:4000/api/v1/reports/admin/overview ^
+  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%"
+```
 
 ## Local URLs
 
