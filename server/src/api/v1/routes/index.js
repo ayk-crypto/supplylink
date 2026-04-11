@@ -9,6 +9,7 @@ import ordersRoutes from "../../../modules/orders/orders.routes.js";
 import invoicesRoutes from "../../../modules/invoices/invoices.routes.js";
 import quotationsRoutes from "../../../modules/quotations/quotations.routes.js";
 import ledgerRoutes from "../../../modules/ledger/ledger.routes.js";
+import paymentsRoutes from "../../../modules/ledger/payments.routes.js";
 import routesRoutes from "../../../modules/routes/routes.routes.js";
 import subscriptionsRoutes from "../../../modules/subscriptions/subscriptions.routes.js";
 
@@ -24,6 +25,7 @@ router.use("/orders", ordersRoutes);
 router.use("/invoices", invoicesRoutes);
 router.use("/quotations", quotationsRoutes);
 router.use("/ledger", ledgerRoutes);
+router.use("/payments", paymentsRoutes);
 router.use("/routes", routesRoutes);
 router.use("/subscriptions", subscriptionsRoutes);
 

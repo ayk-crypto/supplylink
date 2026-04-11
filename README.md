@@ -113,6 +113,12 @@ without leaking ledger, order, pricing, or route data across tenants.
 - `POST /api/v1/invoices`
 - `GET /api/v1/invoices/:invoiceId`
 - `PATCH /api/v1/invoices/:invoiceId`
+- `GET /api/v1/payments`
+- `POST /api/v1/payments`
+- `GET /api/v1/payments/:paymentId`
+- `PATCH /api/v1/payments/:paymentId`
+- `GET /api/v1/ledger`
+- `GET /api/v1/ledger/customer/:customerId`
 
 ## Auth Foundation
 
@@ -408,6 +414,58 @@ The API calculates subtotal, discount total, tax total, grand total, balance
 due, and line totals on the server. Invoice numbers are unique per vendor; if
 omitted, the API generates an invoice number. `paid` and `void` invoices are
 terminal, and line items can only be replaced while an invoice is `draft`.
+
+## Ledger And Payments
+
+Module 9 replaces the ledger placeholder with vendor-scoped payment and ledger
+history endpoints. Invoice-linked payments update invoice balance due and
+status, while on-account payments can be recorded without an invoice.
+
+Vendor admins can create invoice-linked payments:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/payments ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"customerId\":\"%CUSTOMER_ID%\",\"invoiceId\":\"%INVOICE_ID%\",\"paymentDate\":\"2026-04-12\",\"amount\":25.50,\"paymentMethod\":\"bank_transfer\",\"referenceNumber\":\"PAY-1001\",\"notes\":\"Partial payment\"}"
+```
+
+Vendor admins can also record on-account payments:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/payments ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"customerId\":\"%CUSTOMER_ID%\",\"paymentDate\":\"2026-04-12\",\"amount\":10,\"paymentMethod\":\"cash\",\"referenceNumber\":\"ADV-1001\",\"notes\":\"On-account payment\"}"
+```
+
+Vendor admins and vendor staff can read payments and ledger entries for their
+current vendor:
+
+```bash
+curl "http://localhost:4000/api/v1/payments?page=1&pageSize=20&customerId=%CUSTOMER_ID%" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/payments/%PAYMENT_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/ledger?page=1&pageSize=20&customerId=%CUSTOMER_ID%" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/ledger/customer/%CUSTOMER_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+```
+
+Payments are financially immutable after creation: amount, customer, and invoice
+linkage are not editable. Vendor admins can adjust reference, method, notes, and
+metadata:
+
+```bash
+curl -X PATCH http://localhost:4000/api/v1/payments/%PAYMENT_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"referenceNumber\":\"PAY-1001-UPDATED\",\"notes\":\"Updated bank reference\"}"
+```
 
 ## Local URLs
 

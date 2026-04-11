@@ -57,6 +57,12 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - `POST /api/v1/invoices`
 - `GET /api/v1/invoices/:invoiceId`
 - `PATCH /api/v1/invoices/:invoiceId`
+- `GET /api/v1/payments`
+- `POST /api/v1/payments`
+- `GET /api/v1/payments/:paymentId`
+- `PATCH /api/v1/payments/:paymentId`
+- `GET /api/v1/ledger`
+- `GET /api/v1/ledger/customer/:customerId`
 - `GET /api/v1/system/health`
 - `GET /api/v1/system/overview`
 - `GET /api/v1/system/modules`
@@ -68,6 +74,7 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - Quotation line items live in [server/src/database/migrations/003_quotation_items.sql](/d:/supplylink/server/src/database/migrations/003_quotation_items.sql)
 - Order item snapshots live in [server/src/database/migrations/004_order_item_snapshots.sql](/d:/supplylink/server/src/database/migrations/004_order_item_snapshots.sql)
 - Invoice line items live in [server/src/database/migrations/005_invoice_items.sql](/d:/supplylink/server/src/database/migrations/005_invoice_items.sql)
+- Payment relationship and ledger idempotency guards live in [server/src/database/migrations/006_payments_relationship_and_ledger_guards.sql](/d:/supplylink/server/src/database/migrations/006_payments_relationship_and_ledger_guards.sql)
 - Run `npm run db:migrate` inside the `server` workspace after setting `DATABASE_URL`
 
 ## Auth Notes
@@ -285,4 +292,51 @@ curl -X POST http://localhost:4000/api/v1/invoices ^
   -H "Authorization: Bearer %VENDOR_TOKEN%" ^
   -H "Content-Type: application/json" ^
   -d "{\"orderId\":\"%ORDER_ID%\",\"issueDate\":\"2026-04-11\",\"dueDate\":\"2026-04-25\",\"status\":\"issued\"}"
+```
+
+## Ledger And Payment Notes
+
+- Payments and ledger entries are vendor-scoped.
+- `vendor_admin` users can create payments and adjust safe payment reference fields.
+- `vendor_staff` users can list and inspect payments and ledger entries, but cannot write them.
+- Invoice-linked payments validate the invoice belongs to the current vendor and matches the payment customer.
+- On-account payments are supported by omitting `invoiceId`.
+- Invoice-linked payments reject overpayment; extra funds should be recorded as a separate on-account payment.
+- Invoice receivable ledger entries are maintained when invoices are issued and when payments are created for invoices.
+- Payment creation creates a credit ledger entry and recalculates invoice balance/status.
+- Payment amount, customer, and invoice linkage are intentionally immutable after creation.
+
+Example payment requests:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/payments ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"customerId\":\"%CUSTOMER_ID%\",\"invoiceId\":\"%INVOICE_ID%\",\"paymentDate\":\"2026-04-12\",\"amount\":25.50,\"paymentMethod\":\"bank_transfer\",\"referenceNumber\":\"PAY-1001\",\"notes\":\"Partial payment\"}"
+
+curl -X POST http://localhost:4000/api/v1/payments ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"customerId\":\"%CUSTOMER_ID%\",\"paymentDate\":\"2026-04-12\",\"amount\":10,\"paymentMethod\":\"cash\",\"referenceNumber\":\"ADV-1001\",\"notes\":\"On-account payment\"}"
+
+curl "http://localhost:4000/api/v1/payments?page=1&pageSize=20&customerId=%CUSTOMER_ID%" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/payments/%PAYMENT_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl -X PATCH http://localhost:4000/api/v1/payments/%PAYMENT_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"referenceNumber\":\"PAY-1001-UPDATED\",\"notes\":\"Updated bank reference\"}"
+```
+
+Example ledger requests:
+
+```bash
+curl "http://localhost:4000/api/v1/ledger?page=1&pageSize=20&customerId=%CUSTOMER_ID%" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/ledger/customer/%CUSTOMER_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
 ```

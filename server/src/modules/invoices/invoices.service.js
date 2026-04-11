@@ -11,6 +11,7 @@ import {
   listProductsByIdsForVendor,
   updateInvoiceWithOptionalItems
 } from "./invoices.repository.js";
+import { ensureInvoiceLedgerEntry } from "../ledger/ledger.repository.js";
 
 const TERMINAL_STATUSES = ["paid", "void"];
 const ITEM_EDITABLE_STATUSES = ["draft"];
@@ -410,6 +411,10 @@ async function createInvoice(vendorId, payload, actor) {
     items
   });
 
+  if (!["draft", "void"].includes(status)) {
+    await ensureInvoiceLedgerEntry(vendorId, invoice.id, actor.userId);
+  }
+
   return getInvoiceDetail(vendorId, invoice.id);
 }
 
@@ -450,6 +455,10 @@ async function updateInvoice(vendorId, invoiceId, payload) {
   });
 
   assertInvoiceFound(updated, invoiceId);
+
+  if (!["draft", "void"].includes(updated.status)) {
+    await ensureInvoiceLedgerEntry(vendorId, invoiceId);
+  }
 
   return getInvoiceDetail(vendorId, invoiceId);
 }
