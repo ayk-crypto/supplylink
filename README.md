@@ -109,6 +109,10 @@ without leaking ledger, order, pricing, or route data across tenants.
 - `POST /api/v1/orders`
 - `GET /api/v1/orders/:orderId`
 - `PATCH /api/v1/orders/:orderId`
+- `GET /api/v1/invoices`
+- `POST /api/v1/invoices`
+- `GET /api/v1/invoices/:invoiceId`
+- `PATCH /api/v1/invoices/:invoiceId`
 
 ## Auth Foundation
 
@@ -355,6 +359,55 @@ The API calculates subtotal, discount total, tax total, grand total, and line
 totals on the server. Order numbers are unique per vendor; if omitted, the API
 generates an order number. `delivered` and `cancelled` orders are terminal, and
 line items can only be replaced while an order is `draft` or `confirmed`.
+
+## Invoices
+
+Module 8 replaces the invoice placeholder with vendor-scoped invoice
+management. Invoices use the existing `invoices` table, and line items use the
+new `invoice_items` table. Customers must already be linked to the vendor, and
+every invoiced product must belong to the same vendor.
+
+Vendor admins can create direct invoices:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/invoices ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"customerId\":\"%CUSTOMER_ID%\",\"issueDate\":\"2026-04-11\",\"dueDate\":\"2026-04-25\",\"notes\":\"Manual invoice\",\"items\":[{\"productId\":\"%PRODUCT_ID%\",\"quantity\":2,\"unitPrice\":8.99,\"discount\":1,\"tax\":0.5}]}"
+```
+
+Vendor admins can also create an invoice from a same-vendor order:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/invoices ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"orderId\":\"%ORDER_ID%\",\"issueDate\":\"2026-04-11\",\"dueDate\":\"2026-04-25\",\"status\":\"issued\"}"
+```
+
+Vendor admins and vendor staff can read only their current vendor invoices:
+
+```bash
+curl "http://localhost:4000/api/v1/invoices?page=1&pageSize=20&status=draft&customerId=%CUSTOMER_ID%" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/invoices/%INVOICE_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+```
+
+Vendor admins can update non-terminal invoices:
+
+```bash
+curl -X PATCH http://localhost:4000/api/v1/invoices/%INVOICE_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"status\":\"issued\",\"notes\":\"Issued to customer\",\"items\":[{\"productId\":\"%PRODUCT_ID%\",\"quantity\":3,\"unitPrice\":8.99,\"discountTotal\":0,\"taxTotal\":0.75}]}"
+```
+
+The API calculates subtotal, discount total, tax total, grand total, balance
+due, and line totals on the server. Invoice numbers are unique per vendor; if
+omitted, the API generates an invoice number. `paid` and `void` invoices are
+terminal, and line items can only be replaced while an invoice is `draft`.
 
 ## Local URLs
 

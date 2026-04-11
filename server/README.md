@@ -53,6 +53,10 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - `POST /api/v1/orders`
 - `GET /api/v1/orders/:orderId`
 - `PATCH /api/v1/orders/:orderId`
+- `GET /api/v1/invoices`
+- `POST /api/v1/invoices`
+- `GET /api/v1/invoices/:invoiceId`
+- `PATCH /api/v1/invoices/:invoiceId`
 - `GET /api/v1/system/health`
 - `GET /api/v1/system/overview`
 - `GET /api/v1/system/modules`
@@ -63,6 +67,7 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - Auth and membership extension lives in [server/src/database/migrations/002_auth_and_vendor_memberships.sql](/d:/supplylink/server/src/database/migrations/002_auth_and_vendor_memberships.sql)
 - Quotation line items live in [server/src/database/migrations/003_quotation_items.sql](/d:/supplylink/server/src/database/migrations/003_quotation_items.sql)
 - Order item snapshots live in [server/src/database/migrations/004_order_item_snapshots.sql](/d:/supplylink/server/src/database/migrations/004_order_item_snapshots.sql)
+- Invoice line items live in [server/src/database/migrations/005_invoice_items.sql](/d:/supplylink/server/src/database/migrations/005_invoice_items.sql)
 - Run `npm run db:migrate` inside the `server` workspace after setting `DATABASE_URL`
 
 ## Auth Notes
@@ -238,4 +243,46 @@ curl -X POST http://localhost:4000/api/v1/orders ^
   -H "Authorization: Bearer %VENDOR_TOKEN%" ^
   -H "Content-Type: application/json" ^
   -d "{\"quotationId\":\"%QUOTATION_ID%\",\"orderDate\":\"2026-04-11\",\"requestedDeliveryDate\":\"2026-04-18\",\"status\":\"confirmed\"}"
+```
+
+## Invoice Notes
+
+- Invoices are vendor-scoped through `invoices.vendor_id`.
+- Invoice detail includes line items from `invoice_items`.
+- `vendor_admin` users can create and update invoices for their current vendor.
+- `vendor_staff` users can list and inspect invoices, but cannot write them.
+- `super_admin` users can inspect or manage invoices with a selected vendor context or `vendorId` query parameter.
+- Direct invoice creation validates that the customer is linked to the current vendor and every product belongs to the current vendor.
+- Invoices may also be created from an existing same-vendor order by passing `orderId`; if `items` are omitted, order line items are copied into the invoice.
+- Totals are calculated on the server from line item quantity, unit price, discount, and tax values.
+- Invoice numbers are vendor-scoped. If `invoiceNumber` is omitted, the API generates one like `I-20260411-AB12CD34`.
+- Paid and void invoices cannot be patched. Line items can only be replaced while an invoice is draft.
+
+Example direct invoice requests:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/invoices ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"customerId\":\"%CUSTOMER_ID%\",\"issueDate\":\"2026-04-11\",\"dueDate\":\"2026-04-25\",\"notes\":\"Manual invoice\",\"items\":[{\"productId\":\"%PRODUCT_ID%\",\"quantity\":2,\"unitPrice\":8.99,\"discount\":1,\"tax\":0.5}]}"
+
+curl "http://localhost:4000/api/v1/invoices?page=1&pageSize=20&status=draft&customerId=%CUSTOMER_ID%" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/invoices/%INVOICE_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl -X PATCH http://localhost:4000/api/v1/invoices/%INVOICE_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"status\":\"issued\",\"notes\":\"Issued to customer\",\"items\":[{\"productId\":\"%PRODUCT_ID%\",\"quantity\":3,\"unitPrice\":8.99,\"discountTotal\":0,\"taxTotal\":0.75}]}"
+```
+
+Example create-from-order request:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/invoices ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"orderId\":\"%ORDER_ID%\",\"issueDate\":\"2026-04-11\",\"dueDate\":\"2026-04-25\",\"status\":\"issued\"}"
 ```
