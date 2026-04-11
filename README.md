@@ -93,6 +93,14 @@ without leaking ledger, order, pricing, or route data across tenants.
 - `POST /api/v1/customers`
 - `GET /api/v1/customers/:customerId`
 - `PATCH /api/v1/customers/:customerId`
+- `GET /api/v1/categories`
+- `POST /api/v1/categories`
+- `GET /api/v1/categories/:categoryId`
+- `PATCH /api/v1/categories/:categoryId`
+- `GET /api/v1/products`
+- `POST /api/v1/products`
+- `GET /api/v1/products/:productId`
+- `PATCH /api/v1/products/:productId`
 
 ## Auth Foundation
 
@@ -209,6 +217,50 @@ matches, then creates the vendor relationship. If the same vendor-customer pair
 already exists, the API returns a conflict instead of creating a duplicate
 relationship. `super_admin` can inspect a vendor-scoped customer view by using a
 selected vendor context or passing `vendorId` as a query parameter.
+
+## Catalog And Categories
+
+Module 5 replaces the product placeholder route with a vendor-scoped catalog
+foundation and adds `/api/v1/categories`. Categories use the existing
+`categories` table, and products use the existing `products` table.
+
+Vendor admins can create and update catalog records:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/categories ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"name\":\"Beverages\",\"description\":\"Shelf-stable drinks\"}"
+
+curl -X POST http://localhost:4000/api/v1/products ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"sku\":\"BEV-001\",\"name\":\"Sparkling Water 12 Pack\",\"description\":\"Lime sparkling water case\",\"categoryId\":\"%CATEGORY_ID%\",\"unitPrice\":8.99,\"status\":\"active\",\"metadata\":{\"unit\":\"case\"}}"
+
+curl -X PATCH http://localhost:4000/api/v1/products/%PRODUCT_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"unitPrice\":9.49,\"status\":\"active\",\"metadata\":{\"unit\":\"case\",\"cost\":6.25}}"
+```
+
+Vendor admins and vendor staff can read only their current vendor catalog:
+
+```bash
+curl "http://localhost:4000/api/v1/categories?page=1&pageSize=20&search=bev" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/products?page=1&pageSize=20&status=active&categoryId=%CATEGORY_ID%&search=water" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/products/%PRODUCT_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+```
+
+The existing schema enforces vendor-local category slug uniqueness and
+vendor-local product SKU uniqueness. No migration was added because the current
+tables already support the foundation fields; category status and first-class
+product unit, cost, and currency columns can be introduced later when pricing
+and inventory requirements become clearer.
 
 ## Local URLs
 

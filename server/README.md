@@ -37,6 +37,14 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - `POST /api/v1/customers`
 - `GET /api/v1/customers/:customerId`
 - `PATCH /api/v1/customers/:customerId`
+- `GET /api/v1/categories`
+- `POST /api/v1/categories`
+- `GET /api/v1/categories/:categoryId`
+- `PATCH /api/v1/categories/:categoryId`
+- `GET /api/v1/products`
+- `POST /api/v1/products`
+- `GET /api/v1/products/:productId`
+- `PATCH /api/v1/products/:productId`
 - `GET /api/v1/system/health`
 - `GET /api/v1/system/overview`
 - `GET /api/v1/system/modules`
@@ -95,4 +103,54 @@ curl -X PATCH http://localhost:4000/api/v1/customers/%CUSTOMER_ID% ^
   -H "Authorization: Bearer %VENDOR_TOKEN%" ^
   -H "Content-Type: application/json" ^
   -d "{\"customer\":{\"phone\":\"+1-555-0199\"},\"relationship\":{\"status\":\"inactive\",\"notes\":\"Paused ordering until next quarter\"}}"
+```
+
+## Catalog And Category Notes
+
+- Categories and products are vendor-scoped through `vendor_id`.
+- `vendor_admin` users can create and update categories and products for their current vendor.
+- `vendor_staff` users can list and inspect catalog records, but cannot write them.
+- `super_admin` users can inspect or manage catalog records with a selected vendor context or `vendorId` query parameter.
+- Category uniqueness is enforced by the existing `(vendor_id, slug)` constraint.
+- Product SKU uniqueness is enforced by the existing `(vendor_id, sku)` constraint.
+- No migration was added for this module. The current category schema does not include status, and the current product schema stores `unit_price`, `status`, and `metadata`, but not first-class unit, cost, or currency columns.
+
+Example category requests:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/categories ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"name\":\"Beverages\",\"description\":\"Shelf-stable drinks\"}"
+
+curl "http://localhost:4000/api/v1/categories?page=1&pageSize=20&search=bev" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/categories/%CATEGORY_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl -X PATCH http://localhost:4000/api/v1/categories/%CATEGORY_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"description\":\"Drinks and beverage inventory\"}"
+```
+
+Example product requests:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/products ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"sku\":\"BEV-001\",\"name\":\"Sparkling Water 12 Pack\",\"description\":\"Lime sparkling water case\",\"categoryId\":\"%CATEGORY_ID%\",\"unitPrice\":8.99,\"status\":\"active\",\"metadata\":{\"unit\":\"case\"}}"
+
+curl "http://localhost:4000/api/v1/products?page=1&pageSize=20&status=active&categoryId=%CATEGORY_ID%&search=water" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/products/%PRODUCT_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl -X PATCH http://localhost:4000/api/v1/products/%PRODUCT_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"unitPrice\":9.49,\"status\":\"active\",\"metadata\":{\"unit\":\"case\",\"cost\":6.25}}"
 ```

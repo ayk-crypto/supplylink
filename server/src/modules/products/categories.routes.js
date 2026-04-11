@@ -4,54 +4,54 @@ import authenticate from "../../middlewares/authenticate.js";
 import authorizeRoles from "../../middlewares/authorizeRoles.js";
 import requireVendorAccess from "../../middlewares/requireVendorAccess.js";
 import validateRequest from "../../middlewares/validateRequest.js";
-import { create, getById, list, update } from "./products.controller.js";
+import { create, getById, list, update } from "./categories.controller.js";
 import {
-  productCreateBodySchema,
-  productIdParamsSchema,
-  productQuerySchema,
-  productUpdateBodySchema
+  categoryCreateBodySchema,
+  categoryIdParamsSchema,
+  categoryQuerySchema,
+  categoryUpdateBodySchema
 } from "./catalog.schemas.js";
 
-const productsRoutes = Router();
+const categoriesRoutes = Router();
 
-productsRoutes.get(
+categoriesRoutes.get(
   "/",
   authenticate,
   authorizeRoles("super_admin", "vendor_admin", "vendor_staff"),
-  validateRequest({ query: productQuerySchema }),
+  validateRequest({ query: categoryQuerySchema }),
   requireVendorAccess(),
   asyncHandler(list)
 );
 
-productsRoutes.post(
+categoriesRoutes.post(
   "/",
   authenticate,
   authorizeRoles("super_admin", "vendor_admin"),
-  validateRequest({ query: productQuerySchema, body: productCreateBodySchema }),
+  validateRequest({ query: categoryQuerySchema, body: categoryCreateBodySchema }),
   requireVendorAccess(),
   asyncHandler(create)
 );
 
-productsRoutes.get(
-  "/:productId",
+categoriesRoutes.get(
+  "/:categoryId",
   authenticate,
   authorizeRoles("super_admin", "vendor_admin", "vendor_staff"),
-  validateRequest({ params: productIdParamsSchema, query: productQuerySchema }),
+  validateRequest({ params: categoryIdParamsSchema, query: categoryQuerySchema }),
   requireVendorAccess(),
   asyncHandler(getById)
 );
 
-productsRoutes.patch(
-  "/:productId",
+categoriesRoutes.patch(
+  "/:categoryId",
   authenticate,
   authorizeRoles("super_admin", "vendor_admin"),
   validateRequest({
-    params: productIdParamsSchema,
-    query: productQuerySchema,
-    body: productUpdateBodySchema
+    params: categoryIdParamsSchema,
+    query: categoryQuerySchema,
+    body: categoryUpdateBodySchema
   }),
   requireVendorAccess(),
   asyncHandler(update)
 );
 
-export default productsRoutes;
+export default categoriesRoutes;
