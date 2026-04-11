@@ -2,7 +2,7 @@
 
 SupplyLink is a multi-tenant SaaS foundation for vendor-ledger, ordering,
 invoicing, quotations, customer management, and delivery route planning. The
-current step includes the auth foundation plus the first real vendor
+current step includes the auth foundation plus real vendor and customer
 management endpoints for platform and vendor-level administration.
 
 ## Structure
@@ -89,6 +89,10 @@ without leaking ledger, order, pricing, or route data across tenants.
 - `GET /api/v1/vendors/:vendorId`
 - `PATCH /api/v1/vendors/:vendorId`
 - `GET /api/v1/vendors/:vendorId/members`
+- `GET /api/v1/customers`
+- `POST /api/v1/customers`
+- `GET /api/v1/customers/:customerId`
+- `PATCH /api/v1/customers/:customerId`
 
 ## Auth Foundation
 
@@ -165,6 +169,46 @@ The current schema supports vendor profile fields such as legal/display name,
 slug, status, contact email/phone, currency code, timezone, and timestamps.
 Address fields are not present in the current vendor table yet, so this module
 does not expose or migrate address data.
+
+## Customer Management
+
+Module 4 replaces the customer placeholder route with a vendor-isolated
+customer management foundation. The `customers` table remains the shared master
+record, while `vendor_customer_relationships` owns vendor-specific fields such
+as account code, status, credit limit, price list code, notes, metadata, and
+linked timestamps.
+
+Vendor admins can create customers and update both clearly separated parts of
+the payload:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/customers ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"customer\":{\"fullName\":\"Jane Buyer\",\"companyName\":\"Buyer Co\",\"email\":\"jane.buyer@example.com\",\"phone\":\"+1-555-0111\"},\"relationship\":{\"accountCode\":\"ACME-CUST-001\",\"status\":\"active\",\"creditLimit\":5000,\"priceListCode\":\"STANDARD\",\"notes\":\"Prefers morning deliveries\"}}"
+
+curl -X PATCH http://localhost:4000/api/v1/customers/%CUSTOMER_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"customer\":{\"phone\":\"+1-555-0199\"},\"relationship\":{\"status\":\"inactive\",\"notes\":\"Paused ordering until next quarter\"}}"
+```
+
+Vendor admins and vendor staff can read only linked customers for their current
+vendor:
+
+```bash
+curl "http://localhost:4000/api/v1/customers?page=1&pageSize=20&search=jane&status=active" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/customers/%CUSTOMER_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+```
+
+Creation reuses an existing shared customer master when the email or phone
+matches, then creates the vendor relationship. If the same vendor-customer pair
+already exists, the API returns a conflict instead of creating a duplicate
+relationship. `super_admin` can inspect a vendor-scoped customer view by using a
+selected vendor context or passing `vendorId` as a query parameter.
 
 ## Local URLs
 

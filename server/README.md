@@ -11,7 +11,7 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - JWT auth with bcrypt password hashing
 - role and vendor-membership foundations
 - PostgreSQL migration runner with foundational schema
-- placeholder domain modules for future SaaS features
+- real vendor and customer management modules plus placeholder domain modules for future SaaS features
 
 ## Environment Files
 
@@ -33,6 +33,10 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - `GET /api/v1/vendors/:vendorId`
 - `PATCH /api/v1/vendors/:vendorId`
 - `GET /api/v1/vendors/:vendorId/members`
+- `GET /api/v1/customers`
+- `POST /api/v1/customers`
+- `GET /api/v1/customers/:customerId`
+- `PATCH /api/v1/customers/:customerId`
 - `GET /api/v1/system/health`
 - `GET /api/v1/system/overview`
 - `GET /api/v1/system/modules`
@@ -57,3 +61,38 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - `GET /api/v1/vendors/me/members` lets `vendor_admin` users view active tenant membership details.
 - `GET /api/v1/vendors`, `GET /api/v1/vendors/:vendorId`, `PATCH /api/v1/vendors/:vendorId`, and `GET /api/v1/vendors/:vendorId/members` are platform-admin friendly routes; listing and cross-vendor updates require `super_admin`.
 - The current vendor table has no address columns, so address fields are intentionally not exposed until a future migration adds them.
+
+## Customer Management Notes
+
+- Customers are shared platform-level master records in `customers`.
+- Vendor ownership, notes, account codes, pricing references, and status live in `vendor_customer_relationships`.
+- `vendor_admin` and `vendor_staff` can list and inspect only customers linked to their current vendor.
+- `vendor_staff` is read-only for this module.
+- `vendor_admin` can create and update customers for the current vendor.
+- `super_admin` can use these endpoints with an explicit `vendorId` query parameter or a selected current vendor context.
+- Duplicate customer matching is intentionally practical: creation reuses an existing master customer when the submitted email or phone matches an existing record. It then creates the vendor relationship unless that vendor-customer pair already exists.
+- No migration was added for this module because the existing schema already includes the needed relationship fields: `account_code`, `status`, `credit_limit`, `price_list_code`, `notes`, `metadata`, and timestamps.
+
+Example create request:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/customers ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"customer\":{\"fullName\":\"Jane Buyer\",\"companyName\":\"Buyer Co\",\"email\":\"jane.buyer@example.com\",\"phone\":\"+1-555-0111\",\"billingAddress\":{\"city\":\"Austin\"}},\"relationship\":{\"accountCode\":\"ACME-CUST-001\",\"status\":\"active\",\"creditLimit\":5000,\"priceListCode\":\"STANDARD\",\"notes\":\"Prefers morning deliveries\"}}"
+```
+
+Example list, detail, and update requests:
+
+```bash
+curl "http://localhost:4000/api/v1/customers?page=1&pageSize=20&search=jane&status=active" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/customers/%CUSTOMER_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl -X PATCH http://localhost:4000/api/v1/customers/%CUSTOMER_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"customer\":{\"phone\":\"+1-555-0199\"},\"relationship\":{\"status\":\"inactive\",\"notes\":\"Paused ordering until next quarter\"}}"
+```

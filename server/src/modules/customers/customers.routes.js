@@ -1,10 +1,57 @@
-import createPlaceholderModule from "../createPlaceholderModule.js";
+import { Router } from "express";
+import asyncHandler from "../../utils/asyncHandler.js";
+import authenticate from "../../middlewares/authenticate.js";
+import authorizeRoles from "../../middlewares/authorizeRoles.js";
+import requireVendorAccess from "../../middlewares/requireVendorAccess.js";
+import validateRequest from "../../middlewares/validateRequest.js";
+import { create, getById, list, update } from "./customers.controller.js";
+import {
+  customerCreateBodySchema,
+  customerIdParamsSchema,
+  customerUpdateBodySchema,
+  paginationQuerySchema
+} from "./customers.schemas.js";
 
-const customersRoutes = createPlaceholderModule({
-  key: "customers",
-  label: "Customers",
-  scope: "vendor",
-  description: "Vendor-isolated customer views backed by shared customer master records and vendor relationships."
-});
+const customersRoutes = Router();
+
+customersRoutes.get(
+  "/",
+  authenticate,
+  authorizeRoles("super_admin", "vendor_admin", "vendor_staff"),
+  validateRequest({ query: paginationQuerySchema }),
+  requireVendorAccess(),
+  asyncHandler(list)
+);
+
+customersRoutes.post(
+  "/",
+  authenticate,
+  authorizeRoles("super_admin", "vendor_admin"),
+  validateRequest({ query: paginationQuerySchema, body: customerCreateBodySchema }),
+  requireVendorAccess(),
+  asyncHandler(create)
+);
+
+customersRoutes.get(
+  "/:customerId",
+  authenticate,
+  authorizeRoles("super_admin", "vendor_admin", "vendor_staff"),
+  validateRequest({ params: customerIdParamsSchema, query: paginationQuerySchema }),
+  requireVendorAccess(),
+  asyncHandler(getById)
+);
+
+customersRoutes.patch(
+  "/:customerId",
+  authenticate,
+  authorizeRoles("super_admin", "vendor_admin"),
+  validateRequest({
+    params: customerIdParamsSchema,
+    query: paginationQuerySchema,
+    body: customerUpdateBodySchema
+  }),
+  requireVendorAccess(),
+  asyncHandler(update)
+);
 
 export default customersRoutes;
