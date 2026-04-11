@@ -45,6 +45,14 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - `POST /api/v1/products`
 - `GET /api/v1/products/:productId`
 - `PATCH /api/v1/products/:productId`
+- `GET /api/v1/quotations`
+- `POST /api/v1/quotations`
+- `GET /api/v1/quotations/:quotationId`
+- `PATCH /api/v1/quotations/:quotationId`
+- `GET /api/v1/orders`
+- `POST /api/v1/orders`
+- `GET /api/v1/orders/:orderId`
+- `PATCH /api/v1/orders/:orderId`
 - `GET /api/v1/system/health`
 - `GET /api/v1/system/overview`
 - `GET /api/v1/system/modules`
@@ -53,6 +61,8 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 
 - Migration files live in [server/src/database/migrations/001_initial_foundation.sql](/d:/supplylink/server/src/database/migrations/001_initial_foundation.sql)
 - Auth and membership extension lives in [server/src/database/migrations/002_auth_and_vendor_memberships.sql](/d:/supplylink/server/src/database/migrations/002_auth_and_vendor_memberships.sql)
+- Quotation line items live in [server/src/database/migrations/003_quotation_items.sql](/d:/supplylink/server/src/database/migrations/003_quotation_items.sql)
+- Order item snapshots live in [server/src/database/migrations/004_order_item_snapshots.sql](/d:/supplylink/server/src/database/migrations/004_order_item_snapshots.sql)
 - Run `npm run db:migrate` inside the `server` workspace after setting `DATABASE_URL`
 
 ## Auth Notes
@@ -153,4 +163,79 @@ curl -X PATCH http://localhost:4000/api/v1/products/%PRODUCT_ID% ^
   -H "Authorization: Bearer %VENDOR_TOKEN%" ^
   -H "Content-Type: application/json" ^
   -d "{\"unitPrice\":9.49,\"status\":\"active\",\"metadata\":{\"unit\":\"case\",\"cost\":6.25}}"
+```
+
+## Quotation Notes
+
+- Quotations are vendor-scoped through `quotations.vendor_id`.
+- Quotation detail includes line items from `quotation_items`.
+- `vendor_admin` users can create and update draft or sent quotations for their current vendor.
+- `vendor_staff` users can list and inspect quotations, but cannot write them.
+- `super_admin` users can inspect or manage quotations with a selected vendor context or `vendorId` query parameter.
+- The API validates that the customer is linked to the current vendor through `vendor_customer_relationships`.
+- The API validates that every quoted product belongs to the current vendor.
+- Totals are calculated on the server from line item quantity, unit price, discount, and tax values.
+- Quote numbers are vendor-scoped. If `quoteNumber` is omitted, the API generates one like `Q-20260411-AB12CD34`.
+- Quotations in `accepted`, `rejected`, or `expired` status are treated as finalized and cannot be patched.
+
+Example quotation requests:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/quotations ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"customerId\":\"%CUSTOMER_ID%\",\"issueDate\":\"2026-04-11\",\"expiryDate\":\"2026-04-25\",\"notes\":\"Introductory quote\",\"items\":[{\"productId\":\"%PRODUCT_ID%\",\"quantity\":2,\"unitPrice\":8.99,\"discount\":1,\"tax\":0.5}]}"
+
+curl "http://localhost:4000/api/v1/quotations?page=1&pageSize=20&status=draft&customerId=%CUSTOMER_ID%" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/quotations/%QUOTATION_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl -X PATCH http://localhost:4000/api/v1/quotations/%QUOTATION_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"status\":\"sent\",\"notes\":\"Sent to customer\",\"items\":[{\"productId\":\"%PRODUCT_ID%\",\"quantity\":3,\"unitPrice\":8.99,\"discountTotal\":0,\"taxTotal\":0.75}]}"
+```
+
+## Order Notes
+
+- Orders are vendor-scoped through `orders.vendor_id`.
+- Order detail includes line items from `order_items`.
+- `vendor_admin` users can create and update orders for their current vendor.
+- `vendor_staff` users can list and inspect orders, but cannot write them.
+- `super_admin` users can inspect or manage orders with a selected vendor context or `vendorId` query parameter.
+- Direct order creation validates that the customer is linked to the current vendor and every product belongs to the current vendor.
+- Orders may also be created from an existing same-vendor quotation by passing `quotationId`; if `items` are omitted, quotation line items are copied into the order.
+- Totals are calculated on the server from line item quantity, unit price, discount, and tax values.
+- Order numbers are vendor-scoped. If `orderNumber` is omitted, the API generates one like `O-20260411-AB12CD34`.
+- Delivered and cancelled orders cannot be patched. Line items can only be replaced while an order is draft or confirmed.
+
+Example direct order requests:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/orders ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"customerId\":\"%CUSTOMER_ID%\",\"orderDate\":\"2026-04-11\",\"requestedDeliveryDate\":\"2026-04-18\",\"notes\":\"Manual order\",\"items\":[{\"productId\":\"%PRODUCT_ID%\",\"quantity\":2,\"unitPrice\":8.99,\"discount\":1,\"tax\":0.5}]}"
+
+curl "http://localhost:4000/api/v1/orders?page=1&pageSize=20&status=draft&customerId=%CUSTOMER_ID%" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/orders/%ORDER_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl -X PATCH http://localhost:4000/api/v1/orders/%ORDER_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"status\":\"confirmed\",\"notes\":\"Confirmed with customer\",\"items\":[{\"productId\":\"%PRODUCT_ID%\",\"quantity\":3,\"unitPrice\":8.99,\"discountTotal\":0,\"taxTotal\":0.75}]}"
+```
+
+Example create-from-quotation request:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/orders ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"quotationId\":\"%QUOTATION_ID%\",\"orderDate\":\"2026-04-11\",\"requestedDeliveryDate\":\"2026-04-18\",\"status\":\"confirmed\"}"
 ```

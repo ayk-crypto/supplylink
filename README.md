@@ -101,6 +101,14 @@ without leaking ledger, order, pricing, or route data across tenants.
 - `POST /api/v1/products`
 - `GET /api/v1/products/:productId`
 - `PATCH /api/v1/products/:productId`
+- `GET /api/v1/quotations`
+- `POST /api/v1/quotations`
+- `GET /api/v1/quotations/:quotationId`
+- `PATCH /api/v1/quotations/:quotationId`
+- `GET /api/v1/orders`
+- `POST /api/v1/orders`
+- `GET /api/v1/orders/:orderId`
+- `PATCH /api/v1/orders/:orderId`
 
 ## Auth Foundation
 
@@ -261,6 +269,92 @@ vendor-local product SKU uniqueness. No migration was added because the current
 tables already support the foundation fields; category status and first-class
 product unit, cost, and currency columns can be introduced later when pricing
 and inventory requirements become clearer.
+
+## Quotations
+
+Module 6 replaces the quotation placeholder with vendor-scoped quotation
+management. Quotations use the existing `quotations` table, and line items use
+the new `quotation_items` table. Customers must already be linked to the vendor,
+and every quoted product must belong to the same vendor.
+
+Vendor admins can create and update draft or sent quotations:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/quotations ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"customerId\":\"%CUSTOMER_ID%\",\"issueDate\":\"2026-04-11\",\"expiryDate\":\"2026-04-25\",\"notes\":\"Introductory quote\",\"items\":[{\"productId\":\"%PRODUCT_ID%\",\"quantity\":2,\"unitPrice\":8.99,\"discount\":1,\"tax\":0.5}]}"
+
+curl -X PATCH http://localhost:4000/api/v1/quotations/%QUOTATION_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"status\":\"sent\",\"notes\":\"Sent to customer\",\"items\":[{\"productId\":\"%PRODUCT_ID%\",\"quantity\":3,\"unitPrice\":8.99,\"discountTotal\":0,\"taxTotal\":0.75}]}"
+```
+
+Vendor admins and vendor staff can read only their current vendor quotations:
+
+```bash
+curl "http://localhost:4000/api/v1/quotations?page=1&pageSize=20&status=draft&customerId=%CUSTOMER_ID%" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/quotations/%QUOTATION_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+```
+
+The API calculates subtotal, discount total, tax total, grand total, and line
+totals on the server. Quote numbers are unique per vendor; if omitted, the API
+generates a quote number. `accepted`, `rejected`, and `expired` quotations are
+treated as finalized and cannot be patched.
+
+## Orders
+
+Module 7 replaces the order placeholder with vendor-scoped order management.
+Orders use the existing `orders` table, and line items use the existing
+`order_items` table extended with sequence, description, and metadata support.
+Customers must already be linked to the vendor, and every ordered product must
+belong to the same vendor.
+
+Vendor admins can create direct orders:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/orders ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"customerId\":\"%CUSTOMER_ID%\",\"orderDate\":\"2026-04-11\",\"requestedDeliveryDate\":\"2026-04-18\",\"notes\":\"Manual order\",\"items\":[{\"productId\":\"%PRODUCT_ID%\",\"quantity\":2,\"unitPrice\":8.99,\"discount\":1,\"tax\":0.5}]}"
+```
+
+Vendor admins can also create an order from a same-vendor quotation:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/orders ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"quotationId\":\"%QUOTATION_ID%\",\"orderDate\":\"2026-04-11\",\"requestedDeliveryDate\":\"2026-04-18\",\"status\":\"confirmed\"}"
+```
+
+Vendor admins and vendor staff can read only their current vendor orders:
+
+```bash
+curl "http://localhost:4000/api/v1/orders?page=1&pageSize=20&status=draft&customerId=%CUSTOMER_ID%" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/orders/%ORDER_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+```
+
+Vendor admins can update non-terminal orders:
+
+```bash
+curl -X PATCH http://localhost:4000/api/v1/orders/%ORDER_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"status\":\"confirmed\",\"notes\":\"Confirmed with customer\",\"items\":[{\"productId\":\"%PRODUCT_ID%\",\"quantity\":3,\"unitPrice\":8.99,\"discountTotal\":0,\"taxTotal\":0.75}]}"
+```
+
+The API calculates subtotal, discount total, tax total, grand total, and line
+totals on the server. Order numbers are unique per vendor; if omitted, the API
+generates an order number. `delivered` and `cancelled` orders are terminal, and
+line items can only be replaced while an order is `draft` or `confirmed`.
 
 ## Local URLs
 
