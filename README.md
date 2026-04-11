@@ -126,6 +126,13 @@ without leaking ledger, order, pricing, or route data across tenants.
 - `GET /api/v1/routes/:routeId/stops`
 - `POST /api/v1/routes/:routeId/stops`
 - `PATCH /api/v1/routes/:routeId/stops/:stopId`
+- `GET /api/v1/subscriptions`
+- `POST /api/v1/subscriptions`
+- `GET /api/v1/subscriptions/me`
+- `GET /api/v1/subscriptions/:subscriptionId`
+- `PATCH /api/v1/subscriptions/:subscriptionId`
+- `GET /api/v1/subscriptions/admin/vendors/:vendorId/overview`
+- `PATCH /api/v1/subscriptions/admin/vendors/:vendorId/status`
 
 ## Auth Foundation
 
@@ -523,6 +530,58 @@ curl -X PATCH http://localhost:4000/api/v1/routes/%ROUTE_ID%/stops/%STOP_ID% ^
 
 Stop sequencing uses explicit `sequenceNumber` values and shifts neighboring
 stops when a new stop is inserted or an existing stop is moved.
+
+## Admin And Subscriptions
+
+Module 11 replaces the subscriptions placeholder with platform subscription
+administration and a safe vendor self-view. Subscription management is
+`super_admin` only; vendor users can only read the current subscription for
+their selected vendor.
+
+Super admins can list, create, inspect, and update subscriptions:
+
+```bash
+curl "http://localhost:4000/api/v1/subscriptions?page=1&pageSize=20&status=active&search=acme" ^
+  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%"
+
+curl -X POST http://localhost:4000/api/v1/subscriptions ^
+  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"vendorId\":\"%VENDOR_ID%\",\"planCode\":\"growth\",\"status\":\"trialing\",\"billingCycle\":\"monthly\",\"startsAt\":\"2026-04-11\",\"endsAt\":\"2026-05-11\",\"notes\":\"Initial trial\"}"
+
+curl http://localhost:4000/api/v1/subscriptions/%SUBSCRIPTION_ID% ^
+  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%"
+
+curl -X PATCH http://localhost:4000/api/v1/subscriptions/%SUBSCRIPTION_ID% ^
+  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"status\":\"active\",\"planCode\":\"growth\",\"notes\":\"Activated after onboarding\"}"
+```
+
+Vendor admins and staff can view only their own current subscription summary:
+
+```bash
+curl http://localhost:4000/api/v1/subscriptions/me ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+```
+
+Super admins can review a lightweight vendor overview and change vendor account
+status using the existing vendor status values:
+
+```bash
+curl http://localhost:4000/api/v1/subscriptions/admin/vendors/%VENDOR_ID%/overview ^
+  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%"
+
+curl -X PATCH http://localhost:4000/api/v1/subscriptions/admin/vendors/%VENDOR_ID%/status ^
+  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"status\":\"suspended\",\"reason\":\"Billing hold\"}"
+```
+
+The current schema supports subscription `planCode`, status, billing cycle,
+period dates, trial end, and metadata. Notes are stored inside subscription
+metadata because there is no dedicated `notes` column. Vendor account status
+uses the existing schema values: `draft`, `active`, `suspended`, and `archived`.
 
 ## Local URLs
 

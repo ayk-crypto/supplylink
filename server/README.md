@@ -70,6 +70,13 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - `GET /api/v1/routes/:routeId/stops`
 - `POST /api/v1/routes/:routeId/stops`
 - `PATCH /api/v1/routes/:routeId/stops/:stopId`
+- `GET /api/v1/subscriptions`
+- `POST /api/v1/subscriptions`
+- `GET /api/v1/subscriptions/me`
+- `GET /api/v1/subscriptions/:subscriptionId`
+- `PATCH /api/v1/subscriptions/:subscriptionId`
+- `GET /api/v1/subscriptions/admin/vendors/:vendorId/overview`
+- `PATCH /api/v1/subscriptions/admin/vendors/:vendorId/status`
 - `GET /api/v1/system/health`
 - `GET /api/v1/system/overview`
 - `GET /api/v1/system/modules`
@@ -83,6 +90,7 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - Invoice line items live in [server/src/database/migrations/005_invoice_items.sql](/d:/supplylink/server/src/database/migrations/005_invoice_items.sql)
 - Payment relationship and ledger idempotency guards live in [server/src/database/migrations/006_payments_relationship_and_ledger_guards.sql](/d:/supplylink/server/src/database/migrations/006_payments_relationship_and_ledger_guards.sql)
 - Route planning extensions live in [server/src/database/migrations/007_route_planning_foundation.sql](/d:/supplylink/server/src/database/migrations/007_route_planning_foundation.sql)
+- Subscription administration uses the existing `subscriptions` and `vendors.status` schema from the foundation migration.
 - Run `npm run db:migrate` inside the `server` workspace after setting `DATABASE_URL`
 
 ## Auth Notes
@@ -394,4 +402,53 @@ curl -X PATCH http://localhost:4000/api/v1/routes/%ROUTE_ID%/stops/%STOP_ID% ^
   -H "Authorization: Bearer %VENDOR_TOKEN%" ^
   -H "Content-Type: application/json" ^
   -d "{\"sequenceNumber\":2,\"status\":\"completed\",\"actualArrivalAt\":\"2026-04-13T09:12:00+05:00\"}"
+```
+
+## Admin And Subscription Notes
+
+- Subscription management is restricted to `super_admin`.
+- Vendor users can only read the current subscription summary for their selected vendor through `GET /api/v1/subscriptions/me`.
+- Creating a live subscription prevents another live subscription for the same vendor. Live statuses are `trialing`, `active`, and `past_due`.
+- The current subscription schema supports `plan_code`, `status`, `billing_cycle`, current period dates, trial end, metadata, and timestamps.
+- Notes are stored in subscription metadata because the current table has no dedicated `notes` column.
+- Vendor account status updates use the existing vendor status values: `draft`, `active`, `suspended`, and `archived`.
+- Vendor account status is recorded as a platform control; broad enforcement across every vendor workflow can be added later as a centralized policy layer.
+
+Example super admin subscription requests:
+
+```bash
+curl "http://localhost:4000/api/v1/subscriptions?page=1&pageSize=20&status=active&search=acme" ^
+  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%"
+
+curl -X POST http://localhost:4000/api/v1/subscriptions ^
+  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"vendorId\":\"%VENDOR_ID%\",\"planCode\":\"growth\",\"status\":\"trialing\",\"billingCycle\":\"monthly\",\"startsAt\":\"2026-04-11\",\"endsAt\":\"2026-05-11\",\"notes\":\"Initial trial\"}"
+
+curl http://localhost:4000/api/v1/subscriptions/%SUBSCRIPTION_ID% ^
+  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%"
+
+curl -X PATCH http://localhost:4000/api/v1/subscriptions/%SUBSCRIPTION_ID% ^
+  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"status\":\"active\",\"planCode\":\"growth\",\"notes\":\"Activated after onboarding\"}"
+```
+
+Example vendor self-view request:
+
+```bash
+curl http://localhost:4000/api/v1/subscriptions/me ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+```
+
+Example admin vendor overview and status requests:
+
+```bash
+curl http://localhost:4000/api/v1/subscriptions/admin/vendors/%VENDOR_ID%/overview ^
+  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%"
+
+curl -X PATCH http://localhost:4000/api/v1/subscriptions/admin/vendors/%VENDOR_ID%/status ^
+  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"status\":\"suspended\",\"reason\":\"Billing hold\"}"
 ```
