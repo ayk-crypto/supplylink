@@ -3,6 +3,7 @@ import asyncHandler from "../../utils/asyncHandler.js";
 import authenticate from "../../middlewares/authenticate.js";
 import authorizeRoles from "../../middlewares/authorizeRoles.js";
 import requireVendorAccess from "../../middlewares/requireVendorAccess.js";
+import requireVendorWritable from "../../middlewares/requireVendorWritable.js";
 import validateRequest from "../../middlewares/validateRequest.js";
 import { create, getById, list, update } from "./products.controller.js";
 import {
@@ -29,6 +30,7 @@ productsRoutes.post(
   authorizeRoles("super_admin", "vendor_admin"),
   validateRequest({ query: productQuerySchema, body: productCreateBodySchema }),
   requireVendorAccess(),
+  requireVendorWritable(),
   asyncHandler(create)
 );
 
@@ -51,6 +53,7 @@ productsRoutes.patch(
     body: productUpdateBodySchema
   }),
   requireVendorAccess(),
+  requireVendorWritable(),
   asyncHandler(update)
 );
 

@@ -11,6 +11,7 @@ import {
   updateRouteForVendor,
   updateRouteStopForVendor
 } from "./routes.repository.js";
+import { notifyVendorUsers, runNotificationTask } from "../notifications/notifications.service.js";
 
 const ROUTE_FIELDS = {
   name: "name",
@@ -264,7 +265,23 @@ async function getRouteDetail(vendorId, routeId) {
 async function createRoute(vendorId, payload) {
   const route = await createRouteForVendor(vendorId, toColumnPayload(payload, ROUTE_FIELDS));
 
-  return mapRoute(route);
+  const mappedRoute = mapRoute(route);
+
+  runNotificationTask(
+    notifyVendorUsers({
+      vendorId,
+      eventCode: "route.created",
+      title: "Route created",
+      message: `Route ${mappedRoute.name} was created${mappedRoute.routeDate ? ` for ${mappedRoute.routeDate}` : ""}.`,
+      metadata: {
+        routeId: mappedRoute.id,
+        routeDate: mappedRoute.routeDate,
+        status: mappedRoute.status
+      }
+    })
+  );
+
+  return mappedRoute;
 }
 
 async function updateRoute(vendorId, routeId, payload) {
@@ -276,7 +293,23 @@ async function updateRoute(vendorId, routeId, payload) {
 
   assertRouteFound(route, routeId);
 
-  return mapRoute(route);
+  const mappedRoute = mapRoute(route);
+
+  runNotificationTask(
+    notifyVendorUsers({
+      vendorId,
+      eventCode: "route.updated",
+      title: "Route updated",
+      message: `Route ${mappedRoute.name} was updated.`,
+      metadata: {
+        routeId: mappedRoute.id,
+        routeDate: mappedRoute.routeDate,
+        status: mappedRoute.status
+      }
+    })
+  );
+
+  return mappedRoute;
 }
 
 async function getRouteStops(vendorId, routeId) {

@@ -3,6 +3,7 @@ import { z } from "zod";
 const uuidParam = z.string().uuid();
 const jsonRecordSchema = z.record(z.string(), z.unknown());
 const quotationStatusEnum = z.enum(["draft", "sent", "accepted", "rejected", "expired"]);
+const quotationCreateStatusEnum = z.enum(["draft", "sent"]);
 
 const quotationIdParamsSchema = z.object({
   quotationId: uuidParam
@@ -69,7 +70,7 @@ const quotationCreateBodySchema = z.object({
   quoteNumber: z.string().trim().min(1).max(100).optional(),
   issueDate: z.string().trim().date().nullable().optional(),
   expiryDate: z.string().trim().date().nullable().optional(),
-  status: quotationStatusEnum.optional(),
+  status: quotationCreateStatusEnum.optional(),
   notes: z.string().trim().max(5000).nullable().optional(),
   items: z.array(quotationItemSchema).min(1).max(200)
 });

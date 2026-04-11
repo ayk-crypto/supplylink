@@ -3,6 +3,7 @@ import asyncHandler from "../../utils/asyncHandler.js";
 import authenticate from "../../middlewares/authenticate.js";
 import authorizeRoles from "../../middlewares/authorizeRoles.js";
 import requireVendorAccess from "../../middlewares/requireVendorAccess.js";
+import requireVendorWritable from "../../middlewares/requireVendorWritable.js";
 import validateRequest from "../../middlewares/validateRequest.js";
 import {
   getById,
@@ -37,6 +38,7 @@ vendorsRoutes.patch(
   authenticate,
   authorizeRoles("super_admin", "vendor_admin"),
   requireVendorAccess(),
+  requireVendorWritable(),
   validateRequest({ body: baseVendorUpdateBodySchema }),
   asyncHandler(updateMe)
 );

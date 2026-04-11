@@ -9,6 +9,7 @@ import {
   listPaymentsForVendor,
   updatePaymentSafeFields
 } from "./ledger.repository.js";
+import { notifyVendorUsers, runNotificationTask } from "../notifications/notifications.service.js";
 
 const PAYMENT_UPDATE_FIELDS = {
   paymentMethod: "method",
@@ -284,7 +285,25 @@ async function createPayment(vendorId, payload, actor) {
     invoice
   });
 
-  return mapPayment(payment);
+  const mappedPayment = mapPayment(payment);
+
+  runNotificationTask(
+    notifyVendorUsers({
+      vendorId,
+      eventCode: "payment.received",
+      title: "Payment received",
+      message: `Payment ${mappedPayment.referenceNumber || mappedPayment.id} for ${mappedPayment.customer.companyName || mappedPayment.customer.fullName} was recorded.`,
+      metadata: {
+        paymentId: mappedPayment.id,
+        customerId: mappedPayment.customerId,
+        invoiceId: mappedPayment.invoiceId,
+        amount: mappedPayment.amount,
+        paymentMethod: mappedPayment.paymentMethod
+      }
+    })
+  );
+
+  return mappedPayment;
 }
 
 async function updatePayment(vendorId, paymentId, payload) {

@@ -1,5 +1,5 @@
 import { sendSuccess } from "../../core/http/apiResponse.js";
-import { buildSystemOverview, MODULES } from "./system.service.js";
+import { buildSystemOverview, buildSystemReadiness, MODULES } from "./system.service.js";
 
 async function getHealth(request, response) {
   const overview = await buildSystemOverview();
@@ -31,6 +31,19 @@ async function getSystemOverview(request, response) {
   });
 }
 
+async function getReadiness(request, response) {
+  const readiness = await buildSystemReadiness();
+
+  sendSuccess(response, {
+    statusCode: readiness.ready ? 200 : 503,
+    message: readiness.ready ? "SupplyLink API is ready" : "SupplyLink API is not ready",
+    data: readiness,
+    meta: {
+      requestId: request.context.requestId
+    }
+  });
+}
+
 async function getModuleIndex(request, response) {
   sendSuccess(response, {
     message: "SupplyLink modules registered",
@@ -42,4 +55,4 @@ async function getModuleIndex(request, response) {
   });
 }
 
-export { getHealth, getModuleIndex, getSystemOverview };
+export { getHealth, getModuleIndex, getReadiness, getSystemOverview };

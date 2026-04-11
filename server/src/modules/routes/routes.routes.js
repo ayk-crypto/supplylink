@@ -3,6 +3,7 @@ import asyncHandler from "../../utils/asyncHandler.js";
 import authenticate from "../../middlewares/authenticate.js";
 import authorizeRoles from "../../middlewares/authorizeRoles.js";
 import requireVendorAccess from "../../middlewares/requireVendorAccess.js";
+import requireVendorWritable from "../../middlewares/requireVendorWritable.js";
 import validateRequest from "../../middlewares/validateRequest.js";
 import { create, createStop, getById, list, listStops, update, updateStop } from "./routes.controller.js";
 import {
@@ -32,6 +33,7 @@ routesRoutes.post(
   authorizeRoles("super_admin", "vendor_admin"),
   validateRequest({ query: routeQuerySchema, body: routeCreateBodySchema }),
   requireVendorAccess(),
+  requireVendorWritable(),
   asyncHandler(create)
 );
 
@@ -54,6 +56,7 @@ routesRoutes.patch(
     body: routeUpdateBodySchema
   }),
   requireVendorAccess(),
+  requireVendorWritable(),
   asyncHandler(update)
 );
 
@@ -76,6 +79,7 @@ routesRoutes.post(
     body: routeStopCreateBodySchema
   }),
   requireVendorAccess(),
+  requireVendorWritable(),
   asyncHandler(createStop)
 );
 
@@ -89,6 +93,7 @@ routesRoutes.patch(
     body: routeStopUpdateBodySchema
   }),
   requireVendorAccess(),
+  requireVendorWritable(),
   asyncHandler(updateStop)
 );
 

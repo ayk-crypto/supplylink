@@ -69,6 +69,18 @@ const MODULES = [
     scope: "platform",
     path: `${API_INFO.basePath}/subscriptions`,
     description: "Tenant subscription base."
+  },
+  {
+    key: "reports",
+    scope: "vendor",
+    path: `${API_INFO.basePath}/reports`,
+    description: "Vendor-scoped report and CSV export foundation."
+  },
+  {
+    key: "notifications",
+    scope: "user",
+    path: `${API_INFO.basePath}/notifications`,
+    description: "In-app notification center foundation."
   }
 ];
 
@@ -120,4 +132,23 @@ async function buildSystemOverview() {
   };
 }
 
-export { MODULES, buildSystemOverview };
+async function buildSystemReadiness() {
+  const overview = await buildSystemOverview();
+  const checks = {
+    databaseConfigured: overview.database.enabled,
+    databaseConnected: overview.database.connected,
+    jwtSecretConfigured: Boolean(env.JWT_SECRET),
+    productionJwtSecretIsExplicit:
+      env.NODE_ENV !== "production" || env.JWT_SECRET !== "development-only-jwt-secret"
+  };
+  const ready = Object.values(checks).every(Boolean);
+
+  return {
+    ready,
+    checks,
+    app: overview.app,
+    database: overview.database
+  };
+}
+
+export { MODULES, buildSystemOverview, buildSystemReadiness };

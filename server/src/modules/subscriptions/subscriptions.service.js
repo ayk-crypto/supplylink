@@ -10,6 +10,11 @@ import {
   updateSubscription,
   updateVendorStatus
 } from "./subscriptions.repository.js";
+import {
+  notifySuperAdmins,
+  notifyVendorUsers,
+  runNotificationTask
+} from "../notifications/notifications.service.js";
 
 const SUBSCRIPTION_FIELDS = {
   vendorId: "vendor_id",
@@ -254,6 +259,23 @@ async function updateVendorSubscription(subscriptionId, payload) {
 
   assertSubscriptionFound(subscription, subscriptionId);
 
+  if (payload.status && existing.status !== subscription.status) {
+    runNotificationTask(
+      notifySuperAdmins({
+        eventCode: "subscription.status_changed",
+        title: "Subscription status changed",
+        message: `Subscription ${subscription.plan_code} changed from ${existing.status} to ${subscription.status}.`,
+        metadata: {
+          subscriptionId: subscription.id,
+          vendorId: subscription.vendor_id,
+          previousStatus: existing.status,
+          nextStatus: subscription.status,
+          planCode: subscription.plan_code
+        }
+      })
+    );
+  }
+
   return mapSubscription(subscription);
 }
 
@@ -274,14 +296,40 @@ async function changeVendorStatus(vendorId, payload) {
   assertVendorFound(existing, vendorId);
 
   const vendor = await updateVendorStatus(vendorId, payload.status);
+  const statusChange = {
+    previousStatus: existing.status,
+    nextStatus: vendor.status,
+    reason: payload.reason || null
+  };
+
+  runNotificationTask(
+    notifySuperAdmins({
+      eventCode: "vendor.status_changed",
+      title: "Vendor status changed",
+      message: `Vendor ${vendor.display_name} changed from ${existing.status} to ${vendor.status}.`,
+      metadata: {
+        vendorId,
+        ...statusChange
+      }
+    })
+  );
+
+  if (vendor.status === "suspended") {
+    runNotificationTask(
+      notifyVendorUsers({
+        vendorId,
+        type: "account",
+        eventCode: "vendor.suspended",
+        title: "Vendor account suspended",
+        message: "This vendor account has been suspended by a platform administrator.",
+        metadata: statusChange
+      })
+    );
+  }
 
   return {
     vendor: mapVendor(vendor),
-    statusChange: {
-      previousStatus: existing.status,
-      nextStatus: vendor.status,
-      reason: payload.reason || null
-    },
+    statusChange,
     note: "Vendor status is a platform control. Broad enforcement across vendor workflows can be layered in a future policy module."
   };
 }

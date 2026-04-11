@@ -3,6 +3,7 @@ import { z } from "zod";
 const uuidParam = z.string().uuid();
 const jsonRecordSchema = z.record(z.string(), z.unknown());
 const invoiceStatusEnum = z.enum(["draft", "issued", "partially_paid", "paid", "void"]);
+const invoiceCreateStatusEnum = z.enum(["draft", "issued"]);
 
 const invoiceIdParamsSchema = z.object({
   invoiceId: uuidParam
@@ -75,7 +76,7 @@ const invoiceCreateBodySchema = z
     invoiceNumber: z.string().trim().min(1).max(100).optional(),
     issueDate: z.string().trim().date().nullable().optional(),
     dueDate: z.string().trim().date().nullable().optional(),
-    status: invoiceStatusEnum.optional(),
+    status: invoiceCreateStatusEnum.optional(),
     notes: z.string().trim().max(5000).nullable().optional(),
     items: z.array(invoiceItemSchema).min(1).max(200).optional()
   })

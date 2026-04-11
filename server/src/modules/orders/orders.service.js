@@ -11,6 +11,7 @@ import {
   listQuotationItemsForOrder,
   updateOrderWithOptionalItems
 } from "./orders.repository.js";
+import { notifyVendorUsers, runNotificationTask } from "../notifications/notifications.service.js";
 
 const TERMINAL_STATUSES = ["delivered", "cancelled"];
 const LINE_ITEM_EDITABLE_STATUSES = ["draft", "confirmed"];
@@ -397,7 +398,26 @@ async function createOrder(vendorId, payload, actor) {
     items
   });
 
-  return getOrderDetail(vendorId, order.id);
+  const detail = await getOrderDetail(vendorId, order.id);
+
+  if (detail.status === "confirmed") {
+    runNotificationTask(
+      notifyVendorUsers({
+        vendorId,
+        eventCode: "order.confirmed",
+        title: "Order confirmed",
+        message: `Order ${detail.orderNumber} was confirmed for ${detail.customer.companyName || detail.customer.fullName}.`,
+        metadata: {
+          orderId: detail.id,
+          orderNumber: detail.orderNumber,
+          customerId: detail.customerId,
+          grandTotal: detail.grandTotal
+        }
+      })
+    );
+  }
+
+  return detail;
 }
 
 async function updateOrder(vendorId, orderId, payload) {
@@ -435,7 +455,26 @@ async function updateOrder(vendorId, orderId, payload) {
 
   assertOrderFound(updated, orderId);
 
-  return getOrderDetail(vendorId, orderId);
+  const detail = await getOrderDetail(vendorId, orderId);
+
+  if (payload.status === "confirmed" && existing.status !== "confirmed") {
+    runNotificationTask(
+      notifyVendorUsers({
+        vendorId,
+        eventCode: "order.confirmed",
+        title: "Order confirmed",
+        message: `Order ${detail.orderNumber} was confirmed for ${detail.customer.companyName || detail.customer.fullName}.`,
+        metadata: {
+          orderId: detail.id,
+          orderNumber: detail.orderNumber,
+          customerId: detail.customerId,
+          grandTotal: detail.grandTotal
+        }
+      })
+    );
+  }
+
+  return detail;
 }
 
 export { createOrder, getOrderDetail, getOrderDirectory, updateOrder };

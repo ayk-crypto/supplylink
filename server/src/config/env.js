@@ -44,7 +44,9 @@ const env = {
     process.env.JWT_SECRET ||
     (nodeEnv === "production" ? "" : "development-only-jwt-secret"),
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",
-  BCRYPT_SALT_ROUNDS: toNumber(process.env.BCRYPT_SALT_ROUNDS, 12)
+  BCRYPT_SALT_ROUNDS: toNumber(process.env.BCRYPT_SALT_ROUNDS, 12),
+  DEMO_SEED_PASSWORD: process.env.DEMO_SEED_PASSWORD || "Password123!",
+  ALLOW_DEMO_SEED_IN_PRODUCTION: toBoolean(process.env.ALLOW_DEMO_SEED_IN_PRODUCTION, false)
 };
 
 export default env;

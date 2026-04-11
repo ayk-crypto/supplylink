@@ -3,6 +3,7 @@ import { z } from "zod";
 const uuidParam = z.string().uuid();
 const jsonRecordSchema = z.record(z.string(), z.unknown());
 const orderStatusEnum = z.enum(["draft", "confirmed", "packed", "dispatched", "delivered", "cancelled"]);
+const orderCreateStatusEnum = z.enum(["draft", "confirmed"]);
 
 const orderIdParamsSchema = z.object({
   orderId: uuidParam
@@ -70,7 +71,7 @@ const orderCreateBodySchema = z
     orderDate: z.string().trim().date().nullable().optional(),
     requestedDeliveryDate: z.string().trim().date().nullable().optional(),
     deliveryDate: z.string().trim().date().nullable().optional(),
-    status: orderStatusEnum.optional(),
+    status: orderCreateStatusEnum.optional(),
     notes: z.string().trim().max(5000).nullable().optional(),
     items: z.array(orderItemSchema).min(1).max(200).optional()
   })

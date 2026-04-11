@@ -9,6 +9,7 @@ import {
   listQuotationsForVendor,
   updateQuotationWithOptionalItems
 } from "./quotations.repository.js";
+import { notifyVendorUsers, runNotificationTask } from "../notifications/notifications.service.js";
 
 const EDITABLE_STATUSES = ["draft", "sent"];
 const HEADER_FIELDS = {
@@ -303,7 +304,24 @@ async function createQuotation(vendorId, payload, actor) {
     items
   });
 
-  return getQuotationDetail(vendorId, quotation.id);
+  const detail = await getQuotationDetail(vendorId, quotation.id);
+
+  runNotificationTask(
+    notifyVendorUsers({
+      vendorId,
+      eventCode: "quotation.created",
+      title: "Quotation created",
+      message: `Quotation ${detail.quoteNumber} was created for ${detail.customer.companyName || detail.customer.fullName}.`,
+      metadata: {
+        quotationId: detail.id,
+        quoteNumber: detail.quoteNumber,
+        status: detail.status,
+        customerId: detail.customerId
+      }
+    })
+  );
+
+  return detail;
 }
 
 async function updateQuotation(vendorId, quotationId, payload) {
@@ -341,7 +359,25 @@ async function updateQuotation(vendorId, quotationId, payload) {
 
   assertQuotationFound(updated, quotationId);
 
-  return getQuotationDetail(vendorId, quotationId);
+  const detail = await getQuotationDetail(vendorId, quotationId);
+
+  if (payload.status === "sent" && existing.status !== "sent") {
+    runNotificationTask(
+      notifyVendorUsers({
+        vendorId,
+        eventCode: "quotation.sent",
+        title: "Quotation sent",
+        message: `Quotation ${detail.quoteNumber} was marked as sent.`,
+        metadata: {
+          quotationId: detail.id,
+          quoteNumber: detail.quoteNumber,
+          customerId: detail.customerId
+        }
+      })
+    );
+  }
+
+  return detail;
 }
 
 export { createQuotation, getQuotationDetail, getQuotationDirectory, updateQuotation };

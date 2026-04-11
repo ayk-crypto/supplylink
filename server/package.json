@@ -8,7 +8,10 @@
     "start": "cross-env NODE_ENV=production node src/server.js",
     "lint": "eslint .",
     "build": "node -e \"console.log('Server build check passed')\"",
-    "db:migrate": "cross-env NODE_ENV=development node src/database/scripts/migrate.js"
+    "test": "node --test \"src/**/*.test.js\"",
+    "db:migrate": "cross-env NODE_ENV=development node src/database/scripts/migrate.js",
+    "db:seed": "cross-env NODE_ENV=development node src/database/scripts/seed.js",
+    "db:bootstrap": "npm run db:migrate && npm run db:seed"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

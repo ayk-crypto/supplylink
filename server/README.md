@@ -19,6 +19,9 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - Use `.env.production` for production deployments
 - If `NODE_ENV` is not set, the server defaults to `development`
 - `DATABASE_URL` is only required for database-backed work such as migrations or DB health checks
+- `JWT_SECRET` must be set to a long random value outside local throwaway development
+- `DEMO_SEED_PASSWORD` controls the password used by the demo seed script
+- `ALLOW_DEMO_SEED_IN_PRODUCTION` defaults to `false` and should stay false for normal deployments
 
 ## Key Endpoints
 
@@ -87,7 +90,13 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - `GET /api/v1/reports/exports/payments.csv`
 - `GET /api/v1/reports/exports/customer-statement/:customerId.csv`
 - `GET /api/v1/reports/admin/overview`
+- `GET /api/v1/notifications`
+- `GET /api/v1/notifications/unread-count`
+- `GET /api/v1/notifications/:notificationId`
+- `PATCH /api/v1/notifications/:notificationId/read`
+- `PATCH /api/v1/notifications/read-all`
 - `GET /api/v1/system/health`
+- `GET /api/v1/system/readiness`
 - `GET /api/v1/system/overview`
 - `GET /api/v1/system/modules`
 
@@ -102,7 +111,11 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - Route planning extensions live in [server/src/database/migrations/007_route_planning_foundation.sql](/d:/supplylink/server/src/database/migrations/007_route_planning_foundation.sql)
 - Subscription administration uses the existing `subscriptions` and `vendors.status` schema from the foundation migration.
 - Reports and exports read from the existing transactional tables and do not add reporting tables.
+- In-app notifications live in [server/src/database/migrations/008_notifications.sql](/d:/supplylink/server/src/database/migrations/008_notifications.sql)
 - Run `npm run db:migrate` inside the `server` workspace after setting `DATABASE_URL`
+- Run `npm run db:seed` inside the `server` workspace to create local/demo records
+- Run `npm run db:bootstrap` inside the `server` workspace to migrate and then seed
+- Run `npm run test` inside the `server` workspace to execute the built-in Node test suite
 
 ## Auth Notes
 
@@ -518,4 +531,98 @@ Example super admin overview request:
 ```bash
 curl http://localhost:4000/api/v1/reports/admin/overview ^
   -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%"
+```
+
+## Notification Notes
+
+- Notifications are in-app only in this module.
+- Each notification row belongs to one recipient user.
+- `vendor_id` is nullable so platform notifications for super admins can stay separate from vendor-scoped business notifications.
+- Authenticated users can list, inspect, and mark only their own notifications.
+- Vendor business events currently notify active `vendor_admin` users for the vendor.
+- Super admin platform events notify active `super_admin` users.
+- Notification generation is best-effort after the main business operation succeeds, so notification delivery does not become a fragile dependency for quotations, orders, invoices, payments, routes, or subscription updates.
+- No email, SMS, WhatsApp, websocket, queue, retry, or background worker provider is configured yet.
+
+The first event hooks create notifications for:
+
+- `quotation.created`
+- `quotation.sent`
+- `order.confirmed`
+- `invoice.issued`
+- `payment.received`
+- `route.created`
+- `route.updated`
+- `subscription.status_changed`
+- `vendor.status_changed`
+- `vendor.suspended`
+
+Example notification requests:
+
+```bash
+curl "http://localhost:4000/api/v1/notifications?page=1&pageSize=20&unreadOnly=true" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/notifications?eventCode=invoice.issued&dateFrom=2026-04-01" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/notifications/unread-count ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/notifications/%NOTIFICATION_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl -X PATCH http://localhost:4000/api/v1/notifications/%NOTIFICATION_ID%/read ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl -X PATCH http://localhost:4000/api/v1/notifications/read-all ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+```
+
+## API Hardening And Test Notes
+
+- Vendor-scoped write routes use [requireVendorWritable.js](/d:/supplylink/server/src/middlewares/requireVendorWritable.js) after vendor access has been resolved.
+- Non-super-admin users cannot perform vendor write operations while the vendor account is `suspended` or `archived`.
+- `super_admin` users bypass the vendor write block so platform administration remains possible.
+- Create-time validation now rejects unsafe terminal starting states for quotations, orders, invoices, and routes.
+- Tests use Node's built-in `node:test` runner and do not require a database connection for the current policy/schema coverage.
+
+Run server tests:
+
+```bash
+npm run test --workspace server
+```
+
+## Deployment Readiness And Seed Notes
+
+- `GET /api/v1/system/readiness` returns HTTP 200 when deployment-critical checks pass and HTTP 503 when they do not.
+- Readiness currently checks database configuration/connectivity and JWT secret configuration.
+- Demo seeding is implemented in [seed.js](/d:/supplylink/server/src/database/scripts/seed.js).
+- The demo seed is idempotent for the named demo records and is meant for fresh local/test/demo databases.
+- The seed command refuses `NODE_ENV=production` unless `ALLOW_DEMO_SEED_IN_PRODUCTION=true` is explicitly set.
+- Run migrations before seeding; missing demo tables indicate the database is behind the current migration set.
+
+Bootstrap local demo data:
+
+```bash
+npm run db:bootstrap --workspace server
+```
+
+Seeded login details:
+
+```text
+Super admin: super.admin@supplylink.local / Password123!
+Vendor admin: vendor.admin@supplylink.local / Password123!
+```
+
+Set `DEMO_SEED_PASSWORD` in `server/.env.development` to override that password.
+
+Suggested deployment sequence:
+
+```bash
+npm install
+npm run test --workspace server
+npm run build --workspace server
+npm run db:migrate --workspace server
+npm run start --workspace server
 ```

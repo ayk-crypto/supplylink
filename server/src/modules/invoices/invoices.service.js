@@ -12,6 +12,7 @@ import {
   updateInvoiceWithOptionalItems
 } from "./invoices.repository.js";
 import { ensureInvoiceLedgerEntry } from "../ledger/ledger.repository.js";
+import { notifyVendorUsers, runNotificationTask } from "../notifications/notifications.service.js";
 
 const TERMINAL_STATUSES = ["paid", "void"];
 const ITEM_EDITABLE_STATUSES = ["draft"];
@@ -415,7 +416,27 @@ async function createInvoice(vendorId, payload, actor) {
     await ensureInvoiceLedgerEntry(vendorId, invoice.id, actor.userId);
   }
 
-  return getInvoiceDetail(vendorId, invoice.id);
+  const detail = await getInvoiceDetail(vendorId, invoice.id);
+
+  if (detail.status === "issued") {
+    runNotificationTask(
+      notifyVendorUsers({
+        vendorId,
+        eventCode: "invoice.issued",
+        title: "Invoice issued",
+        message: `Invoice ${detail.invoiceNumber} was issued for ${detail.customer.companyName || detail.customer.fullName}.`,
+        metadata: {
+          invoiceId: detail.id,
+          invoiceNumber: detail.invoiceNumber,
+          customerId: detail.customerId,
+          grandTotal: detail.grandTotal,
+          balanceDue: detail.balanceDue
+        }
+      })
+    );
+  }
+
+  return detail;
 }
 
 async function updateInvoice(vendorId, invoiceId, payload) {
@@ -460,7 +481,27 @@ async function updateInvoice(vendorId, invoiceId, payload) {
     await ensureInvoiceLedgerEntry(vendorId, invoiceId);
   }
 
-  return getInvoiceDetail(vendorId, invoiceId);
+  const detail = await getInvoiceDetail(vendorId, invoiceId);
+
+  if (payload.status === "issued" && existing.status !== "issued") {
+    runNotificationTask(
+      notifyVendorUsers({
+        vendorId,
+        eventCode: "invoice.issued",
+        title: "Invoice issued",
+        message: `Invoice ${detail.invoiceNumber} was issued for ${detail.customer.companyName || detail.customer.fullName}.`,
+        metadata: {
+          invoiceId: detail.id,
+          invoiceNumber: detail.invoiceNumber,
+          customerId: detail.customerId,
+          grandTotal: detail.grandTotal,
+          balanceDue: detail.balanceDue
+        }
+      })
+    );
+  }
+
+  return detail;
 }
 
 export { createInvoice, getInvoiceDetail, getInvoiceDirectory, updateInvoice };

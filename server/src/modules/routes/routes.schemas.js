@@ -3,6 +3,7 @@ import { z } from "zod";
 const uuidParam = z.string().uuid();
 const jsonRecordSchema = z.record(z.string(), z.unknown());
 const routeStatusEnum = z.enum(["draft", "planned", "in_progress", "completed", "cancelled"]);
+const routeCreateStatusEnum = z.enum(["draft", "planned"]);
 const stopStatusEnum = z.enum(["pending", "completed", "skipped"]);
 
 const routeIdParamsSchema = z.object({
@@ -28,7 +29,7 @@ const routeQuerySchema = z.object({
 const routeCreateBodySchema = z.object({
   name: z.string().trim().min(2).max(150),
   routeDate: z.string().trim().date().nullable().optional(),
-  status: routeStatusEnum.optional(),
+  status: routeCreateStatusEnum.optional(),
   driverUserId: uuidParam.nullable().optional(),
   vehicleLabel: z.string().trim().min(1).max(100).nullable().optional(),
   notes: z.string().trim().max(5000).nullable().optional(),

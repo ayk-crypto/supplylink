@@ -30,25 +30,35 @@ management endpoints for platform and vendor-level administration.
    copy client\.env.example client\.env.development
    ```
 
-3. Start the client and server together:
+3. Apply migrations and seed a demo dataset:
+
+   ```bash
+   npm run db:bootstrap
+   ```
+
+4. Start the client and server together:
 
    ```bash
    npm run dev
    ```
 
-4. If PostgreSQL is configured, apply the schema foundation:
+If you prefer separate steps, run migrations and seed independently:
 
-   ```bash
-   npm run db:migrate --workspace server
-   ```
+```bash
+npm run db:migrate
+npm run db:seed
+```
 
 ## Scripts
 
 - `npm run dev` starts both workspaces in development mode.
 - `npm run build` validates the server build step and builds the frontend.
 - `npm run lint` runs ESLint in both workspaces.
+- `npm run test` runs the server's built-in Node test suite.
 - `npm run start` starts the Express server in production mode.
 - `npm run db:migrate --workspace server` applies SQL migrations.
+- `npm run db:seed` creates a small local/demo dataset.
+- `npm run db:bootstrap` runs migrations and then seeds demo data.
 
 ## Architecture
 
@@ -76,6 +86,7 @@ without leaking ledger, order, pricing, or route data across tenants.
 ## Key Endpoints
 
 - `GET /api/v1/system/health`
+- `GET /api/v1/system/readiness`
 - `GET /api/v1/system/overview`
 - `GET /api/v1/system/modules`
 - `POST /api/v1/auth/register`
@@ -143,6 +154,11 @@ without leaking ledger, order, pricing, or route data across tenants.
 - `GET /api/v1/reports/exports/payments.csv`
 - `GET /api/v1/reports/exports/customer-statement/:customerId.csv`
 - `GET /api/v1/reports/admin/overview`
+- `GET /api/v1/notifications`
+- `GET /api/v1/notifications/unread-count`
+- `GET /api/v1/notifications/:notificationId`
+- `PATCH /api/v1/notifications/:notificationId/read`
+- `PATCH /api/v1/notifications/read-all`
 
 ## Auth Foundation
 
@@ -647,8 +663,107 @@ curl http://localhost:4000/api/v1/reports/admin/overview ^
   -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%"
 ```
 
+## Notifications
+
+Module 13 adds an in-app notification foundation. Notifications are stored per
+recipient user, optionally scoped to a vendor, and include event code, type,
+title, message, read state, metadata, timestamps, and `readAt`.
+
+Authenticated users can list and read only their own notifications:
+
+```bash
+curl "http://localhost:4000/api/v1/notifications?page=1&pageSize=20&unreadOnly=true" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/notifications?eventCode=invoice.issued&dateFrom=2026-04-01" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/notifications/unread-count ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/notifications/%NOTIFICATION_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+```
+
+Read-state updates are intentionally small and predictable:
+
+```bash
+curl -X PATCH http://localhost:4000/api/v1/notifications/%NOTIFICATION_ID%/read ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl -X PATCH http://localhost:4000/api/v1/notifications/read-all ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+```
+
+The first event hooks are in-app only and best-effort. Vendor admins receive key
+vendor events such as `quotation.created`, `quotation.sent`, `order.confirmed`,
+`invoice.issued`, `payment.received`, `route.created`, and `route.updated`.
+Super admins receive platform events such as `subscription.status_changed` and
+`vendor.status_changed`. A suspended vendor also creates a vendor-scoped
+`vendor.suspended` notification for that vendor's admins.
+
+## API Hardening And Tests
+
+Module 14 adds a centralized vendor write policy and a lightweight automated
+test suite. Vendor-scoped write routes now run a shared policy after vendor
+access resolution; non-super-admin users are blocked from write operations when
+the vendor account is `suspended` or `archived`. `super_admin` platform actions
+remain available.
+
+Creation validation now rejects unsafe terminal starting states for the most
+important transactional records, such as creating already accepted quotations,
+delivered orders, paid invoices, or completed routes. List responses continue to
+use the existing `{ items, pagination, filters }` shape with bounded page sizes.
+
+Run the tests with:
+
+```bash
+npm run test
+```
+
+## Deployment Readiness And Demo Seed
+
+Module 15 adds a practical local/demo bootstrap path and a readiness check.
+Configure `server/.env.development` with `DATABASE_URL` and a non-default
+`JWT_SECRET`, then run:
+
+```bash
+npm run db:bootstrap
+```
+
+The seed data is clearly marked as demo data and includes:
+
+- super admin: `super.admin@supplylink.local`
+- vendor admin: `vendor.admin@supplylink.local`
+- password: `Password123!` by default, or `DEMO_SEED_PASSWORD` if set
+- vendor: `Demo Supply Co`
+- sample category, product, customer, quotation, order, invoice, payment, ledger entries, and subscription
+
+The seed command is intended for local/test/demo databases. It refuses to run
+with `NODE_ENV=production` unless `ALLOW_DEMO_SEED_IN_PRODUCTION=true` is set.
+
+Deployment basics:
+
+```bash
+npm install
+npm run test
+npm run build
+npm run db:migrate --workspace server
+npm run start
+```
+
+Use the readiness endpoint for deployment checks:
+
+```bash
+curl http://localhost:4000/api/v1/system/readiness
+```
+
+Readiness checks confirm database configuration/connectivity and JWT secret
+configuration. It returns HTTP 503 when the API is not ready.
+
 ## Local URLs
 
 - Frontend: `http://localhost:5173`
 - Backend: `http://localhost:4000`
 - Foundation overview: `http://localhost:4000/api/v1/system/overview`
+- Readiness check: `http://localhost:4000/api/v1/system/readiness`
