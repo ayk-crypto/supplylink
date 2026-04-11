@@ -119,6 +119,13 @@ without leaking ledger, order, pricing, or route data across tenants.
 - `PATCH /api/v1/payments/:paymentId`
 - `GET /api/v1/ledger`
 - `GET /api/v1/ledger/customer/:customerId`
+- `GET /api/v1/routes`
+- `POST /api/v1/routes`
+- `GET /api/v1/routes/:routeId`
+- `PATCH /api/v1/routes/:routeId`
+- `GET /api/v1/routes/:routeId/stops`
+- `POST /api/v1/routes/:routeId/stops`
+- `PATCH /api/v1/routes/:routeId/stops/:stopId`
 
 ## Auth Foundation
 
@@ -466,6 +473,56 @@ curl -X PATCH http://localhost:4000/api/v1/payments/%PAYMENT_ID% ^
   -H "Content-Type: application/json" ^
   -d "{\"referenceNumber\":\"PAY-1001-UPDATED\",\"notes\":\"Updated bank reference\"}"
 ```
+
+## Route Planning
+
+Module 10 replaces the route placeholder with vendor-scoped route planning and
+ordered route stops. Stops can reference customers and optionally same-vendor
+orders; order workflow is left untouched for now.
+
+Vendor admins can create and update routes:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/routes ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"name\":\"North Loop\",\"routeDate\":\"2026-04-13\",\"status\":\"planned\",\"vehicleLabel\":\"Van 12\",\"notes\":\"Morning deliveries\"}"
+
+curl -X PATCH http://localhost:4000/api/v1/routes/%ROUTE_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"status\":\"in_progress\",\"vehicleLabel\":\"Van 14\"}"
+```
+
+Vendor admins and vendor staff can read current-vendor routes:
+
+```bash
+curl "http://localhost:4000/api/v1/routes?page=1&pageSize=20&status=planned&routeDate=2026-04-13" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/routes/%ROUTE_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+```
+
+Vendor admins can add and reorder route stops:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/routes/%ROUTE_ID%/stops ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"sequenceNumber\":1,\"customerId\":\"%CUSTOMER_ID%\",\"orderId\":\"%ORDER_ID%\",\"stopType\":\"delivery\",\"plannedArrivalAt\":\"2026-04-13T09:00:00+05:00\",\"notes\":\"Call on arrival\"}"
+
+curl http://localhost:4000/api/v1/routes/%ROUTE_ID%/stops ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl -X PATCH http://localhost:4000/api/v1/routes/%ROUTE_ID%/stops/%STOP_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"sequenceNumber\":2,\"status\":\"completed\",\"actualArrivalAt\":\"2026-04-13T09:12:00+05:00\"}"
+```
+
+Stop sequencing uses explicit `sequenceNumber` values and shifts neighboring
+stops when a new stop is inserted or an existing stop is moved.
 
 ## Local URLs
 

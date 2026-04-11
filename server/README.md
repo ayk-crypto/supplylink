@@ -63,6 +63,13 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - `PATCH /api/v1/payments/:paymentId`
 - `GET /api/v1/ledger`
 - `GET /api/v1/ledger/customer/:customerId`
+- `GET /api/v1/routes`
+- `POST /api/v1/routes`
+- `GET /api/v1/routes/:routeId`
+- `PATCH /api/v1/routes/:routeId`
+- `GET /api/v1/routes/:routeId/stops`
+- `POST /api/v1/routes/:routeId/stops`
+- `PATCH /api/v1/routes/:routeId/stops/:stopId`
 - `GET /api/v1/system/health`
 - `GET /api/v1/system/overview`
 - `GET /api/v1/system/modules`
@@ -75,6 +82,7 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - Order item snapshots live in [server/src/database/migrations/004_order_item_snapshots.sql](/d:/supplylink/server/src/database/migrations/004_order_item_snapshots.sql)
 - Invoice line items live in [server/src/database/migrations/005_invoice_items.sql](/d:/supplylink/server/src/database/migrations/005_invoice_items.sql)
 - Payment relationship and ledger idempotency guards live in [server/src/database/migrations/006_payments_relationship_and_ledger_guards.sql](/d:/supplylink/server/src/database/migrations/006_payments_relationship_and_ledger_guards.sql)
+- Route planning extensions live in [server/src/database/migrations/007_route_planning_foundation.sql](/d:/supplylink/server/src/database/migrations/007_route_planning_foundation.sql)
 - Run `npm run db:migrate` inside the `server` workspace after setting `DATABASE_URL`
 
 ## Auth Notes
@@ -339,4 +347,51 @@ curl "http://localhost:4000/api/v1/ledger?page=1&pageSize=20&customerId=%CUSTOME
 
 curl http://localhost:4000/api/v1/ledger/customer/%CUSTOMER_ID% ^
   -H "Authorization: Bearer %VENDOR_TOKEN%"
+```
+
+## Route Planning Notes
+
+- Routes and route stops are vendor-scoped.
+- `vendor_admin` users can create and update routes and route stops for their current vendor.
+- `vendor_staff` users can list and inspect route plans, but cannot write them.
+- Route stop customers must be linked to the current vendor.
+- Route stop orders, when provided, must belong to the current vendor and match the stop customer.
+- Stop ordering uses `sequenceNumber`; adding or moving stops shifts neighboring sequence values.
+- Order workflow is intentionally not modified when adding stops.
+
+Example route requests:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/routes ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"name\":\"North Loop\",\"routeDate\":\"2026-04-13\",\"status\":\"planned\",\"vehicleLabel\":\"Van 12\",\"notes\":\"Morning deliveries\"}"
+
+curl "http://localhost:4000/api/v1/routes?page=1&pageSize=20&status=planned&routeDate=2026-04-13" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/routes/%ROUTE_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl -X PATCH http://localhost:4000/api/v1/routes/%ROUTE_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"status\":\"in_progress\",\"vehicleLabel\":\"Van 14\"}"
+```
+
+Example route stop requests:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/routes/%ROUTE_ID%/stops ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"sequenceNumber\":1,\"customerId\":\"%CUSTOMER_ID%\",\"orderId\":\"%ORDER_ID%\",\"stopType\":\"delivery\",\"plannedArrivalAt\":\"2026-04-13T09:00:00+05:00\",\"notes\":\"Call on arrival\"}"
+
+curl http://localhost:4000/api/v1/routes/%ROUTE_ID%/stops ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl -X PATCH http://localhost:4000/api/v1/routes/%ROUTE_ID%/stops/%STOP_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"sequenceNumber\":2,\"status\":\"completed\",\"actualArrivalAt\":\"2026-04-13T09:12:00+05:00\"}"
 ```
