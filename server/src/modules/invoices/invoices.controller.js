@@ -5,6 +5,7 @@ import {
   getInvoiceDirectory,
   updateInvoice
 } from "./invoices.service.js";
+import { buildInvoicePrintDocument } from "../documents/documents.service.js";
 
 async function list(request, response) {
   const result = await getInvoiceDirectory(request.access.vendorId, request.query);
@@ -28,6 +29,20 @@ async function getById(request, response) {
     meta: {
       requestId: request.context.requestId,
       vendorId: request.access.vendorId
+    }
+  });
+}
+
+async function print(request, response) {
+  const result = await buildInvoicePrintDocument(request.access.vendorId, request.params.invoiceId);
+
+  sendSuccess(response, {
+    message: "Invoice print document loaded",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId,
+      output: "structured-json"
     }
   });
 }
@@ -63,4 +78,4 @@ async function update(request, response) {
   });
 }
 
-export { create, getById, list, update };
+export { create, getById, list, print, update };

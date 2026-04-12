@@ -53,6 +53,7 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - `GET /api/v1/quotations`
 - `POST /api/v1/quotations`
 - `GET /api/v1/quotations/:quotationId`
+- `GET /api/v1/quotations/:quotationId/print`
 - `PATCH /api/v1/quotations/:quotationId`
 - `GET /api/v1/orders`
 - `POST /api/v1/orders`
@@ -61,6 +62,7 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - `GET /api/v1/invoices`
 - `POST /api/v1/invoices`
 - `GET /api/v1/invoices/:invoiceId`
+- `GET /api/v1/invoices/:invoiceId/print`
 - `PATCH /api/v1/invoices/:invoiceId`
 - `GET /api/v1/payments`
 - `POST /api/v1/payments`
@@ -341,6 +343,36 @@ curl -X POST http://localhost:4000/api/v1/invoices ^
   -H "Authorization: Bearer %VENDOR_TOKEN%" ^
   -H "Content-Type: application/json" ^
   -d "{\"orderId\":\"%ORDER_ID%\",\"issueDate\":\"2026-04-11\",\"dueDate\":\"2026-04-25\",\"status\":\"issued\"}"
+```
+
+## Printable Document Notes
+
+- Quotation and invoice print endpoints return structured JSON, not HTML or PDF bytes.
+- The response shape is document-oriented and consistent across both record types: `header`, `vendor`, `customer`, `items`, `totals`, and `footer`.
+- The payload includes `output.renderTargets` for `browser_print` and `future_pdf`, plus `pdfGenerated: false` to make the current limitation explicit.
+- Tenant isolation follows the existing quotation and invoice read paths: `vendor_admin` and `vendor_staff` can read print documents for their own vendor, and `super_admin` can inspect with a selected vendor context such as `vendorId`.
+- The document service is intentionally compatible with the attachment foundation: future generated PDFs can be saved as attachments using the same entity IDs, but this pass does not generate or attach PDFs.
+- No template engine, branding system, PDF renderer, email delivery, or external rendering service is configured yet.
+
+Example printable quotation request:
+
+```bash
+curl http://localhost:4000/api/v1/quotations/%QUOTATION_ID%/print ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+```
+
+Example printable invoice request:
+
+```bash
+curl http://localhost:4000/api/v1/invoices/%INVOICE_ID%/print ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+```
+
+Example `super_admin` vendor-scoped printable document request:
+
+```bash
+curl "http://localhost:4000/api/v1/invoices/%INVOICE_ID%/print?vendorId=%VENDOR_ID%" ^
+  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%"
 ```
 
 ## Ledger And Payment Notes

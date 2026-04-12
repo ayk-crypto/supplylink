@@ -5,7 +5,7 @@ import authorizeRoles from "../../middlewares/authorizeRoles.js";
 import requireVendorAccess from "../../middlewares/requireVendorAccess.js";
 import requireVendorWritable from "../../middlewares/requireVendorWritable.js";
 import validateRequest from "../../middlewares/validateRequest.js";
-import { create, getById, list, update } from "./quotations.controller.js";
+import { create, getById, list, print, update } from "./quotations.controller.js";
 import {
   quotationCreateBodySchema,
   quotationIdParamsSchema,
@@ -32,6 +32,15 @@ quotationsRoutes.post(
   requireVendorAccess(),
   requireVendorWritable(),
   asyncHandler(create)
+);
+
+quotationsRoutes.get(
+  "/:quotationId/print",
+  authenticate,
+  authorizeRoles("super_admin", "vendor_admin", "vendor_staff"),
+  validateRequest({ params: quotationIdParamsSchema, query: quotationQuerySchema }),
+  requireVendorAccess(),
+  asyncHandler(print)
 );
 
 quotationsRoutes.get(

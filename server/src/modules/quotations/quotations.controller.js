@@ -5,6 +5,7 @@ import {
   getQuotationDirectory,
   updateQuotation
 } from "./quotations.service.js";
+import { buildQuotationPrintDocument } from "../documents/documents.service.js";
 
 async function list(request, response) {
   const result = await getQuotationDirectory(request.access.vendorId, request.query);
@@ -28,6 +29,23 @@ async function getById(request, response) {
     meta: {
       requestId: request.context.requestId,
       vendorId: request.access.vendorId
+    }
+  });
+}
+
+async function print(request, response) {
+  const result = await buildQuotationPrintDocument(
+    request.access.vendorId,
+    request.params.quotationId
+  );
+
+  sendSuccess(response, {
+    message: "Quotation print document loaded",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId,
+      output: "structured-json"
     }
   });
 }
@@ -63,4 +81,4 @@ async function update(request, response) {
   });
 }
 
-export { create, getById, list, update };
+export { create, getById, list, print, update };

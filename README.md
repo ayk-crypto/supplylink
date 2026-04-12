@@ -115,6 +115,7 @@ without leaking ledger, order, pricing, or route data across tenants.
 - `GET /api/v1/quotations`
 - `POST /api/v1/quotations`
 - `GET /api/v1/quotations/:quotationId`
+- `GET /api/v1/quotations/:quotationId/print`
 - `PATCH /api/v1/quotations/:quotationId`
 - `GET /api/v1/orders`
 - `POST /api/v1/orders`
@@ -123,6 +124,7 @@ without leaking ledger, order, pricing, or route data across tenants.
 - `GET /api/v1/invoices`
 - `POST /api/v1/invoices`
 - `GET /api/v1/invoices/:invoiceId`
+- `GET /api/v1/invoices/:invoiceId/print`
 - `PATCH /api/v1/invoices/:invoiceId`
 - `GET /api/v1/payments`
 - `POST /api/v1/payments`
@@ -725,6 +727,25 @@ git and is not served statically; downloads go through
 Use `POST /api/v1/files` with a multipart field named `file` plus `entityType`,
 `entityId`, and optional JSON `metadata`. `vendor_admin` and `super_admin` can
 upload/delete with a valid vendor context; `vendor_staff` is read-only.
+
+## Printable Document Groundwork
+
+Module 17 adds structured JSON print payloads for quotations and invoices:
+
+```bash
+curl http://localhost:4000/api/v1/quotations/%QUOTATION_ID%/print ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/invoices/%INVOICE_ID%/print ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+```
+
+The output is not rendered HTML and does not include generated PDF bytes yet.
+It is a consistent document envelope with `header`, `vendor`, `customer`,
+`items`, `totals`, and `footer` sections, plus render metadata for browser print
+screens and future PDF generation. The endpoints use the same tenant-isolated
+read permissions as quotation and invoice detail views, and future generated
+PDFs can be attached through the Module 16 attachment foundation.
 
 ## API Hardening And Tests
 
