@@ -790,6 +790,29 @@ These helpers are tenant-scoped where relevant, `lookups/vendors` is
 `super_admin` only, lookup limits are capped at 50, and UI bundle limits are
 capped at 30. They do not replace the core CRUD or report endpoints.
 
+## Frontend App Shell
+
+Module 20A replaces the placeholder foundation overview with a real frontend
+shell and dashboard foundation. The client now includes a login screen,
+auth-aware API service layer, protected session loading through `/api/v1/auth/me`,
+responsive sidebar/topbar layout, logout flow, and dashboard widgets powered by
+`/api/v1/ui/dashboard` and `/api/v1/ui/notifications-panel`.
+
+Run the app locally:
+
+```bash
+npm run db:bootstrap
+npm run dev
+```
+
+Then open `http://localhost:5173` and sign in with a seeded vendor admin:
+
+```text
+vendor.admin@supplylink.local / Password123!
+```
+
+The client expects `VITE_API_BASE_URL=/api/v1` in `client/.env.development`.
+
 ## API Hardening And Tests
 
 Module 14 adds a centralized vendor write policy and a lightweight automated
