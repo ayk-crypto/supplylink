@@ -64,9 +64,9 @@ npm run db:seed
 
 The backend is organized around a versioned API entrypoint at `/api/v1`.
 Domain modules are split into `auth`, `vendors`, `customers`, `products`,
-`orders`, `invoices`, `quotations`, `ledger`, `routes`, and `subscriptions`,
-with lightweight placeholders ready for future services, controllers, and
-validators.
+`orders`, `invoices`, `quotations`, `ledger`, `routes`, `subscriptions`,
+`notifications`, and `files`, with lightweight placeholders ready for future
+services, controllers, and validators.
 
 Shared backend patterns now include:
 
@@ -159,6 +159,12 @@ without leaking ledger, order, pricing, or route data across tenants.
 - `GET /api/v1/notifications/:notificationId`
 - `PATCH /api/v1/notifications/:notificationId/read`
 - `PATCH /api/v1/notifications/read-all`
+- `GET /api/v1/files`
+- `POST /api/v1/files`
+- `GET /api/v1/files/:fileId`
+- `GET /api/v1/files/:fileId/download`
+- `GET /api/v1/files/entity/:entityType/:entityId`
+- `DELETE /api/v1/files/:fileId`
 
 ## Auth Foundation
 
@@ -701,6 +707,24 @@ vendor events such as `quotation.created`, `quotation.sent`, `order.confirmed`,
 Super admins receive platform events such as `subscription.status_changed` and
 `vendor.status_changed`. A suspended vendor also creates a vendor-scoped
 `vendor.suspended` notification for that vendor's admins.
+
+## File And Attachment Foundation
+
+Module 16 adds a safe local/dev attachment foundation. Files can be linked to
+`customers`, `quotations`, `orders`, `invoices`, and `routes`; each target is
+validated against the selected vendor context before metadata or bytes are
+accepted.
+
+File metadata lives in the `attachments` table from
+`server/src/database/migrations/009_attachments.sql`. Local file bytes are stored
+under `FILE_UPLOAD_DIR`, which defaults to `server/uploads`, and the upload size
+limit is controlled by `FILE_UPLOAD_MAX_BYTES`. The upload folder is ignored by
+git and is not served statically; downloads go through
+`GET /api/v1/files/:fileId/download` so tenant and role checks run first.
+
+Use `POST /api/v1/files` with a multipart field named `file` plus `entityType`,
+`entityId`, and optional JSON `metadata`. `vendor_admin` and `super_admin` can
+upload/delete with a valid vendor context; `vendor_staff` is read-only.
 
 ## API Hardening And Tests
 

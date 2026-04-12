@@ -22,6 +22,8 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - `JWT_SECRET` must be set to a long random value outside local throwaway development
 - `DEMO_SEED_PASSWORD` controls the password used by the demo seed script
 - `ALLOW_DEMO_SEED_IN_PRODUCTION` defaults to `false` and should stay false for normal deployments
+- `FILE_UPLOAD_DIR` controls the local/dev upload directory and defaults to `uploads` under the server workspace
+- `FILE_UPLOAD_MAX_BYTES` controls the multipart upload limit and defaults to `10485760` bytes
 
 ## Key Endpoints
 
@@ -95,6 +97,12 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - `GET /api/v1/notifications/:notificationId`
 - `PATCH /api/v1/notifications/:notificationId/read`
 - `PATCH /api/v1/notifications/read-all`
+- `GET /api/v1/files`
+- `POST /api/v1/files`
+- `GET /api/v1/files/:fileId`
+- `GET /api/v1/files/:fileId/download`
+- `GET /api/v1/files/entity/:entityType/:entityId`
+- `DELETE /api/v1/files/:fileId`
 - `GET /api/v1/system/health`
 - `GET /api/v1/system/readiness`
 - `GET /api/v1/system/overview`
@@ -112,6 +120,7 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - Subscription administration uses the existing `subscriptions` and `vendors.status` schema from the foundation migration.
 - Reports and exports read from the existing transactional tables and do not add reporting tables.
 - In-app notifications live in [server/src/database/migrations/008_notifications.sql](/d:/supplylink/server/src/database/migrations/008_notifications.sql)
+- Attachment metadata lives in [server/src/database/migrations/009_attachments.sql](/d:/supplylink/server/src/database/migrations/009_attachments.sql)
 - Run `npm run db:migrate` inside the `server` workspace after setting `DATABASE_URL`
 - Run `npm run db:seed` inside the `server` workspace to create local/demo records
 - Run `npm run db:bootstrap` inside the `server` workspace to migrate and then seed
@@ -577,6 +586,54 @@ curl -X PATCH http://localhost:4000/api/v1/notifications/%NOTIFICATION_ID%/read 
 
 curl -X PATCH http://localhost:4000/api/v1/notifications/read-all ^
   -H "Authorization: Bearer %VENDOR_TOKEN%"
+```
+
+## File And Attachment Notes
+
+- Attachments are a local/dev foundation, not a full document management system.
+- Attachment metadata is stored in `attachments`; file bytes are stored under `FILE_UPLOAD_DIR`.
+- The upload directory is not mounted as public static content. Downloads go through `GET /api/v1/files/:fileId/download` so auth, role, and vendor isolation checks run first.
+- Supported entity types are explicit: `customers`, `quotations`, `orders`, `invoices`, and `routes`.
+- Customer attachments validate the vendor/customer relationship. Quotations, orders, invoices, and routes validate direct same-vendor ownership.
+- `vendor_admin` and `super_admin` can upload and delete when a vendor context is selected and writable.
+- `vendor_staff` can list, inspect, and download only files for their own vendor context.
+- `super_admin` should pass `vendorId` in the query string, or use a token/current vendor context, for vendor-scoped inspection.
+- Allowed MIME types are PDF, JPEG, PNG, WebP, plain text, CSV, JSON, Word, and Excel document formats.
+- Local storage is intentionally small and swappable: the service persists `storage_backend`, `storage_key`, and `stored_filename` so future S3/object storage can plug in without changing the API shape.
+- Antivirus scanning, thumbnails, public sharing links, versioning, and cloud storage are intentionally out of scope for this pass.
+
+Example upload, list, entity list, detail, download, and delete requests:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/files ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -F "entityType=orders" ^
+  -F "entityId=%ORDER_ID%" ^
+  -F "metadata={\"label\":\"proof of delivery\"}" ^
+  -F "file=@C:\temp\proof.pdf;type=application/pdf"
+
+curl "http://localhost:4000/api/v1/files?page=1&pageSize=20&entityType=orders&entityId=%ORDER_ID%" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/files/entity/orders/%ORDER_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/files/%FILE_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/files/%FILE_ID%/download ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -o downloaded-proof.pdf
+
+curl -X DELETE http://localhost:4000/api/v1/files/%FILE_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+```
+
+Example `super_admin` vendor-scoped inspection:
+
+```bash
+curl "http://localhost:4000/api/v1/files?vendorId=%VENDOR_ID%" ^
+  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%"
 ```
 
 ## API Hardening And Test Notes

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { attachmentQuerySchema } from "./files/files.schemas.js";
 import { invoiceCreateBodySchema } from "./invoices/invoices.schemas.js";
 import { notificationQuerySchema } from "./notifications/notifications.schemas.js";
 import { orderCreateBodySchema } from "./orders/orders.schemas.js";
@@ -8,6 +9,7 @@ import { routeCreateBodySchema } from "./routes/routes.schemas.js";
 
 const CUSTOMER_ID = "11111111-1111-4111-8111-111111111111";
 const PRODUCT_ID = "22222222-2222-4222-8222-222222222222";
+const ORDER_ID = "33333333-3333-4333-8333-333333333333";
 
 const lineItem = {
   productId: PRODUCT_ID,
@@ -61,4 +63,17 @@ test("notification unreadOnly query parsing handles false safely", () => {
 
   assert.equal(result.success, true);
   assert.equal(result.data.unreadOnly, false);
+});
+
+test("attachment query requires entityType when entityId is provided", () => {
+  const missingType = attachmentQuerySchema.safeParse({
+    entityId: ORDER_ID
+  });
+  const completeFilter = attachmentQuerySchema.safeParse({
+    entityType: "orders",
+    entityId: ORDER_ID
+  });
+
+  assert.equal(missingType.success, false);
+  assert.equal(completeFilter.success, true);
 });

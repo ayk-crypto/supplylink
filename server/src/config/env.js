@@ -46,7 +46,9 @@ const env = {
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",
   BCRYPT_SALT_ROUNDS: toNumber(process.env.BCRYPT_SALT_ROUNDS, 12),
   DEMO_SEED_PASSWORD: process.env.DEMO_SEED_PASSWORD || "Password123!",
-  ALLOW_DEMO_SEED_IN_PRODUCTION: toBoolean(process.env.ALLOW_DEMO_SEED_IN_PRODUCTION, false)
+  ALLOW_DEMO_SEED_IN_PRODUCTION: toBoolean(process.env.ALLOW_DEMO_SEED_IN_PRODUCTION, false),
+  FILE_UPLOAD_DIR: path.resolve(rootDir, process.env.FILE_UPLOAD_DIR || "uploads"),
+  FILE_UPLOAD_MAX_BYTES: toNumber(process.env.FILE_UPLOAD_MAX_BYTES, 10 * 1024 * 1024)
 };
 
 export default env;

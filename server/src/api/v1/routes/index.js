@@ -14,6 +14,7 @@ import routesRoutes from "../../../modules/routes/routes.routes.js";
 import subscriptionsRoutes from "../../../modules/subscriptions/subscriptions.routes.js";
 import reportsRoutes from "../../../modules/reports/reports.routes.js";
 import notificationsRoutes from "../../../modules/notifications/notifications.routes.js";
+import filesRoutes from "../../../modules/files/files.routes.js";
 
 const router = Router();
 
@@ -32,5 +33,6 @@ router.use("/routes", routesRoutes);
 router.use("/subscriptions", subscriptionsRoutes);
 router.use("/reports", reportsRoutes);
 router.use("/notifications", notificationsRoutes);
+router.use("/files", filesRoutes);
 
 export default router;

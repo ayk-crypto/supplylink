@@ -11,6 +11,10 @@ build/
 *.log
 *.err.log
 
+# Local uploads
+uploads/
+server/uploads/
+
 # OS / Editor
 .DS_Store
 .vscode/
