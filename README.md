@@ -55,6 +55,7 @@ npm run db:seed
 - `npm run build` validates the server build step and builds the frontend.
 - `npm run lint` runs ESLint in both workspaces.
 - `npm run test` runs the server's built-in Node test suite.
+- `npm run test:integration` runs DB-backed server integration tests when `TEST_DATABASE_URL` is configured.
 - `npm run start` starts the Express server in production mode.
 - `npm run db:migrate --workspace server` applies SQL migrations.
 - `npm run db:seed` creates a small local/demo dataset.
@@ -807,6 +808,19 @@ Run the tests with:
 ```bash
 npm run test
 ```
+
+Run the DB-backed integration tests with:
+
+```bash
+copy server\.env.test.example server\.env.test
+# Edit server\.env.test so TEST_DATABASE_URL points at an isolated database such as supplylink_test.
+npm run test:integration
+```
+
+The integration harness refuses to run unless the database name includes `test`.
+It applies migrations, truncates application data tables in the test database,
+and then drives real API calls through an ephemeral Express server. If no
+`TEST_DATABASE_URL` is configured, the integration test is skipped safely.
 
 ## Deployment Readiness And Demo Seed
 

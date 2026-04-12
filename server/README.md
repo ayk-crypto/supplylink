@@ -16,6 +16,7 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 ## Environment Files
 
 - Use `.env.development` for local development
+- Use `.env.test` for DB-backed integration tests; [server/.env.test.example](/d:/supplylink/server/.env.test.example) provides a template
 - Use `.env.production` for production deployments
 - If `NODE_ENV` is not set, the server defaults to `development`
 - `DATABASE_URL` is only required for database-backed work such as migrations or DB health checks
@@ -24,6 +25,7 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - `ALLOW_DEMO_SEED_IN_PRODUCTION` defaults to `false` and should stay false for normal deployments
 - `FILE_UPLOAD_DIR` controls the local/dev upload directory and defaults to `uploads` under the server workspace
 - `FILE_UPLOAD_MAX_BYTES` controls the multipart upload limit and defaults to `10485760` bytes
+- `TEST_DATABASE_URL` is used by the integration test harness when present; the database name must include `test`
 
 ## Key Endpoints
 
@@ -734,6 +736,23 @@ Run server tests:
 ```bash
 npm run test --workspace server
 ```
+
+Run DB-backed integration tests:
+
+```bash
+copy server\.env.test.example server\.env.test
+# Edit server\.env.test so TEST_DATABASE_URL points at an isolated database such as supplylink_test.
+npm run test:integration --workspace server
+```
+
+Integration test behavior:
+
+- The test database name must include `test`; the harness refuses to run otherwise.
+- The harness runs the normal SQL migrations before starting the Express app.
+- The harness truncates application data tables in the test database before the scenario.
+- Roles and `schema_migrations` are preserved so migrations remain idempotent.
+- If `TEST_DATABASE_URL` is missing, the integration test is skipped instead of touching a developer database.
+- The scenario covers auth register/login/me, tenant isolation, quotation/order/invoice/payment flow, invoice balance changes, overpayment rejection, ledger/customer statement, notifications, reports, UI helpers, lookups, and file attachment isolation.
 
 ## Deployment Readiness And Seed Notes
 

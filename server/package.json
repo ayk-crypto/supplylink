@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "build": "node -e \"console.log('Server build check passed')\"",
     "test": "node --test \"src/**/*.test.js\"",
+    "test:integration": "cross-env NODE_ENV=test node --test \"src/**/*.integration.test.js\"",
     "db:migrate": "cross-env NODE_ENV=development node src/database/scripts/migrate.js",
     "db:seed": "cross-env NODE_ENV=development node src/database/scripts/seed.js",
     "db:bootstrap": "npm run db:migrate && npm run db:seed"
