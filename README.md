@@ -167,6 +167,14 @@ without leaking ledger, order, pricing, or route data across tenants.
 - `GET /api/v1/files/:fileId/download`
 - `GET /api/v1/files/entity/:entityType/:entityId`
 - `DELETE /api/v1/files/:fileId`
+- `GET /api/v1/lookups/customers`
+- `GET /api/v1/lookups/products`
+- `GET /api/v1/lookups/categories`
+- `GET /api/v1/lookups/vendors`
+- `GET /api/v1/lookups/options`
+- `GET /api/v1/ui/dashboard`
+- `GET /api/v1/ui/create-context`
+- `GET /api/v1/ui/notifications-panel`
 
 ## Auth Foundation
 
@@ -746,6 +754,40 @@ It is a consistent document envelope with `header`, `vendor`, `customer`,
 screens and future PDF generation. The endpoints use the same tenant-isolated
 read permissions as quotation and invoice detail views, and future generated
 PDFs can be attached through the Module 16 attachment foundation.
+
+## Frontend Integration Helpers
+
+Module 18 adds screen-friendly helper endpoints for common frontend fetches.
+Lookups return compact selector records with `id`, `label`, `secondaryText`, and
+optional `status` fields:
+
+```bash
+curl "http://localhost:4000/api/v1/lookups/customers?search=jane&limit=10" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/lookups/products?status=active&limit=10" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/lookups/options" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+```
+
+UI helpers bundle bounded data for common screens:
+
+```bash
+curl "http://localhost:4000/api/v1/ui/dashboard" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/ui/create-context?limit=10" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/ui/notifications-panel?limit=10" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+```
+
+These helpers are tenant-scoped where relevant, `lookups/vendors` is
+`super_admin` only, lookup limits are capped at 50, and UI bundle limits are
+capped at 30. They do not replace the core CRUD or report endpoints.
 
 ## API Hardening And Tests
 

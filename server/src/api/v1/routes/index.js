@@ -15,6 +15,8 @@ import subscriptionsRoutes from "../../../modules/subscriptions/subscriptions.ro
 import reportsRoutes from "../../../modules/reports/reports.routes.js";
 import notificationsRoutes from "../../../modules/notifications/notifications.routes.js";
 import filesRoutes from "../../../modules/files/files.routes.js";
+import lookupsRoutes from "../../../modules/lookups/lookups.routes.js";
+import uiRoutes from "../../../modules/ui/ui.routes.js";
 
 const router = Router();
 
@@ -34,5 +36,7 @@ router.use("/subscriptions", subscriptionsRoutes);
 router.use("/reports", reportsRoutes);
 router.use("/notifications", notificationsRoutes);
 router.use("/files", filesRoutes);
+router.use("/lookups", lookupsRoutes);
+router.use("/ui", uiRoutes);
 
 export default router;

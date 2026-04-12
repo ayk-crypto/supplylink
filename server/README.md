@@ -105,6 +105,14 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - `GET /api/v1/files/:fileId/download`
 - `GET /api/v1/files/entity/:entityType/:entityId`
 - `DELETE /api/v1/files/:fileId`
+- `GET /api/v1/lookups/customers`
+- `GET /api/v1/lookups/products`
+- `GET /api/v1/lookups/categories`
+- `GET /api/v1/lookups/vendors`
+- `GET /api/v1/lookups/options`
+- `GET /api/v1/ui/dashboard`
+- `GET /api/v1/ui/create-context`
+- `GET /api/v1/ui/notifications-panel`
 - `GET /api/v1/system/health`
 - `GET /api/v1/system/readiness`
 - `GET /api/v1/system/overview`
@@ -665,6 +673,51 @@ Example `super_admin` vendor-scoped inspection:
 
 ```bash
 curl "http://localhost:4000/api/v1/files?vendorId=%VENDOR_ID%" ^
+  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%"
+```
+
+## Frontend Integration Helper Notes
+
+- Lookup endpoints return compact selector objects with stable `id`, `label`, `secondaryText`, and optional `status` fields.
+- Vendor-scoped lookup and UI endpoints use the same auth, role, and vendor access middleware as the business modules.
+- `vendor_admin` and `vendor_staff` can use tenant-scoped helper endpoints for their current vendor.
+- `super_admin` can use tenant-scoped helpers by passing a safe vendor context such as `vendorId`.
+- `GET /api/v1/lookups/vendors` is `super_admin` only.
+- Lookup limits are bounded to 50 items; UI bundle limits are bounded to 30 items.
+- These endpoints are helper views only. They do not replace the core CRUD, report, notification, print, or file endpoints.
+
+Example lookup requests:
+
+```bash
+curl "http://localhost:4000/api/v1/lookups/customers?search=jane&limit=10" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/lookups/products?search=water&status=active&limit=10" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/lookups/categories?limit=20" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/lookups/options" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/lookups/vendors?search=acme&status=active" ^
+  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%"
+```
+
+Example UI helper requests:
+
+```bash
+curl "http://localhost:4000/api/v1/ui/dashboard" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/ui/create-context?limit=10" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/ui/notifications-panel?limit=10" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/ui/dashboard?vendorId=%VENDOR_ID%" ^
   -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%"
 ```
 
