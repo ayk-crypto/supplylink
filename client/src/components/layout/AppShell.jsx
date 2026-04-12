@@ -1,48 +1,64 @@
 import { useState } from "react";
 import { useAuth } from "../../features/auth/useAuth.js";
 
-const navItems = [
-  "Dashboard",
-  "Customers",
-  "Catalog",
-  "Quotations",
-  "Orders",
-  "Invoices",
-  "Payments",
-  "Routes",
-  "Reports"
-];
-
-function AppShell({ children }) {
+function AppShell({ activePath = "/dashboard", children, navItems = [], onNavigate }) {
   const { logout, user } = useAuth();
   const [isNavOpen, setIsNavOpen] = useState(false);
-  const activeVendor = user?.memberships?.find((membership) => membership.vendorId === user.currentVendorId);
+  const activeVendor = user?.memberships?.find(
+    (membership) => membership.vendorId === user.currentVendorId
+  );
   const roleLabel = user?.roleCodes?.join(", ") || "Team member";
 
   return (
     <div className="app-layout">
+      {isNavOpen ? (
+        <button
+          aria-label="Close navigation overlay"
+          className="sidebar-backdrop"
+          onClick={() => setIsNavOpen(false)}
+          type="button"
+        />
+      ) : null}
+
       <aside className={`sidebar ${isNavOpen ? "sidebar-open" : ""}`}>
-        <div className="brand-lockup">
-          <span className="brand-mark">SL</span>
-          <div>
-            <strong>SupplyLink</strong>
-            <small>Operations console</small>
+        <div className="sidebar-header">
+          <div className="brand-lockup">
+            <span className="brand-mark">SL</span>
+            <div>
+              <strong>SupplyLink</strong>
+              <small>Operations console</small>
+            </div>
           </div>
+          <button
+            aria-label="Close navigation"
+            className="sidebar-close"
+            onClick={() => setIsNavOpen(false)}
+            type="button"
+          >
+            Close
+          </button>
+        </div>
+
+        <div className="sidebar-vendor">
+          <span>Current vendor</span>
+          <strong>{activeVendor?.vendorDisplayName || "Selected workspace"}</strong>
+          <small>{activeVendor?.vendorSlug || user?.currentVendorId}</small>
         </div>
 
         <nav className="side-nav" aria-label="Primary navigation">
           {navItems.map((item) => (
-            <a
-              className={item === "Dashboard" ? "active" : ""}
-              href="/"
-              key={item}
+            <button
+              className={item.path === activePath ? "active" : ""}
+              key={item.id}
               onClick={(event) => {
                 event.preventDefault();
+                onNavigate?.(item.path);
                 setIsNavOpen(false);
               }}
+              type="button"
             >
-              {item}
-            </a>
+              {item.label}
+            </button>
           ))}
         </nav>
       </aside>
@@ -50,6 +66,7 @@ function AppShell({ children }) {
       <div className="workspace">
         <header className="topbar">
           <button
+            aria-expanded={isNavOpen}
             aria-label="Toggle navigation"
             className="nav-toggle"
             onClick={() => setIsNavOpen((value) => !value)}

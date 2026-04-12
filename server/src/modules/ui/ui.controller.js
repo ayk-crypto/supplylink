@@ -2,7 +2,9 @@ import { sendSuccess } from "../../core/http/apiResponse.js";
 import { getCreateContext, getNotificationPanel, getVendorUiDashboard } from "./ui.service.js";
 
 async function dashboard(request, response) {
-  const result = await getVendorUiDashboard(request.access.vendorId, request.auth.userId);
+  const result = await getVendorUiDashboard(request.access.vendorId, request.auth.userId, {
+    includeNotifications: request.query.includeNotifications
+  });
 
   sendSuccess(response, {
     message: "Dashboard helper loaded",

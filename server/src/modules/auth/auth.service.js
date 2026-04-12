@@ -362,7 +362,10 @@ async function loginUser(payload) {
 
   return {
     accessToken,
-    user: refreshedProfile
+    user: {
+      ...refreshedProfile,
+      currentVendorId
+    }
   };
 }
 

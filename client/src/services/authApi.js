@@ -11,8 +11,8 @@ async function loginUser({ email, password, vendorId }) {
   });
 }
 
-async function getCurrentUser() {
-  return request("/auth/me");
+async function getCurrentUser(options = {}) {
+  return request("/auth/me", options);
 }
 
 export { getCurrentUser, loginUser };

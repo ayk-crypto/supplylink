@@ -5,29 +5,36 @@ function useDashboardData() {
   const [dashboard, setDashboard] = useState(null);
   const [notifications, setNotifications] = useState(null);
   const [error, setError] = useState("");
+  const [notificationsError, setNotificationsError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [areNotificationsLoading, setAreNotificationsLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
 
     async function loadDashboard() {
       setIsLoading(true);
+      setError("");
 
       try {
-        const [dashboardResponse, notificationsResponse] = await Promise.all([
-          getDashboard(),
-          getNotificationsPanel()
-        ]);
+        const dashboardResponse = await getDashboard({
+          includeNotifications: false,
+          signal: controller.signal
+        });
 
         if (!active) {
           return;
         }
 
         setDashboard(dashboardResponse.data);
-        setNotifications(notificationsResponse.data);
         setError("");
       } catch (requestError) {
         if (!active) {
+          return;
+        }
+
+        if (requestError.name === "AbortError") {
           return;
         }
 
@@ -41,18 +48,54 @@ function useDashboardData() {
       }
     }
 
+    async function loadNotifications() {
+      setAreNotificationsLoading(true);
+      setNotificationsError("");
+
+      try {
+        const notificationsResponse = await getNotificationsPanel({ signal: controller.signal });
+
+        if (!active) {
+          return;
+        }
+
+        setNotifications(notificationsResponse.data);
+        setNotificationsError("");
+      } catch (requestError) {
+        if (!active) {
+          return;
+        }
+
+        if (requestError.name === "AbortError") {
+          return;
+        }
+
+        setNotificationsError(
+          requestError instanceof Error ? requestError.message : "Notifications could not load."
+        );
+      } finally {
+        if (active) {
+          setAreNotificationsLoading(false);
+        }
+      }
+    }
+
     loadDashboard();
+    loadNotifications();
 
     return () => {
       active = false;
+      controller.abort();
     };
   }, []);
 
   return {
+    areNotificationsLoading,
     dashboard,
     error,
     isLoading,
-    notifications
+    notifications,
+    notificationsError
   };
 }
 

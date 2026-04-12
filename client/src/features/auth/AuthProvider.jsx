@@ -3,6 +3,23 @@ import { getCurrentUser, loginUser } from "../../services/authApi.js";
 import { getStoredToken, setStoredToken } from "../../services/httpClient.js";
 import AuthContext from "./authContext.js";
 
+let currentUserRequest = null;
+let currentUserRequestToken = null;
+
+function getCurrentUserForToken(token) {
+  if (currentUserRequest && currentUserRequestToken === token) {
+    return currentUserRequest;
+  }
+
+  currentUserRequestToken = token;
+  currentUserRequest = getCurrentUser({ token }).finally(() => {
+    currentUserRequest = null;
+    currentUserRequestToken = null;
+  });
+
+  return currentUserRequest;
+}
+
 function AuthProvider({ children }) {
   const [token, setToken] = useState(() => getStoredToken());
   const [user, setUser] = useState(null);
@@ -10,7 +27,9 @@ function AuthProvider({ children }) {
   const [error, setError] = useState("");
 
   const refreshCurrentUser = useCallback(async () => {
-    if (!getStoredToken()) {
+    const storedToken = getStoredToken();
+
+    if (!storedToken) {
       setUser(null);
       setIsLoading(false);
       return null;
@@ -19,7 +38,7 @@ function AuthProvider({ children }) {
     setIsLoading(true);
 
     try {
-      const response = await getCurrentUser();
+      const response = await getCurrentUserForToken(storedToken);
       setUser(response.data);
       setError("");
       return response.data;
@@ -42,21 +61,17 @@ function AuthProvider({ children }) {
 
   const login = useCallback(
     async ({ email, password, vendorId }) => {
-      setIsLoading(true);
+      setError("");
 
-      try {
-        const response = await loginUser({ email, password, vendorId });
-        setStoredToken(response.data.accessToken);
-        setToken(response.data.accessToken);
-        setUser(response.data.user);
-        setError("");
-        await refreshCurrentUser();
-        return response.data.user;
-      } finally {
-        setIsLoading(false);
-      }
+      const response = await loginUser({ email, password, vendorId });
+      setStoredToken(response.data.accessToken);
+      setToken(response.data.accessToken);
+      setUser(response.data.user);
+      setError("");
+
+      return response.data.user;
     },
-    [refreshCurrentUser]
+    []
   );
 
   const logout = useCallback(() => {

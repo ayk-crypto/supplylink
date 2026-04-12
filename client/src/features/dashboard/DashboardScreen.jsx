@@ -66,7 +66,14 @@ function NotificationsList({ notifications }) {
 }
 
 function DashboardScreen() {
-  const { dashboard, error, isLoading, notifications } = useDashboardData();
+  const {
+    areNotificationsLoading,
+    dashboard,
+    error,
+    isLoading,
+    notifications,
+    notificationsError
+  } = useDashboardData();
   const currency = dashboard?.vendor?.currencyCode || "USD";
 
   if (isLoading) {
@@ -143,9 +150,17 @@ function DashboardScreen() {
         <div className="panel-block notifications-panel">
           <div className="panel-heading">
             <h3>Notifications</h3>
-            <span>{notifications?.unreadCount || 0} unread</span>
+            <span>
+              {areNotificationsLoading ? "Loading" : `${notifications?.unreadCount || 0} unread`}
+            </span>
           </div>
-          <NotificationsList notifications={notifications} />
+          {notificationsError ? (
+            <p className="surface-message error">{notificationsError}</p>
+          ) : areNotificationsLoading && !notifications ? (
+            <p className="surface-message">Loading notifications...</p>
+          ) : (
+            <NotificationsList notifications={notifications} />
+          )}
         </div>
       </section>
     </div>

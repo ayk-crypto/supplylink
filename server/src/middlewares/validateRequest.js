@@ -8,6 +8,22 @@ const TARGET_MAP = {
   headers: "headers"
 };
 
+function setValidatedRequestTarget(request, target, value) {
+  const requestKey = TARGET_MAP[target];
+
+  if (target === "query") {
+    Object.defineProperty(request, requestKey, {
+      configurable: true,
+      enumerable: true,
+      value,
+      writable: true
+    });
+    return;
+  }
+
+  request[requestKey] = value;
+}
+
 function validateRequest(schemas = {}) {
   return (request, response, next) => {
     void response;
@@ -18,7 +34,11 @@ function validateRequest(schemas = {}) {
           return;
         }
 
-        request[TARGET_MAP[target]] = schema.parse(request[TARGET_MAP[target]]);
+        setValidatedRequestTarget(
+          request,
+          target,
+          schema.parse(request[TARGET_MAP[target]])
+        );
       });
 
       next();

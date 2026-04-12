@@ -16,19 +16,22 @@ function setStoredToken(token) {
 }
 
 async function request(path, options = {}) {
-  const token = options.token ?? getStoredToken();
+  const { token: requestToken, ...fetchOptions } = options;
+  const token = requestToken ?? getStoredToken();
   const headers = {
-    ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
+    ...(fetchOptions.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(options.headers || {})
+    ...(fetchOptions.headers || {})
   };
   const response = await fetch(`${env.apiBaseUrl}${path}`, {
-    ...options,
+    ...fetchOptions,
     headers,
     body:
-      options.body && !(options.body instanceof FormData) && typeof options.body !== "string"
-        ? JSON.stringify(options.body)
-        : options.body
+      fetchOptions.body &&
+      !(fetchOptions.body instanceof FormData) &&
+      typeof fetchOptions.body !== "string"
+        ? JSON.stringify(fetchOptions.body)
+        : fetchOptions.body
   });
 
   const payload = await response.json().catch(() => null);

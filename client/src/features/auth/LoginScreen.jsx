@@ -1,6 +1,26 @@
 import { useState } from "react";
 import { useAuth } from "./useAuth.js";
 
+function getLoginErrorMessage(error) {
+  if (!(error instanceof Error)) {
+    return "Unable to sign in. Check your email and password.";
+  }
+
+  if (error.status === 401 || error.status === 400) {
+    return "The email or password you entered is not correct.";
+  }
+
+  if (error.status === 403) {
+    return error.message || "This account cannot access the selected workspace.";
+  }
+
+  if (error.status === 422) {
+    return "Check the sign-in details and try again.";
+  }
+
+  return error.message || "Unable to sign in. Check your email and password.";
+}
+
 function LoginScreen() {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
@@ -9,6 +29,12 @@ function LoginScreen() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  function clearError() {
+    if (error) {
+      setError("");
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
@@ -16,10 +42,8 @@ function LoginScreen() {
 
     try {
       await login({ email, password, vendorId: vendorId || null });
-      window.history.replaceState({}, "", "/");
-      window.dispatchEvent(new PopStateEvent("popstate"));
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Unable to sign in.");
+      setError(getLoginErrorMessage(requestError));
     } finally {
       setIsSubmitting(false);
     }
@@ -51,7 +75,10 @@ function LoginScreen() {
             <input
               autoComplete="email"
               inputMode="email"
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(event) => {
+                clearError();
+                setEmail(event.target.value);
+              }}
               placeholder="vendor.admin@supplylink.local"
               required
               type="email"
@@ -63,7 +90,10 @@ function LoginScreen() {
             Password
             <input
               autoComplete="current-password"
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(event) => {
+                clearError();
+                setPassword(event.target.value);
+              }}
               placeholder="Password123!"
               required
               type="password"
@@ -74,14 +104,22 @@ function LoginScreen() {
           <label>
             Vendor ID
             <input
-              onChange={(event) => setVendorId(event.target.value)}
+              onChange={(event) => {
+                clearError();
+                setVendorId(event.target.value);
+              }}
               placeholder="Optional when your account has one active vendor"
               type="text"
               value={vendorId}
             />
           </label>
 
-          {error ? <p className="form-error">{error}</p> : null}
+          {error ? (
+            <div className="form-error" role="alert">
+              <strong>Sign-in failed</strong>
+              <span>{error}</span>
+            </div>
+          ) : null}
 
           <button className="primary-button" disabled={isSubmitting} type="submit">
             {isSubmitting ? "Signing in..." : "Sign in"}

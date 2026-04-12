@@ -5,6 +5,7 @@ import {
   findNotificationForUser,
   listActiveSuperAdminUserIds,
   listActiveVendorUsersByRoleCodes,
+  listLatestNotificationsForUser,
   listNotificationsForUser,
   markAllNotificationsReadForUser,
   markNotificationReadForUser
@@ -88,6 +89,19 @@ async function getUnreadNotificationCount(userId) {
   };
 }
 
+async function getNotificationPanelSummary(userId, { limit = 10 } = {}) {
+  const [latest, unreadCount] = await Promise.all([
+    listLatestNotificationsForUser(userId, limit),
+    countUnreadNotificationsForUser(userId)
+  ]);
+
+  return {
+    unreadCount,
+    latest: latest.map(mapNotification),
+    limit
+  };
+}
+
 async function getNotificationDetail(userId, notificationId) {
   const notification = await findNotificationForUser(userId, notificationId);
 
@@ -162,6 +176,7 @@ function runNotificationTask(task) {
 export {
   getNotificationDetail,
   getNotificationDirectory,
+  getNotificationPanelSummary,
   getUnreadNotificationCount,
   markAllNotificationsRead,
   markNotificationRead,

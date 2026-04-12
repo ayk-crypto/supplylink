@@ -96,6 +96,19 @@ async function countUnreadNotificationsForUser(userId) {
   return result.rows[0]?.total || 0;
 }
 
+async function listLatestNotificationsForUser(userId, limit = 10) {
+  const result = await query(
+    `SELECT ${NOTIFICATION_SELECT}
+     ${notificationJoinClause()}
+     WHERE notification.user_id = $1
+     ORDER BY notification.created_at DESC, notification.id DESC
+     LIMIT $2`,
+    [userId, limit]
+  );
+
+  return result.rows;
+}
+
 async function findNotificationForUser(userId, notificationId) {
   const result = await query(
     `SELECT ${NOTIFICATION_SELECT}
@@ -227,6 +240,7 @@ export {
   findNotificationForUser,
   listActiveSuperAdminUserIds,
   listActiveVendorUsersByRoleCodes,
+  listLatestNotificationsForUser,
   listNotificationsForUser,
   markAllNotificationsReadForUser,
   markNotificationReadForUser

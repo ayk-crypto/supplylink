@@ -798,6 +798,30 @@ auth-aware API service layer, protected session loading through `/api/v1/auth/me
 responsive sidebar/topbar layout, logout flow, and dashboard widgets powered by
 `/api/v1/ui/dashboard` and `/api/v1/ui/notifications-panel`.
 
+Module 20B adds the first operational frontend screens in that shell:
+Customers, Categories, and Products. These screens use the real vendor-scoped
+backend APIs for list/search/filter, pagination, create, and edit flows. Product
+category options are loaded from the existing categories endpoint, and all write
+permissions continue to be enforced by the backend role and vendor guards.
+
+Module 20C hardens the frontend foundation with URL-based navigation for
+`/dashboard`, `/customers`, `/categories`, and `/products`, direct refresh and
+browser back/forward support, a safe not-found workspace page, lightweight toast
+feedback, and practical inline validation for the master-data forms.
+
+Module 20D adds the first transactional frontend flows for Quotations and
+Orders. The app now includes `/quotations`, `/quotations/new`,
+`/quotations/:id`, `/orders`, `/orders/new`, and `/orders/:id`, with list,
+create, and detail screens powered by the existing backend endpoints. Line item
+totals are previewed in the browser, while the backend remains the source of
+truth for final totals and workflow rules.
+
+Module 20E adds the frontend invoice and payment foundation. The app now
+includes `/invoices` and `/invoices/:id`, with invoice search/filter/pagination,
+invoice detail, line items, totals, paid/outstanding summaries, payment history,
+and a guarded payment capture form backed by the existing `/api/v1/payments`
+endpoint.
+
 Run the app locally:
 
 ```bash
