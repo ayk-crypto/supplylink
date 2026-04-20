@@ -94,35 +94,42 @@ function InventoryListScreen({ navigate }) {
       ) : null}
 
       {items.length ? (
-        <div className="resource-table">
-          <div className="resource-table-head inventory-grid">
-            <span>Product</span>
-            <span>SKU</span>
-            <span>Stock</span>
-            <span>Status</span>
-            <span>Unit price</span>
-            <span />
-          </div>
+        <div className="inventory-list">
           {items.map((product) => {
             const tone = stockTone(product.stockQuantity);
             return (
-              <article className="resource-row inventory-grid" key={product.id}>
-                <div>
-                  <strong>{product.name}</strong>
-                  <span>{product.category?.name || "No category"}</span>
-                </div>
-                <span>{product.sku}</span>
-                <div>
-                  <strong className={`stock-amount stock-${tone}`}>
-                    {formatQuantity(product.stockQuantity)}
-                  </strong>
-                  <span className={`stock-pill stock-${tone}`}>
-                    {stockLabel(product.stockQuantity)}
+              <article className="inventory-card" key={product.id}>
+                <header className="inventory-card-head">
+                  <div className="inventory-card-title">
+                    <strong>{product.name}</strong>
+                    <span>
+                      {product.sku} · {product.category?.name || "No category"}
+                    </span>
+                  </div>
+                  <span className={`status-pill status-${product.status}`}>
+                    {product.status}
                   </span>
-                </div>
-                <span className="status-pill">{product.status}</span>
-                <span>{toMoney(product.unitPrice)}</span>
-                <div className="inventory-row-actions">
+                </header>
+                <dl className="inventory-card-meta">
+                  <div>
+                    <dt>Stock</dt>
+                    <dd>
+                      <strong className={`stock-amount stock-${tone}`}>
+                        {formatQuantity(product.stockQuantity)}
+                      </strong>
+                      <span className={`stock-pill stock-${tone}`}>
+                        {stockLabel(product.stockQuantity)}
+                      </span>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Unit price</dt>
+                    <dd>
+                      <strong>{toMoney(product.unitPrice)}</strong>
+                    </dd>
+                  </div>
+                </dl>
+                <div className="inventory-card-actions">
                   <button
                     className="secondary-button compact"
                     onClick={() => openProduct(product)}

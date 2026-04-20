@@ -214,30 +214,33 @@ function InventoryDetailScreen({ id, navigate }) {
         ) : null}
 
         {movements.length ? (
-          <div className="resource-table">
-            <div className="resource-table-head movement-grid">
-              <span>Date</span>
-              <span>Type</span>
-              <span>Quantity</span>
-              <span>Reference</span>
-              <span>Notes</span>
-            </div>
+          <div className="movement-list">
             {movements.map((movement) => {
               const tone = movementToneFor(movement.type);
               const signed = signedQuantity(movement);
               return (
-                <article className="resource-row movement-grid" key={movement.id}>
-                  <span>{formatDateTime(movement.createdAt)}</span>
-                  <span className={`movement-pill movement-${tone}`}>{movement.type}</span>
-                  <strong className={`movement-quantity movement-${tone}`}>
-                    {signed > 0 ? "+" : ""}
-                    {formatQuantity(Math.abs(signed))}
-                  </strong>
-                  <div>
-                    <strong>{movement.referenceType || "—"}</strong>
-                    <span>{movement.referenceId || "—"}</span>
-                  </div>
-                  <span>{movement.notes || "—"}</span>
+                <article className="movement-card" key={movement.id}>
+                  <header className="movement-card-head">
+                    <span className={`movement-pill movement-${tone}`}>{movement.type}</span>
+                    <strong className={`movement-quantity movement-${tone}`}>
+                      {signed > 0 ? "+" : ""}
+                      {formatQuantity(Math.abs(signed))}
+                    </strong>
+                    <time>{formatDateTime(movement.createdAt)}</time>
+                  </header>
+                  <dl className="movement-card-meta">
+                    <div>
+                      <dt>Reference</dt>
+                      <dd>
+                        <strong>{movement.referenceType || "—"}</strong>
+                        {movement.referenceId ? <span>{movement.referenceId}</span> : null}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Notes</dt>
+                      <dd>{movement.notes || "—"}</dd>
+                    </div>
+                  </dl>
                 </article>
               );
             })}

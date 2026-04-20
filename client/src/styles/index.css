@@ -3028,27 +3028,114 @@ canvas {
 
 /* === Module 20O: Inventory screens =========================== */
 
-.inventory-grid {
-  grid-template-columns:
-    minmax(220px, 1.6fr)
-    minmax(120px, 0.9fr)
-    minmax(160px, 1.1fr)
-    minmax(110px, 0.7fr)
-    minmax(110px, 0.8fr)
-    minmax(150px, auto);
-  gap: 12px 18px;
-  align-items: center;
+.inventory-list,
+.movement-list {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
 }
 
-.movement-grid {
-  grid-template-columns:
-    minmax(180px, 1.1fr)
-    minmax(120px, 0.7fr)
-    minmax(120px, 0.7fr)
-    minmax(180px, 1.2fr)
-    minmax(200px, 1.4fr);
-  gap: 12px 18px;
-  align-items: center;
+.inventory-card,
+.movement-card {
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--border, rgba(20, 24, 32, 0.08));
+  border-radius: var(--radius-md, 12px);
+  box-shadow: var(--shadow-soft, 0 1px 2px rgba(20, 24, 32, 0.04));
+  padding: 18px 20px;
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.inventory-card-head,
+.movement-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.inventory-card-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 220px;
+}
+
+.inventory-card-title strong {
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  font-size: 1.02rem;
+  word-break: break-word;
+}
+
+.inventory-card-title span {
+  font-size: 0.82rem;
+  color: var(--text-muted, #5b6573);
+  word-break: break-word;
+}
+
+.inventory-card-meta,
+.movement-card-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px 24px;
+  margin: 0;
+  padding: 0;
+}
+
+.inventory-card-meta > div,
+.movement-card-meta > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.inventory-card-meta dt,
+.movement-card-meta dt {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted, #6b7383);
+  margin: 0;
+}
+
+.inventory-card-meta dd,
+.movement-card-meta dd {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.inventory-card-meta dd strong,
+.movement-card-meta dd strong {
+  font-weight: 600;
+}
+
+.inventory-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.inventory-card-actions .secondary-button {
+  flex: 0 0 auto;
+}
+
+.movement-card-head time {
+  font-size: 0.82rem;
+  color: var(--text-muted, #6b7383);
+  font-variant-numeric: tabular-nums;
+  margin-left: auto;
 }
 
 .stock-amount {
@@ -3056,7 +3143,6 @@ canvas {
   font-weight: 700;
   letter-spacing: -0.022em;
   font-size: 1.05rem;
-  display: block;
 }
 
 .stock-pill,
@@ -3068,7 +3154,7 @@ canvas {
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  margin-top: 4px;
+  align-self: flex-start;
 }
 
 .stock-pill.stock-ok {
@@ -3119,6 +3205,7 @@ canvas {
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   letter-spacing: -0.022em;
+  font-size: 1.05rem;
 }
 
 .movement-quantity.movement-ok {
@@ -3129,36 +3216,27 @@ canvas {
   color: #a55300;
 }
 
-.inventory-row-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
 .detail-field-wide {
   grid-column: 1 / -1;
 }
 
-@media (max-width: 1080px) {
-  .inventory-grid,
-  .movement-grid {
-    min-width: 720px;
-  }
-}
-
 @media (max-width: 768px) {
-  .inventory-grid,
-  .movement-grid {
-    grid-template-columns: 1fr;
-    min-width: 0;
+  .inventory-card,
+  .movement-card {
+    padding: 16px;
   }
 
-  .inventory-row-actions {
+  .inventory-card-actions {
+    width: 100%;
     justify-content: stretch;
   }
 
-  .inventory-row-actions .secondary-button {
-    flex: 1 1 auto;
+  .inventory-card-actions .secondary-button {
+    flex: 1 1 0;
+  }
+
+  .movement-card-head time {
+    margin-left: 0;
+    width: 100%;
   }
 }
