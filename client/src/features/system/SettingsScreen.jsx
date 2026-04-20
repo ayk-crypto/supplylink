@@ -10,6 +10,7 @@ const CURRENCY_OPTIONS = [
   { value: "GBP", label: "British Pound (GBP) — £" },
   { value: "INR", label: "Indian Rupee (INR) — ₹" },
   { value: "AED", label: "UAE Dirham (AED) — د.إ" },
+  { value: "PKR", label: "Pakistani Rupee (PKR) — ₨" },
   { value: "JPY", label: "Japanese Yen (JPY) — ¥" }
 ];
 
@@ -19,6 +20,7 @@ const CURRENCY_SYMBOLS = {
   GBP: "£",
   INR: "₹",
   AED: "د.إ",
+  PKR: "₨",
   JPY: "¥"
 };
 
