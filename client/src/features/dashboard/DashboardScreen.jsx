@@ -1,12 +1,6 @@
+import { useAppSettings } from "../system/settingsContext.js";
+import { formatMoneyWith } from "../system/settingsFormat.js";
 import { useDashboardData } from "./useDashboardData.js";
-
-function formatMoney(value, currency = "USD") {
-  return new Intl.NumberFormat(undefined, {
-    currency,
-    maximumFractionDigits: 2,
-    style: "currency"
-  }).format(Number(value || 0));
-}
 
 function MetricIcon({ glyph }) {
   const paths = {
@@ -73,7 +67,7 @@ function MetricCard({ detail, glyph, label, value }) {
   );
 }
 
-function RecordList({ emptyLabel, items, kind }) {
+function RecordList({ emptyLabel, formatMoney, items, kind }) {
   if (!items?.length) {
     return <p className="empty-state">{emptyLabel}</p>;
   }
@@ -156,7 +150,8 @@ function DashboardScreen({ navigate }) {
     notifications,
     notificationsError
   } = useDashboardData();
-  const currency = dashboard?.vendor?.currencyCode || "USD";
+  const { settings } = useAppSettings();
+  const formatMoney = (value) => formatMoneyWith(settings, value);
 
   if (isLoading) {
     return <p className="surface-message loading">Loading dashboard...</p>;
@@ -190,10 +185,10 @@ function DashboardScreen({ navigate }) {
         </div>
         <div className="receivables-card">
           <span>Outstanding receivables</span>
-          <strong>{formatMoney(dashboard.receivables.outstanding, currency)}</strong>
+          <strong>{formatMoney(dashboard.receivables.outstanding)}</strong>
           <small>
-            {formatMoney(dashboard.receivables.paymentTotal, currency)} received against{" "}
-            {formatMoney(dashboard.receivables.invoiceTotal, currency)} invoiced
+            {formatMoney(dashboard.receivables.paymentTotal)} received against{" "}
+            {formatMoney(dashboard.receivables.invoiceTotal)} invoiced
           </small>
           {collectedRatio !== null ? (
             <div
@@ -226,7 +221,7 @@ function DashboardScreen({ navigate }) {
           value={dashboard.metrics.totalOrders}
         />
         <MetricCard
-          detail={formatMoney(dashboard.metrics.invoiceTotal, currency)}
+          detail={formatMoney(dashboard.metrics.invoiceTotal)}
           glyph="invoices"
           label="Invoices"
           value={dashboard.metrics.totalInvoices}
@@ -253,7 +248,12 @@ function DashboardScreen({ navigate }) {
               </button>
             ) : null}
           </div>
-          <RecordList emptyLabel="No recent orders." items={dashboard.recent.orders} kind="order" />
+          <RecordList
+            emptyLabel="No recent orders."
+            formatMoney={formatMoney}
+            items={dashboard.recent.orders}
+            kind="order"
+          />
         </div>
 
         <div className="panel-block">
@@ -271,6 +271,7 @@ function DashboardScreen({ navigate }) {
           </div>
           <RecordList
             emptyLabel="No recent invoices."
+            formatMoney={formatMoney}
             items={dashboard.recent.invoices}
             kind="invoice"
           />

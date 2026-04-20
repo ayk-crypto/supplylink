@@ -1,0 +1,69 @@
+Work only on the existing SupplyLink frontend.
+
+Do not change backend APIs.
+
+Goal:
+Implement Module 20AA: Frontend Settings Persistence and Propagation.
+
+Context:
+Backend now provides:
+- GET /api/v1/settings
+- PATCH /api/v1/settings
+
+The current /settings screen is UI-only and stores values in localStorage.
+
+Core objective:
+Replace localStorage-only settings with tenant-scoped backend persistence, and begin propagating key settings across the app where practical.
+
+What to do:
+
+1. Settings API layer
+- add a frontend settings API service using existing patterns
+- support:
+  - getSettings
+  - updateSettings
+
+2. Settings screen wiring
+- load settings from GET /settings on screen open
+- save via PATCH /settings
+- keep the current UI structure and polish
+- preserve validation UX where useful
+- show success/error toasts
+
+3. Migration from localStorage
+- if legacy localStorage settings exist, load them once
+- after successful GET /settings and/or first successful save, migrate or reconcile sensibly
+- avoid losing user-entered values
+- clear the old localStorage key once migration is safely complete
+
+4. Propagation of settings
+Where practical and safe, start using backend settings in the frontend for:
+- currency display formatting
+- default page size in list screens where easy to apply
+- date format display where already centralized
+- notifications badge visibility
+- destructive confirmation preference
+
+5. Graceful fallback
+- if settings are missing or older environments do not return expected fields, fall back safely
+- do not break existing pages
+
+6. Constraints
+- no backend changes
+- no redesign of the settings page
+- keep changes additive and production-minded
+
+7. Documentation
+- update client README for real settings persistence behavior
+
+Verification:
+- run client lint
+- run client build
+
+Deliverable:
+1. Summary
+2. Files changed
+3. What localStorage logic was replaced or migrated
+4. What settings are now propagated
+5. Verification results
+6. Any useful follow-up items

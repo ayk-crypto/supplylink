@@ -11,6 +11,8 @@ import { useToast } from "../feedback/toastContext.js";
 import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
 import { formatCustomer } from "./transactionUtils.js";
+import { useAppSettings } from "../system/settingsContext.js";
+import { getDefaultPageSize } from "../system/settingsFormat.js";
 
 const configs = {
   orders: {
@@ -40,6 +42,8 @@ const configs = {
 function TransactionListScreen({ kind, navigate }) {
   const config = configs[kind];
   const { showToast } = useToast();
+  const { settings } = useAppSettings();
+  const pageSize = getDefaultPageSize(settings, 10);
   const [customers, setCustomers] = useState([]);
   const [customerId, setCustomerId] = useState("");
   const [page, setPage] = useState(1);
@@ -49,12 +53,12 @@ function TransactionListScreen({ kind, navigate }) {
   const query = useMemo(
     () => ({
       page,
-      pageSize: 10,
+      pageSize,
       customerId,
       search,
       status
     }),
-    [customerId, page, search, status]
+    [customerId, page, pageSize, search, status]
   );
   const loadDirectory = useCallback((params, options) => config.list(params, options), [config]);
   const handleListError = useCallback(

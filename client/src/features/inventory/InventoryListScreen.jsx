@@ -11,9 +11,13 @@ import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
 import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
 import StockAdjustForm from "./StockAdjustForm.jsx";
 import { formatQuantity, stockLabel, stockTone } from "./inventoryUtils.js";
+import { useAppSettings } from "../system/settingsContext.js";
+import { getDefaultPageSize } from "../system/settingsFormat.js";
 
 function InventoryListScreen({ navigate }) {
   const { showToast } = useToast();
+  const { settings } = useAppSettings();
+  const pageSize = getDefaultPageSize(settings, 10);
   const [page, setPage] = useState(1);
   const [searchDraft, setSearchDraft] = useState("");
   const [search, setSearch] = useState("");
@@ -21,8 +25,8 @@ function InventoryListScreen({ navigate }) {
   const [adjustingProduct, setAdjustingProduct] = useState(null);
 
   const query = useMemo(
-    () => ({ page, pageSize: 10, search, status }),
-    [page, search, status]
+    () => ({ page, pageSize, search, status }),
+    [page, pageSize, search, status]
   );
   const loadProducts = useCallback((params, options) => listInventoryProducts(params, options), []);
   const handleListError = useCallback(

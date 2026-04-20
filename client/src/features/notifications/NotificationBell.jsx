@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { getApiErrorMessage } from "../master-data/resourceUtils.js";
 import { useToast } from "../feedback/toastContext.js";
+import { useAppSettings } from "../system/settingsContext.js";
+import { shouldShowNotificationsBadge } from "../system/settingsFormat.js";
 import { useNotificationsCenter } from "./notificationsContext.js";
 import {
   buildNotificationRoute,
@@ -19,6 +21,8 @@ function NotificationBell({ onNavigate }) {
     unreadCount
   } = useNotificationsCenter();
   const { showToast } = useToast();
+  const { settings } = useAppSettings();
+  const badgeEnabled = shouldShowNotificationsBadge(settings);
   const [isOpen, setIsOpen] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const containerRef = useRef(null);
@@ -149,7 +153,7 @@ function NotificationBell({ onNavigate }) {
             />
           </svg>
         </span>
-        {unreadCount > 0 ? (
+        {unreadCount > 0 && badgeEnabled ? (
           <span aria-hidden="true" className="notification-bell-badge">
             {badgeLabel}
           </span>

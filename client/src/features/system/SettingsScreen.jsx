@@ -1,8 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Field, PageHeader } from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
-
-const STORAGE_KEY = "supplylink.settings.v1";
+import { getApiErrorMessage } from "../master-data/resourceUtils.js";
+import { useAppSettings } from "./settingsContext.js";
+import { DEFAULT_SETTINGS, mergeSettings } from "./settingsDefaults.js";
+import {
+  CURRENCY_SYMBOLS,
+  formatMoneyWith,
+  shouldConfirmDestructive
+} from "./settingsFormat.js";
 
 const CURRENCY_OPTIONS = [
   { value: "USD", label: "US Dollar (USD) — $" },
@@ -14,16 +20,6 @@ const CURRENCY_OPTIONS = [
   { value: "JPY", label: "Japanese Yen (JPY) — ¥" }
 ];
 
-const CURRENCY_SYMBOLS = {
-  USD: "$",
-  EUR: "€",
-  GBP: "£",
-  INR: "₹",
-  AED: "د.إ",
-  PKR: "₨",
-  JPY: "¥"
-};
-
 const DATE_FORMAT_OPTIONS = [
   { value: "iso", label: "ISO (2026-04-20)" },
   { value: "medium", label: "Medium (Apr 20, 2026)" },
@@ -32,65 +28,6 @@ const DATE_FORMAT_OPTIONS = [
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
-const DEFAULT_SETTINGS = {
-  company: {
-    legalName: "",
-    displayName: "",
-    contactEmail: "",
-    contactPhone: "",
-    addressLine1: "",
-    addressLine2: "",
-    taxId: ""
-  },
-  invoice: {
-    prefix: "INV-",
-    nextNumber: 1001,
-    padding: 4,
-    suffix: "",
-    defaultDueDays: 30,
-    defaultNotes: ""
-  },
-  currency: {
-    code: "USD",
-    decimals: 2,
-    thousandsSeparator: ","
-  },
-  preferences: {
-    dateFormat: "medium",
-    defaultPageSize: 20,
-    notificationsBadgeEnabled: true,
-    confirmDestructiveActions: true
-  }
-};
-
-function loadSettings() {
-  if (typeof window === "undefined") {
-    return DEFAULT_SETTINGS;
-  }
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return DEFAULT_SETTINGS;
-    }
-    const parsed = JSON.parse(raw);
-    return {
-      company: { ...DEFAULT_SETTINGS.company, ...(parsed.company || {}) },
-      invoice: { ...DEFAULT_SETTINGS.invoice, ...(parsed.invoice || {}) },
-      currency: { ...DEFAULT_SETTINGS.currency, ...(parsed.currency || {}) },
-      preferences: { ...DEFAULT_SETTINGS.preferences, ...(parsed.preferences || {}) }
-    };
-  } catch {
-    return DEFAULT_SETTINGS;
-  }
-}
-
-function saveSettings(settings) {
-  if (typeof window === "undefined") {
-    return;
-  }
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-}
-
 function buildInvoiceNumberPreview(invoice) {
   const padding = Math.max(0, Math.min(10, Number(invoice.padding) || 0));
   const next = Number(invoice.nextNumber) || 0;
@@ -98,54 +35,52 @@ function buildInvoiceNumberPreview(invoice) {
   return `${invoice.prefix || ""}${padded}${invoice.suffix || ""}`;
 }
 
-function buildCurrencyPreview(currency) {
-  const decimals = Math.max(0, Math.min(4, Number(currency.decimals) || 0));
-  const symbol = CURRENCY_SYMBOLS[currency.code] || currency.code;
-  const sample = (12345.6).toFixed(decimals);
-  const [whole, fractional] = sample.split(".");
-  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, currency.thousandsSeparator || "");
-  const display = fractional ? `${grouped}.${fractional}` : grouped;
-  return `${symbol}${display}`;
-}
-
 function SettingsScreen() {
   const { showToast } = useToast();
-  const [settings, setSettings] = useState(loadSettings);
+  const {
+    error: loadError,
+    isHydrated,
+    isLoading,
+    refresh,
+    save,
+    settings: providerSettings
+  } = useAppSettings();
+  const [draft, setDraft] = useState(providerSettings);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    setSettings(loadSettings());
-  }, []);
+    setDraft(providerSettings);
+  }, [providerSettings]);
 
   function updateSection(section, field, value) {
-    setSettings((current) => ({
+    setDraft((current) => ({
       ...current,
       [section]: { ...current[section], [field]: value }
     }));
   }
 
   const invoicePreview = useMemo(
-    () => buildInvoiceNumberPreview(settings.invoice),
-    [settings.invoice]
+    () => buildInvoiceNumberPreview(draft.invoice),
+    [draft.invoice]
   );
   const currencyPreview = useMemo(
-    () => buildCurrencyPreview(settings.currency),
-    [settings.currency]
+    () => formatMoneyWith(draft, 12345.6),
+    [draft]
   );
 
-  function handleSave(event) {
+  async function handleSave(event) {
     event.preventDefault();
     setIsSaving(true);
     try {
-      saveSettings(settings);
+      await save(draft);
       showToast({
-        message: "Settings saved locally. Backend sync will arrive in a later module.",
+        message: "Your settings are saved for everyone in this workspace.",
         title: "Settings updated",
         tone: "success"
       });
-    } catch {
+    } catch (requestError) {
       showToast({
-        message: "We could not store your settings on this device.",
+        message: getApiErrorMessage(requestError, "We could not save your settings."),
         title: "Save failed",
         tone: "error"
       });
@@ -154,37 +89,70 @@ function SettingsScreen() {
     }
   }
 
-  function handleReset() {
-    if (!window.confirm("Reset all settings to the SupplyLink defaults?")) {
+  async function handleReset() {
+    if (
+      shouldConfirmDestructive(providerSettings) &&
+      !window.confirm("Reset all settings to the SupplyLink defaults?")
+    ) {
       return;
     }
-    setSettings(DEFAULT_SETTINGS);
-    saveSettings(DEFAULT_SETTINGS);
-    showToast({
-      message: "Settings restored to defaults.",
-      title: "Defaults restored",
-      tone: "info"
-    });
+
+    setIsSaving(true);
+    try {
+      const restored = await save(DEFAULT_SETTINGS);
+      setDraft(restored);
+      showToast({
+        message: "Settings restored to defaults.",
+        title: "Defaults restored",
+        tone: "info"
+      });
+    } catch (requestError) {
+      showToast({
+        message: getApiErrorMessage(requestError, "We could not reset your settings."),
+        title: "Reset failed",
+        tone: "error"
+      });
+    } finally {
+      setIsSaving(false);
+    }
   }
 
-  const logoInitials = (settings.company.displayName || settings.company.legalName || "S")
+  async function handleReload() {
+    try {
+      const next = await refresh();
+      setDraft(mergeSettings(DEFAULT_SETTINGS, next));
+    } catch {
+      // refresh already surfaces error in context state
+    }
+  }
+
+  const logoInitials = (draft.company.displayName || draft.company.legalName || "S")
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() || "")
     .join("") || "S";
 
+  const description = isHydrated
+    ? "Configure how SupplyLink presents and numbers your business records. Changes are saved to your workspace."
+    : "Loading the latest workspace settings…";
+
   return (
     <div className="resource-page">
       <PageHeader
         action={
           <div className="button-row">
-            <button className="secondary-button" onClick={handleReset} type="button">
+            <button
+              className="secondary-button"
+              disabled={isSaving || isLoading}
+              onClick={handleReset}
+              type="button"
+            >
               Reset to defaults
             </button>
             <button
               className="primary-button"
-              disabled={isSaving}
+              disabled={isSaving || isLoading}
               form="settings-form"
               type="submit"
             >
@@ -192,10 +160,23 @@ function SettingsScreen() {
             </button>
           </div>
         }
-        description="Configure how SupplyLink presents and numbers your business records. Stored on this device for now; backend sync arrives in a later module."
+        description={description}
         eyebrow="Workspace"
         title="Settings"
       />
+
+      {loadError ? (
+        <p className="surface-message error">
+          {loadError}{" "}
+          <button className="link-button" onClick={handleReload} type="button">
+            Try again
+          </button>
+        </p>
+      ) : null}
+
+      {isLoading && !isHydrated ? (
+        <p className="surface-message loading">Loading settings...</p>
+      ) : null}
 
       <form id="settings-form" onSubmit={handleSave}>
         <section className="transaction-panel">
@@ -218,7 +199,7 @@ function SettingsScreen() {
                 onChange={(event) => updateSection("company", "displayName", event.target.value)}
                 placeholder="SupplyLink Trading"
                 type="text"
-                value={settings.company.displayName}
+                value={draft.company.displayName}
               />
             </Field>
             <Field label="Legal name">
@@ -226,7 +207,7 @@ function SettingsScreen() {
                 onChange={(event) => updateSection("company", "legalName", event.target.value)}
                 placeholder="SupplyLink Trading LLC"
                 type="text"
-                value={settings.company.legalName}
+                value={draft.company.legalName}
               />
             </Field>
             <Field label="Contact email">
@@ -234,7 +215,7 @@ function SettingsScreen() {
                 onChange={(event) => updateSection("company", "contactEmail", event.target.value)}
                 placeholder="ops@yourcompany.com"
                 type="email"
-                value={settings.company.contactEmail}
+                value={draft.company.contactEmail}
               />
             </Field>
             <Field label="Contact phone">
@@ -242,28 +223,28 @@ function SettingsScreen() {
                 onChange={(event) => updateSection("company", "contactPhone", event.target.value)}
                 placeholder="+1 555 0100"
                 type="tel"
-                value={settings.company.contactPhone}
+                value={draft.company.contactPhone}
               />
             </Field>
             <Field label="Tax / VAT ID">
               <input
                 onChange={(event) => updateSection("company", "taxId", event.target.value)}
                 type="text"
-                value={settings.company.taxId}
+                value={draft.company.taxId}
               />
             </Field>
             <Field label="Address line 1">
               <input
                 onChange={(event) => updateSection("company", "addressLine1", event.target.value)}
                 type="text"
-                value={settings.company.addressLine1}
+                value={draft.company.addressLine1}
               />
             </Field>
             <Field label="Address line 2">
               <input
                 onChange={(event) => updateSection("company", "addressLine2", event.target.value)}
                 type="text"
-                value={settings.company.addressLine2}
+                value={draft.company.addressLine2}
               />
             </Field>
           </div>
@@ -280,7 +261,7 @@ function SettingsScreen() {
                 maxLength={10}
                 onChange={(event) => updateSection("invoice", "prefix", event.target.value)}
                 type="text"
-                value={settings.invoice.prefix}
+                value={draft.invoice.prefix}
               />
             </Field>
             <Field hint="Optional trailing text" label="Suffix">
@@ -288,7 +269,7 @@ function SettingsScreen() {
                 maxLength={10}
                 onChange={(event) => updateSection("invoice", "suffix", event.target.value)}
                 type="text"
-                value={settings.invoice.suffix}
+                value={draft.invoice.suffix}
               />
             </Field>
             <Field label="Next number">
@@ -299,7 +280,7 @@ function SettingsScreen() {
                 }
                 step={1}
                 type="number"
-                value={settings.invoice.nextNumber}
+                value={draft.invoice.nextNumber}
               />
             </Field>
             <Field hint="Leading zeros, e.g. 4 → 0001" label="Number padding">
@@ -311,7 +292,7 @@ function SettingsScreen() {
                 }
                 step={1}
                 type="number"
-                value={settings.invoice.padding}
+                value={draft.invoice.padding}
               />
             </Field>
             <Field hint="Default due date offset on new invoices" label="Default due (days)">
@@ -322,7 +303,7 @@ function SettingsScreen() {
                 }
                 step={1}
                 type="number"
-                value={settings.invoice.defaultDueDays}
+                value={draft.invoice.defaultDueDays}
               />
             </Field>
             <Field label="Default notes">
@@ -330,7 +311,7 @@ function SettingsScreen() {
                 onChange={(event) => updateSection("invoice", "defaultNotes", event.target.value)}
                 placeholder="Thank you for your business."
                 rows={3}
-                value={settings.invoice.defaultNotes}
+                value={draft.invoice.defaultNotes}
               />
             </Field>
           </div>
@@ -345,13 +326,16 @@ function SettingsScreen() {
             <Field label="Currency">
               <select
                 onChange={(event) => updateSection("currency", "code", event.target.value)}
-                value={settings.currency.code}
+                value={draft.currency.code}
               >
                 {CURRENCY_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
                 ))}
+                {CURRENCY_SYMBOLS[draft.currency.code] ? null : (
+                  <option value={draft.currency.code}>{draft.currency.code}</option>
+                )}
               </select>
             </Field>
             <Field label="Decimal places">
@@ -363,7 +347,7 @@ function SettingsScreen() {
                 }
                 step={1}
                 type="number"
-                value={settings.currency.decimals}
+                value={draft.currency.decimals}
               />
             </Field>
             <Field hint="Character used between thousands (e.g. , or .)" label="Thousands separator">
@@ -373,7 +357,7 @@ function SettingsScreen() {
                   updateSection("currency", "thousandsSeparator", event.target.value)
                 }
                 type="text"
-                value={settings.currency.thousandsSeparator}
+                value={draft.currency.thousandsSeparator}
               />
             </Field>
           </div>
@@ -388,7 +372,7 @@ function SettingsScreen() {
             <Field label="Date format">
               <select
                 onChange={(event) => updateSection("preferences", "dateFormat", event.target.value)}
-                value={settings.preferences.dateFormat}
+                value={draft.preferences.dateFormat}
               >
                 {DATE_FORMAT_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -406,7 +390,7 @@ function SettingsScreen() {
                     Number(event.target.value) || 20
                   )
                 }
-                value={settings.preferences.defaultPageSize}
+                value={draft.preferences.defaultPageSize}
               >
                 {PAGE_SIZE_OPTIONS.map((option) => (
                   <option key={option} value={option}>
@@ -418,7 +402,7 @@ function SettingsScreen() {
             <Field label="Notifications badge">
               <label className="settings-toggle">
                 <input
-                  checked={settings.preferences.notificationsBadgeEnabled}
+                  checked={draft.preferences.notificationsBadgeEnabled}
                   onChange={(event) =>
                     updateSection(
                       "preferences",
@@ -434,7 +418,7 @@ function SettingsScreen() {
             <Field label="Destructive action confirmation">
               <label className="settings-toggle">
                 <input
-                  checked={settings.preferences.confirmDestructiveActions}
+                  checked={draft.preferences.confirmDestructiveActions}
                   onChange={(event) =>
                     updateSection(
                       "preferences",
@@ -451,10 +435,15 @@ function SettingsScreen() {
         </section>
 
         <div className="form-actions">
-          <button className="secondary-button" onClick={handleReset} type="button">
+          <button
+            className="secondary-button"
+            disabled={isSaving || isLoading}
+            onClick={handleReset}
+            type="button"
+          >
             Reset to defaults
           </button>
-          <button className="primary-button" disabled={isSaving} type="submit">
+          <button className="primary-button" disabled={isSaving || isLoading} type="submit">
             {isSaving ? "Saving..." : "Save changes"}
           </button>
         </div>

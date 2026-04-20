@@ -11,11 +11,15 @@ import { useToast } from "../feedback/toastContext.js";
 import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
 import { formatCustomer } from "../transactions/transactionUtils.js";
+import { useAppSettings } from "../system/settingsContext.js";
+import { getDefaultPageSize } from "../system/settingsFormat.js";
 
 const invoiceStatuses = ["draft", "issued", "partially_paid", "paid", "void"];
 
 function InvoiceListScreen({ navigate }) {
   const { showToast } = useToast();
+  const { settings } = useAppSettings();
+  const pageSize = getDefaultPageSize(settings, 10);
   const [customers, setCustomers] = useState([]);
   const [customerId, setCustomerId] = useState("");
   const [page, setPage] = useState(1);
@@ -26,11 +30,11 @@ function InvoiceListScreen({ navigate }) {
     () => ({
       customerId,
       page,
-      pageSize: 10,
+      pageSize,
       search,
       status
     }),
-    [customerId, page, search, status]
+    [customerId, page, pageSize, search, status]
   );
   const loadInvoices = useCallback((params, options) => listInvoices(params, options), []);
   const handleListError = useCallback(

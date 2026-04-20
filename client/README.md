@@ -340,3 +340,75 @@ invoices, quotations, payments).
 
 Service helpers live in `client/src/services/auditApi.js` and reuse the
 shared `request` and `toQueryString` utilities — no new HTTP plumbing.
+
+## Module 20AA Frontend Settings Persistence and Propagation
+
+The `/settings` screen is no longer local-only. Settings now load from and
+save to the backend (`GET /api/v1/settings`, `PATCH /api/v1/settings`) and
+key preferences propagate across the app.
+
+API service:
+
+- `client/src/services/settingsApi.js` exposes `getSettings()` and
+  `updateSettings(payload)` using the shared `httpClient`.
+
+Provider and context:
+
+- `client/src/features/system/SettingsProvider.jsx` wraps the authenticated
+  shell. It loads settings on sign-in, deep-merges the response over the
+  default schema (so missing fields fall back safely), exposes
+  `{ settings, isLoading, isHydrated, error, refresh, save }`, and is
+  consumed via `useAppSettings()` from
+  `client/src/features/system/settingsContext.js`.
+- Defaults and a deep-merge helper live in
+  `client/src/features/system/settingsDefaults.js` and are also used as the
+  reset payload.
+
+Migration from localStorage:
+
+- The previous `supplylink.settings.v1` localStorage key is read on first
+  load only. If present, the provider merges its values onto the response,
+  PATCHes the result back to the backend, and clears the legacy key. If the
+  PATCH fails, the legacy key is preserved and migration is retried on the
+  next save. The `/settings` screen no longer reads or writes localStorage.
+
+Settings screen behavior:
+
+- Reads its current draft from the provider, saves with `PATCH /settings`,
+  and shows success / error toasts.
+- "Reset to defaults" PATCHes the default schema back to the backend; the
+  destructive confirmation respects the `confirmDestructiveActions`
+  preference.
+- A "Try again" link surfaces when the initial load fails so the user can
+  retry without leaving the screen.
+
+Propagation:
+
+- `client/src/features/system/settingsFormat.js` provides
+  `formatMoneyWith(settings, value)`, `formatDateWith(settings, value)`,
+  `getDefaultPageSize(settings, fallback)`,
+  `shouldShowNotificationsBadge(settings)`, and
+  `shouldConfirmDestructive(settings)`.
+- Currency display: `DashboardScreen` now formats every money value
+  (outstanding receivables, recent orders, recent invoices, KPI tiles)
+  through `formatMoneyWith`, honoring the configured currency code,
+  decimal places, and thousands separator.
+- Default page size: `InvoiceListScreen`, `InventoryListScreen`, and
+  `TransactionListScreen` (Orders + Quotations) read `defaultPageSize`
+  from settings instead of the hardcoded 10. Other lists keep their
+  existing page sizes for now.
+- Notifications badge: `NotificationBell` hides the unread count badge
+  when `notificationsBadgeEnabled` is false. The bell itself and the
+  dropdown stay available.
+- Destructive confirmation: the Settings screen reset action respects the
+  preference. Other destructive flows can adopt
+  `shouldConfirmDestructive` incrementally without further plumbing.
+
+Graceful fallback:
+
+- If `GET /settings` fails, the provider falls back to defaults merged
+  with any legacy localStorage values, surfaces the error on the Settings
+  screen, and keeps the rest of the app rendering with sensible defaults.
+- Older backends that omit any of the four sections or any individual
+  field continue to work because every formatter and consumer reads
+  through the merged shape.
