@@ -122,6 +122,16 @@ function InventoryDetailScreen({ id, navigate }) {
               Back to inventory
             </button>
             <button
+              className="secondary-button"
+              disabled={!product}
+              onClick={() =>
+                product && navigate && navigate(`/audit/product/${product.id}`)
+              }
+              type="button"
+            >
+              Audit history
+            </button>
+            <button
               className="primary-button"
               disabled={!product}
               onClick={() => setIsAdjusting(true)}

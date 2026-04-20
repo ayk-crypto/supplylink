@@ -1,0 +1,216 @@
+import { useCallback, useMemo, useState } from "react";
+import {
+  EmptyState,
+  PageHeader,
+  Pagination,
+  Toolbar
+} from "../../components/ui/ResourceScreens.jsx";
+import { listAuditEvents } from "../../services/auditApi.js";
+import { useToast } from "../feedback/toastContext.js";
+import { getApiErrorMessage } from "../master-data/resourceUtils.js";
+import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
+import {
+  ENTITY_TYPE_OPTIONS,
+  entityHrefFor,
+  eventLabelOf,
+  formatAuditDateTime,
+  formatMetadataSummary,
+  shortId
+} from "./auditUtils.js";
+
+function AuditScreen({ navigate }) {
+  const { showToast } = useToast();
+  const [page, setPage] = useState(1);
+  const [entityType, setEntityType] = useState("");
+  const [eventTypeDraft, setEventTypeDraft] = useState("");
+  const [eventType, setEventType] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
+  const query = useMemo(() => {
+    const params = { page, pageSize: 20 };
+    if (entityType) {
+      params.entityType = entityType;
+    }
+    if (eventType) {
+      params.eventType = eventType;
+    }
+    if (dateFrom) {
+      params.dateFrom = dateFrom;
+    }
+    if (dateTo) {
+      params.dateTo = dateTo;
+    }
+    return params;
+  }, [page, entityType, eventType, dateFrom, dateTo]);
+
+  const loadEvents = useCallback(
+    (params, options) => listAuditEvents(params, options),
+    []
+  );
+  const handleListError = useCallback(
+    (requestError) => {
+      showToast({
+        message: getApiErrorMessage(requestError, "Audit history could not be loaded."),
+        title: "Audit unavailable",
+        tone: "error"
+      });
+    },
+    [showToast]
+  );
+
+  const { data, error, isLoading } = useResourceDirectory(loadEvents, query, {
+    onError: handleListError
+  });
+  const items = data?.items || [];
+  const hasFilters = Boolean(entityType || eventType || dateFrom || dateTo);
+
+  function submitFilters(event) {
+    event.preventDefault();
+    setEventType(eventTypeDraft.trim());
+    setPage(1);
+  }
+
+  function clearFilters() {
+    setEntityType("");
+    setEventTypeDraft("");
+    setEventType("");
+    setDateFrom("");
+    setDateTo("");
+    setPage(1);
+  }
+
+  return (
+    <div className="resource-page">
+      <PageHeader
+        description="Track changes across the workspace. Filter by entity, event, or date range to investigate activity."
+        eyebrow="Audit"
+        title="Activity history"
+      />
+
+      <Toolbar onSubmit={submitFilters}>
+        <select
+          aria-label="Entity type"
+          onChange={(event) => {
+            setEntityType(event.target.value);
+            setPage(1);
+          }}
+          value={entityType}
+        >
+          {ENTITY_TYPE_OPTIONS.map((option) => (
+            <option key={option.value || "all"} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <input
+          aria-label="Event type"
+          onChange={(event) => setEventTypeDraft(event.target.value)}
+          placeholder="Event type (e.g. invoice.created)"
+          type="search"
+          value={eventTypeDraft}
+        />
+        <input
+          aria-label="Date from"
+          onChange={(event) => {
+            setDateFrom(event.target.value);
+            setPage(1);
+          }}
+          type="date"
+          value={dateFrom}
+        />
+        <input
+          aria-label="Date to"
+          onChange={(event) => {
+            setDateTo(event.target.value);
+            setPage(1);
+          }}
+          type="date"
+          value={dateTo}
+        />
+        <button className="secondary-button" type="submit">
+          Apply
+        </button>
+        {hasFilters ? (
+          <button className="secondary-button" onClick={clearFilters} type="button">
+            Clear
+          </button>
+        ) : null}
+      </Toolbar>
+
+      {error ? <p className="surface-message error">{error}</p> : null}
+      {isLoading ? <p className="surface-message loading">Loading audit history...</p> : null}
+      {!isLoading && !items.length ? (
+        <EmptyState>
+          {hasFilters
+            ? "No audit events match the current filters."
+            : "No audit events recorded yet."}
+        </EmptyState>
+      ) : null}
+
+      {items.length ? (
+        <div className="audit-list">
+          {items.map((event) => {
+            const href = entityHrefFor(event.entityType, event.entityId);
+            const metaSummary = formatMetadataSummary(event.metadata);
+            return (
+              <article className="audit-card" key={event.id}>
+                <header className="audit-card-head">
+                  <div className="audit-card-title">
+                    <strong>{eventLabelOf(event)}</strong>
+                    {event.eventType && event.eventType !== eventLabelOf(event) ? (
+                      <span className="audit-event-code">{event.eventType}</span>
+                    ) : null}
+                  </div>
+                  <time dateTime={event.createdAt || undefined}>
+                    {formatAuditDateTime(event.createdAt)}
+                  </time>
+                </header>
+                <dl className="audit-card-meta">
+                  <div>
+                    <dt>Entity</dt>
+                    <dd>
+                      <strong>{event.entityType || "—"}</strong>
+                      {event.entityId ? (
+                        href && navigate ? (
+                          <button
+                            className="link-button"
+                            onClick={() => navigate(href)}
+                            type="button"
+                            title={event.entityId}
+                          >
+                            {shortId(event.entityId)}
+                          </button>
+                        ) : (
+                          <span title={event.entityId}>{shortId(event.entityId)}</span>
+                        )
+                      ) : null}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Actor</dt>
+                    <dd>
+                      <span title={event.actorUserId || ""}>
+                        {event.actorUserId ? shortId(event.actorUserId) : "System"}
+                      </span>
+                    </dd>
+                  </div>
+                  {metaSummary ? (
+                    <div className="audit-meta-wide">
+                      <dt>Details</dt>
+                      <dd>{metaSummary}</dd>
+                    </div>
+                  ) : null}
+                </dl>
+              </article>
+            );
+          })}
+        </div>
+      ) : null}
+
+      <Pagination pagination={data?.pagination} onPageChange={setPage} />
+    </div>
+  );
+}
+
+export default AuditScreen;

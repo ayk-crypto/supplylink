@@ -2,6 +2,8 @@ import AppShell from "../components/layout/AppShell.jsx";
 import { ToastProvider } from "../features/feedback/ToastProvider.jsx";
 import AuthProvider from "../features/auth/AuthProvider.jsx";
 import ProtectedRoute from "../features/auth/ProtectedRoute.jsx";
+import AuditScreen from "../features/audit/AuditScreen.jsx";
+import EntityAuditScreen from "../features/audit/EntityAuditScreen.jsx";
 import DashboardScreen from "../features/dashboard/DashboardScreen.jsx";
 import InvoiceCreateScreen from "../features/invoices/InvoiceCreateScreen.jsx";
 import InvoiceDetailScreen from "../features/invoices/InvoiceDetailScreen.jsx";
@@ -51,7 +53,15 @@ const screens = {
   "report-invoices": (props) => <OperationalReportScreen kind="invoices" {...props} />,
   "report-payments": (props) => <OperationalReportScreen kind="payments" {...props} />,
   "report-orders": (props) => <OperationalReportScreen kind="orders" {...props} />,
-  "report-statements": StatementsReportScreen
+  "report-statements": StatementsReportScreen,
+  audit: AuditScreen,
+  "audit-entity": (props) => (
+    <EntityAuditScreen
+      entityId={props.entityId}
+      entityType={props.entityType}
+      navigate={props.navigate}
+    />
+  )
 };
 
 function NotFoundScreen({ onGoHome }) {
@@ -89,6 +99,8 @@ function AuthenticatedApp() {
         >
           {ActiveScreen ? (
             <ActiveScreen
+              entityId={route.params?.entityId}
+              entityType={route.params?.entityType}
               id={route.params?.id}
               navigate={navigate}
               orderId={route.params?.orderId}

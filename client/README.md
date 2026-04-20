@@ -315,3 +315,28 @@ Manual stock adjustment:
 
 The frontend reflects backend-supported behavior only and adds no
 client-side stock blocking or inventory rules.
+
+## Module 20T Audit / Activity History
+
+Audit history surfaces the workspace activity stream produced by the backend
+(`GET /api/v1/audit` and `GET /api/v1/audit/:entityType/:entityId`).
+
+Routes:
+- `/audit` — overview of every audit event for the current vendor
+- `/audit/:entityType/:entityId` — history scoped to a single record
+
+The overview screen filters by entity type (product, order, invoice, quotation,
+payment), event type (free-text match, e.g. `invoice.created`), and a date
+range. Pagination uses the standard backend page/pageSize contract (page size
+20, max 100). Each event card shows the event label and code, entity type with
+a deep link to the related record when known, the actor user id (or "System"),
+the created timestamp, and a metadata summary built from the first few non-
+empty metadata fields.
+
+The inventory product detail screen exposes an "Audit history" action that
+opens the entity-scoped variant. The same `/audit/:entityType/:entityId`
+pattern can be linked from any other detail screen as needed (orders,
+invoices, quotations, payments).
+
+Service helpers live in `client/src/services/auditApi.js` and reuse the
+shared `request` and `toQueryString` utilities — no new HTTP plumbing.

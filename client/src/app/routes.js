@@ -48,6 +48,11 @@ const appRoutes = [
     id: "reports",
     label: "Reports",
     path: "/reports"
+  },
+  {
+    id: "audit",
+    label: "Audit",
+    path: "/audit"
   }
 ];
 
@@ -136,6 +141,12 @@ const routeDefinitions = [
     id: "notifications",
     path: "/notifications",
     navPath: "/notifications"
+  },
+  {
+    id: "audit-entity",
+    path: /^\/audit\/([^/]+)\/([^/]+)$/,
+    navPath: "/audit",
+    paramNames: ["entityType", "entityId"]
   }
 ];
 
