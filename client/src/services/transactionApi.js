@@ -37,6 +37,18 @@ async function convertQuotationToOrder(quotationId) {
   });
 }
 
+async function transitionQuotation(quotationId, action) {
+  return request(`/quotations/${quotationId}/${action}`, {
+    method: "POST"
+  });
+}
+
+async function transitionOrder(orderId, action) {
+  return request(`/orders/${orderId}/${action}`, {
+    method: "POST"
+  });
+}
+
 export {
   convertQuotationToOrder,
   createOrder,
@@ -44,5 +56,7 @@ export {
   getOrder,
   getQuotation,
   listOrders,
-  listQuotations
+  listQuotations,
+  transitionOrder,
+  transitionQuotation
 };

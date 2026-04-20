@@ -38,6 +38,12 @@ async function createPayment(payload) {
   });
 }
 
+async function transitionInvoice(invoiceId, action) {
+  return request(`/invoices/${invoiceId}/${action}`, {
+    method: "POST"
+  });
+}
+
 export {
   createInvoice,
   createInvoiceFromOrder,
@@ -45,5 +51,6 @@ export {
   getInvoice,
   getInvoicePrintDocument,
   listInvoices,
-  listPayments
+  listPayments,
+  transitionInvoice
 };

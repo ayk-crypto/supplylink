@@ -2,27 +2,52 @@ import { useEffect, useState } from "react";
 import {
   convertQuotationToOrder,
   getOrder,
-  getQuotation
+  getQuotation,
+  transitionOrder,
+  transitionQuotation
 } from "../../services/transactionApi.js";
 import { PageHeader } from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
 import { formatCustomer } from "./transactionUtils.js";
 
+const QUOTATION_ACTIONS = [
+  { action: "send", label: "Send", from: ["draft"], successTitle: "Quotation sent", successMessage: "Quotation marked as sent." },
+  { action: "accept", label: "Accept", from: ["sent"], successTitle: "Quotation accepted", successMessage: "Quotation accepted." },
+  { action: "reject", label: "Reject", from: ["sent"], successTitle: "Quotation rejected", successMessage: "Quotation rejected." },
+  { action: "expire", label: "Expire", from: ["sent"], successTitle: "Quotation expired", successMessage: "Quotation marked as expired." }
+];
+
+const ORDER_ACTIONS = [
+  { action: "confirm", label: "Confirm", from: ["draft"], successTitle: "Order confirmed", successMessage: "Order confirmed." },
+  { action: "pack", label: "Pack", from: ["confirmed"], successTitle: "Order packed", successMessage: "Order marked as packed." },
+  { action: "dispatch", label: "Dispatch", from: ["packed"], successTitle: "Order dispatched", successMessage: "Order marked as dispatched." },
+  { action: "deliver", label: "Deliver", from: ["dispatched"], successTitle: "Order delivered", successMessage: "Order marked as delivered." },
+  { action: "cancel", label: "Cancel", from: ["draft", "confirmed", "packed"], successTitle: "Order cancelled", successMessage: "Order cancelled." }
+];
+
 const configs = {
   orders: {
     get: getOrder,
     listPath: "/orders",
     numberKey: "orderNumber",
-    title: "Order"
+    title: "Order",
+    actions: ORDER_ACTIONS,
+    transition: transitionOrder
   },
   quotations: {
     get: getQuotation,
     listPath: "/quotations",
     numberKey: "quoteNumber",
-    title: "Quotation"
+    title: "Quotation",
+    actions: QUOTATION_ACTIONS,
+    transition: transitionQuotation
   }
 };
+
+function describeReason(actionLabel, currentStatus) {
+  return `${actionLabel} is not available while status is "${currentStatus}".`;
+}
 
 function DetailField({ label, value }) {
   return (
@@ -40,6 +65,37 @@ function TransactionDetailScreen({ id, kind, navigate }) {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isConverting, setIsConverting] = useState(false);
+  const [pendingAction, setPendingAction] = useState("");
+
+  async function runLifecycleAction(spec) {
+    if (!detail || pendingAction) {
+      return;
+    }
+    if (spec.action === "cancel" && !window.confirm("Cancel this order? This cannot be undone.")) {
+      return;
+    }
+    setPendingAction(spec.action);
+    try {
+      const response = await config.transition(detail.id, spec.action);
+      const next = response?.data;
+      if (next) {
+        setDetail((current) => ({ ...current, ...next }));
+      }
+      showToast({
+        message: spec.successMessage,
+        title: spec.successTitle,
+        tone: "success"
+      });
+    } catch (requestError) {
+      showToast({
+        message: getApiErrorMessage(requestError, `${spec.label} action failed.`),
+        title: `${spec.label} failed`,
+        tone: "error"
+      });
+    } finally {
+      setPendingAction("");
+    }
+  }
 
   async function handleConvertToOrder() {
     if (!detail || isConverting) {
@@ -133,6 +189,22 @@ function TransactionDetailScreen({ id, kind, navigate }) {
       <PageHeader
         action={
           <div className="button-row">
+            {config.actions.map((spec) => {
+              const enabled = spec.from.includes(detail.status);
+              const isBusy = pendingAction === spec.action;
+              return (
+                <button
+                  className={spec.action === "cancel" || spec.action === "reject" ? "secondary-button" : "primary-button"}
+                  disabled={!enabled || Boolean(pendingAction)}
+                  key={spec.action}
+                  onClick={() => runLifecycleAction(spec)}
+                  title={enabled ? `${spec.label} this ${config.title.toLowerCase()}` : describeReason(spec.label, detail.status)}
+                  type="button"
+                >
+                  {isBusy ? `${spec.label}...` : spec.label}
+                </button>
+              );
+            })}
             {kind === "orders" ? (
               <button
                 className="primary-button"

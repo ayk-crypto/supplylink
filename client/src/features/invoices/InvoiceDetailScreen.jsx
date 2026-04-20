@@ -3,8 +3,14 @@ import {
   createPayment,
   getInvoice,
   getInvoicePrintDocument,
-  listPayments
+  listPayments,
+  transitionInvoice
 } from "../../services/invoiceApi.js";
+
+const INVOICE_ACTIONS = [
+  { action: "issue", label: "Issue", from: ["draft"], successTitle: "Invoice issued", successMessage: "Invoice issued.", tone: "primary" },
+  { action: "void", label: "Void", from: ["issued"], successTitle: "Invoice voided", successMessage: "Invoice voided.", tone: "secondary" }
+];
 import { Field, PageHeader } from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
@@ -279,6 +285,37 @@ function InvoiceDetailScreen({ id, navigate }) {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [pendingAction, setPendingAction] = useState("");
+
+  async function runLifecycleAction(spec) {
+    if (!invoice || pendingAction) {
+      return;
+    }
+    if (spec.action === "void" && !window.confirm("Void this invoice? This cannot be undone.")) {
+      return;
+    }
+    setPendingAction(spec.action);
+    try {
+      const response = await transitionInvoice(invoice.id, spec.action);
+      const next = response?.data;
+      if (next) {
+        setInvoice((current) => ({ ...current, ...next }));
+      }
+      showToast({
+        message: spec.successMessage,
+        title: spec.successTitle,
+        tone: "success"
+      });
+    } catch (requestError) {
+      showToast({
+        message: getApiErrorMessage(requestError, `${spec.label} action failed.`),
+        title: `${spec.label} failed`,
+        tone: "error"
+      });
+    } finally {
+      setPendingAction("");
+    }
+  }
 
   const loadInvoice = useCallback(
     async ({ signal } = {}) => {
@@ -391,6 +428,26 @@ function InvoiceDetailScreen({ id, navigate }) {
       <PageHeader
         action={
           <div className="button-row">
+            {INVOICE_ACTIONS.map((spec) => {
+              const enabled = spec.from.includes(invoice.status);
+              const isBusy = pendingAction === spec.action;
+              return (
+                <button
+                  className={spec.tone === "primary" ? "primary-button" : "secondary-button"}
+                  disabled={!enabled || Boolean(pendingAction)}
+                  key={spec.action}
+                  onClick={() => runLifecycleAction(spec)}
+                  title={
+                    enabled
+                      ? `${spec.label} this invoice`
+                      : `${spec.label} is not available while status is "${invoice.status}".`
+                  }
+                  type="button"
+                >
+                  {isBusy ? `${spec.label}...` : spec.label}
+                </button>
+              );
+            })}
             <button className="secondary-button" onClick={openPrintView} type="button">
               {isPrinting ? "Preparing..." : "Print / Download"}
             </button>
