@@ -223,9 +223,6 @@ function DashboardScreen({ navigate }) {
     areNotificationsLoading,
     dashboard,
     error,
-    intelligence,
-    intelligenceError,
-    isIntelligenceLoading,
     isLoading,
     notifications,
     notificationsError
@@ -251,10 +248,20 @@ function DashboardScreen({ navigate }) {
     return Math.min(100, Math.round((paymentTotal / invoiceTotal) * 100));
   })();
 
-  const inventory = intelligence?.inventory;
-  const totalProducts = dashboard.metrics.totalProducts ?? inventory?.total ?? 0;
-  const lowStockCount = inventory?.lowStock;
-  const negativeStockCount = inventory?.negative;
+  const aggregates = dashboard.aggregates || {};
+  const inventoryAgg = aggregates.inventory || {};
+  const ordersAgg = aggregates.orders || {};
+  const invoicesAgg = aggregates.invoices || {};
+  const receivablesAgg = aggregates.receivables || {};
+
+  const totalProducts = inventoryAgg.productCount ?? dashboard.metrics.totalProducts ?? 0;
+  const totalStockQuantity = inventoryAgg.totalStockQuantity;
+  const lowStockCount = inventoryAgg.lowStockProductCount;
+  const negativeStockCount = inventoryAgg.negativeStockProductCount;
+  const orderCounts = ordersAgg.byStatus || {};
+  const invoiceCounts = invoicesAgg.byStatus || {};
+  const overdueCount = Number(receivablesAgg.overdueInvoiceCount || 0);
+  const overdueTotal = Number(receivablesAgg.overdueTotal || 0);
 
   return (
     <div className="dashboard-page">
@@ -285,6 +292,11 @@ function DashboardScreen({ navigate }) {
             >
               <span style={{ width: `${collectedRatio}%` }} />
             </div>
+          ) : null}
+          {overdueCount > 0 ? (
+            <small className="receivables-overdue">
+              {formatNumber(overdueCount)} overdue · {formatMoney(overdueTotal, currency)}
+            </small>
           ) : null}
         </div>
       </section>
@@ -330,44 +342,32 @@ function DashboardScreen({ navigate }) {
             View inventory →
           </button>
         </div>
-        {intelligenceError ? (
-          <p className="surface-message error">{intelligenceError}</p>
-        ) : (
-          <div className="metric-strip">
-            <MetricCard
-              glyph="inventory"
-              label="Total products"
-              value={isIntelligenceLoading && totalProducts === 0 ? "…" : formatNumber(totalProducts)}
-              detail={
-                inventory?.isPartial
-                  ? `Stock signals from latest ${inventory.sampledCount}`
-                  : "Across the catalogue"
-              }
-            />
-            <MetricCard
-              glyph="warning"
-              label="Low stock"
-              tone={lowStockCount > 0 ? "warn" : null}
-              value={
-                isIntelligenceLoading && lowStockCount === undefined
-                  ? "…"
-                  : formatNumber(lowStockCount || 0)
-              }
-              detail="At or below 5 units"
-            />
-            <MetricCard
-              glyph="alert"
-              label="Negative stock"
-              tone={negativeStockCount > 0 ? "danger" : null}
-              value={
-                isIntelligenceLoading && negativeStockCount === undefined
-                  ? "…"
-                  : formatNumber(negativeStockCount || 0)
-              }
-              detail="Below zero on hand"
-            />
-          </div>
-        )}
+        <div className="metric-strip">
+          <MetricCard
+            glyph="inventory"
+            label="Total products"
+            value={formatNumber(totalProducts)}
+            detail={
+              totalStockQuantity !== undefined && totalStockQuantity !== null
+                ? `${formatNumber(totalStockQuantity)} units on hand`
+                : "Across the catalogue"
+            }
+          />
+          <MetricCard
+            glyph="warning"
+            label="Low stock"
+            tone={Number(lowStockCount) > 0 ? "warn" : null}
+            value={lowStockCount === undefined ? "—" : formatNumber(lowStockCount)}
+            detail="At or below 5 units"
+          />
+          <MetricCard
+            glyph="alert"
+            label="Negative stock"
+            tone={Number(negativeStockCount) > 0 ? "danger" : null}
+            value={negativeStockCount === undefined ? "—" : formatNumber(negativeStockCount)}
+            detail="Below zero on hand"
+          />
+        </div>
       </section>
 
       <section className="dashboard-grid-two">
@@ -382,16 +382,12 @@ function DashboardScreen({ navigate }) {
               Open orders →
             </button>
           </div>
-          {intelligenceError ? (
-            <p className="surface-message error">{intelligenceError}</p>
-          ) : (
-            <StatusCountGrid
-              counts={intelligence?.orderCounts}
-              labels={ORDER_STATUS_LABELS}
-              statuses={ORDER_STATUS_KEYS}
-              emptyHint="No orders recorded yet."
-            />
-          )}
+          <StatusCountGrid
+            counts={orderCounts}
+            labels={ORDER_STATUS_LABELS}
+            statuses={ORDER_STATUS_KEYS}
+            emptyHint="No orders recorded yet."
+          />
         </div>
 
         <div className="panel-block">
@@ -405,16 +401,12 @@ function DashboardScreen({ navigate }) {
               Open invoices →
             </button>
           </div>
-          {intelligenceError ? (
-            <p className="surface-message error">{intelligenceError}</p>
-          ) : (
-            <StatusCountGrid
-              counts={intelligence?.invoiceCounts}
-              labels={INVOICE_STATUS_LABELS}
-              statuses={INVOICE_STATUS_KEYS}
-              emptyHint="No invoices recorded yet."
-            />
-          )}
+          <StatusCountGrid
+            counts={invoiceCounts}
+            labels={INVOICE_STATUS_LABELS}
+            statuses={INVOICE_STATUS_KEYS}
+            emptyHint="No invoices recorded yet."
+          />
         </div>
       </section>
 
