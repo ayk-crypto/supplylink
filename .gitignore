@@ -6,10 +6,15 @@ build/
 .env
 .env.*
 !.env.example
+!.env.test.example
 
 # Logs
 *.log
 *.err.log
+
+# Local uploads
+uploads/
+server/uploads/
 
 # OS / Editor
 .DS_Store

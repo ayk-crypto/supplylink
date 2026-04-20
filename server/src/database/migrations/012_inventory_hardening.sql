@@ -1,0 +1,2 @@
+ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS low_stock_threshold NUMERIC(14, 3) NOT NULL DEFAULT 0;

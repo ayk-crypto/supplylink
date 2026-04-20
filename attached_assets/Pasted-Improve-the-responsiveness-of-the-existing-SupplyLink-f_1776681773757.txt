@@ -1,0 +1,97 @@
+Improve the responsiveness of the existing SupplyLink frontend across all screen sizes.
+
+Important constraints:
+- Do not change backend APIs
+- Do not change business logic
+- Do not rebuild components from scratch
+- Reuse existing structure, components, and CSS classes
+- Focus only on layout, responsiveness, and usability
+
+Goal:
+Make the application fully responsive for:
+- desktop
+- tablet
+- mobile
+
+Core requirements:
+
+1. Layout responsiveness
+- ensure the main layout adapts cleanly across breakpoints
+- prevent horizontal scrolling on all screens
+- maintain proper spacing and alignment
+- content should stay centered and readable on large screens
+
+2. Sidebar behavior
+- collapse sidebar on smaller screens
+- allow toggle/open/close behavior on mobile
+- ensure overlay or slide-in pattern works smoothly
+
+3. Tables
+- make tables responsive:
+  - stack into cards OR
+  - allow horizontal scroll with good UX
+- avoid broken layouts on small screens
+- ensure actions remain accessible
+
+4. Forms
+- make all forms responsive:
+  - single column on mobile
+  - two-column grid on desktop
+- ensure proper spacing between inputs
+- buttons should be full-width on mobile where needed
+
+5. Cards and sections
+- use flexible grid (auto-fit / auto-fill)
+- cards should wrap properly
+- avoid fixed widths
+
+6. Typography and spacing
+- adjust font sizes slightly for mobile
+- maintain readability
+- ensure consistent padding/margins
+
+7. Breakpoints
+Use existing breakpoints if defined, otherwise standardize:
+- desktop: >1080px
+- tablet: 768–1080px
+- mobile: <768px
+
+8. Loading / empty states
+- ensure loading states display properly on small screens
+- no overflow or clipping
+
+9. UX improvements
+- ensure buttons are touch-friendly
+- improve tap targets
+- ensure dropdowns and panels work on mobile
+
+10. CSS approach
+- prefer:
+  - flexbox
+  - grid
+  - media queries
+- avoid fixed pixel widths
+- use relative units (%, rem)
+
+11. Scope
+- apply improvements across:
+  - dashboard
+  - customers
+  - products
+  - orders
+  - invoices
+  - ledger
+  - reports
+  - notifications
+
+Do not redesign visually — only improve responsiveness and usability.
+
+Verification:
+- test desktop, tablet, and mobile layouts
+- ensure no horizontal scroll
+- ensure no broken UI sections
+
+Deliverable:
+1. Summary of changes
+2. Files modified
+3. Key responsive improvements applied

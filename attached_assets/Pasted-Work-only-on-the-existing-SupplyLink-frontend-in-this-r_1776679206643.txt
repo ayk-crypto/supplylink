@@ -1,0 +1,67 @@
+Work only on the existing SupplyLink frontend in this repo.
+
+Important constraints:
+- Do not rebuild the app from scratch
+- Do not change backend contracts
+- Do not invent new endpoints
+- Reuse the existing routing, auth, shell, toast, and service patterns
+- Keep UI professional, responsive, and consistent with the existing app
+
+Goal:
+Implement Module 20L: Frontend Notifications / Activity Center.
+
+Backend already exists for notifications. First inspect the existing notification endpoints and payloads from the backend modules, then build the frontend around the real contracts.
+
+What to do:
+
+1. API layer
+- add a notifications API service following the existing client service patterns
+- support:
+  - list notifications
+  - unread count
+  - mark one as read
+  - mark all as read
+  - get notification detail only if useful
+
+2. Header integration
+- add a notification bell in the existing app shell/header
+- show unread count badge
+- keep it clean and professional
+- work well on desktop and mobile
+
+3. Notifications UI
+- add a dropdown, drawer, or panel for recent notifications
+- also add a dedicated notifications page/section if that fits the current structure cleanly
+- show:
+  - title/message
+  - created time
+  - read/unread state
+  - related entity info if available
+
+4. Actions
+- mark individual notification as read
+- mark all as read
+- clicking a notification should navigate to the related entity using relatedEntityType and relatedEntityId where possible
+
+5. Navigation behavior
+- map notification entity links cleanly to existing frontend routes for quotations, orders, invoices, ledger, etc.
+- if an entity type does not yet have a frontend destination, handle gracefully
+
+6. UX
+- reuse existing toast/loading/error/empty-state patterns
+- keep design modern, minimal, and SaaS-quality
+- ensure responsive behavior
+
+7. Documentation
+- update client README / docs for notifications UI usage
+
+Verification:
+- run client lint
+- run client build
+
+Deliverable:
+1. Summary
+2. Files changed
+3. Assumptions
+4. Verification results
+5. Any backend limitations noticed

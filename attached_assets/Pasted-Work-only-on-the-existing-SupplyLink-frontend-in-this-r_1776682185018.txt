@@ -1,0 +1,77 @@
+Work only on the existing SupplyLink frontend in this repo.
+
+Important constraints:
+- Do not change backend contracts
+- Do not rebuild the app from scratch
+- Do not change business logic
+- Reuse the existing routes, auth flow, shell, toast, and service patterns
+- Focus only on frontend quality, responsiveness, typography, and Replit usability
+
+Goal:
+Stabilize and polish the frontend while backend work continues in parallel.
+
+What to do:
+
+1. Fix Replit app preview/workflow usability
+- inspect the current run/workflow setup
+- identify why preview/workflow waits on the wrong port
+- update the workspace run configuration if needed so the frontend preview works reliably
+- do not change backend logic
+- if .replit/workflow config is blocked, clearly document the exact required fix
+
+2. Typography improvement
+- replace the current app font with Inter
+- apply it globally
+- improve heading/body/label hierarchy
+- keep it professional and readable on desktop and mobile
+
+3. Full responsiveness pass
+- improve responsiveness across:
+  - dashboard
+  - customers
+  - categories
+  - products
+  - quotations
+  - orders
+  - invoices
+  - ledger
+  - reports
+  - notifications
+- prevent horizontal overflow
+- make forms mobile-friendly
+- make tables degrade gracefully on smaller screens
+- improve touch targets and spacing
+
+4. App shell polish
+- refine header, sidebar, and content spacing
+- keep notification bell clean and aligned
+- improve sidebar behavior on tablet/mobile if needed
+
+5. Shared UI polish
+- improve consistency of:
+  - cards
+  - tables
+  - forms
+  - toolbars
+  - empty states
+  - loading states
+- do not redesign functionality, only polish presentation
+
+6. Constraints
+- do not add new backend dependencies
+- do not invent endpoints
+- do not change route structure unless required for UI only
+- keep the implementation additive and safe
+
+Verification:
+- run client lint
+- run client build
+- verify frontend preview works or clearly document the exact config blocker
+
+Deliverable:
+1. Summary
+2. Files changed
+3. Responsive improvements made
+4. Typography changes made
+5. Preview/workflow fix applied or exact blocker documented
+6. Verification results

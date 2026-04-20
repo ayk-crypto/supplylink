@@ -10,6 +10,7 @@ function createPool() {
 
   const databaseUrl = new URL(env.DATABASE_URL);
   const useSsl =
+    env.ENABLE_DB_SSL ||
     databaseUrl.hostname.endsWith(".neon.tech") ||
     databaseUrl.searchParams.get("sslmode") === "require";
 
@@ -29,4 +30,34 @@ function createPool() {
 
 const pool = createPool();
 
+async function query(text, params = []) {
+  if (!pool) {
+    throw new Error("Database pool is not configured");
+  }
+
+  return pool.query(text, params);
+}
+
+async function withTransaction(callback) {
+  if (!pool) {
+    throw new Error("Database pool is not configured");
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+    const result = await callback(client);
+    await client.query("COMMIT");
+
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export { pool, query, withTransaction };
 export default pool;
