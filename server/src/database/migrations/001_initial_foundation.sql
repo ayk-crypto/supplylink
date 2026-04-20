@@ -101,6 +101,7 @@ CREATE TABLE IF NOT EXISTS products (
   description TEXT,
   unit_price NUMERIC(14, 2) NOT NULL DEFAULT 0,
   stock_quantity NUMERIC(14, 3) NOT NULL DEFAULT 0,
+  low_stock_threshold NUMERIC(14, 3) NOT NULL DEFAULT 0,
   status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('draft', 'active', 'archived')),
   metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

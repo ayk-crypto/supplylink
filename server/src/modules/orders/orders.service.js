@@ -11,7 +11,12 @@ import {
   listQuotationItemsForOrder,
   updateOrderWithOptionalItems
 } from "./orders.repository.js";
-import { applyOutboundStockForOrder } from "../inventory/inventory.service.js";
+import {
+  applyOutboundStockForOrder,
+  assertSufficientStockForOrder,
+  assertSufficientStockForOrderItems,
+  reverseOutboundStockForOrder
+} from "../inventory/inventory.service.js";
 import { notifyVendorUsers, runNotificationTask } from "../notifications/notifications.service.js";
 
 const EDITABLE_FIELDS_BY_STATUS = {
@@ -529,6 +534,12 @@ async function createOrder(vendorId, payload, actor) {
   const source = await resolveOrderCreationSource(vendorId, payload);
   const items = await buildOrderItems(vendorId, source.items);
   const totals = calculateTotals(items);
+  const status = payload.status || "draft";
+
+  if (status === "confirmed") {
+    await assertSufficientStockForOrderItems(vendorId, items);
+  }
+
   const order = await createOrderWithItems({
     order: {
       vendor_id: vendorId,
@@ -536,7 +547,7 @@ async function createOrder(vendorId, payload, actor) {
       vendor_customer_relationship_id: source.relationship.id,
       quotation_id: payload.quotationId || null,
       order_number: payload.orderNumber || generateOrderNumber(),
-      status: payload.status || "draft",
+      status,
       order_date: payload.orderDate || null,
       delivery_date: payload.requestedDeliveryDate || payload.deliveryDate || null,
       notes: payload.notes || source.quotation?.notes || null,
@@ -618,6 +629,11 @@ async function transitionOrder(vendorId, orderId, action, actor = {}) {
   assertOrderFound(existing, orderId);
 
   const transition = assertOrderTransition(existing, action);
+
+  if (["confirmed", "delivered"].includes(transition.to)) {
+    await assertSufficientStockForOrder(vendorId, orderId);
+  }
+
   const updated = await updateOrderWithOptionalItems({
     vendorId,
     orderId,
@@ -632,6 +648,10 @@ async function transitionOrder(vendorId, orderId, action, actor = {}) {
 
   if (["confirmed", "delivered"].includes(transition.to)) {
     await applyOutboundStockForOrder(vendorId, detail.id, actor);
+  }
+
+  if (transition.to === "cancelled") {
+    await reverseOutboundStockForOrder(vendorId, detail.id, actor);
   }
 
   const content = ORDER_EVENT_CONTENT[transition.to];

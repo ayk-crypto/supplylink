@@ -24,6 +24,7 @@ const PRODUCT_SELECT = `product.id,
                         product.description,
                         product.unit_price,
                         product.stock_quantity,
+                        product.low_stock_threshold,
                         product.status,
                         product.metadata,
                         product.created_at,
@@ -40,6 +41,7 @@ const PRODUCT_RETURNING = `id,
                            description,
                            unit_price,
                            stock_quantity,
+                           low_stock_threshold,
                            status,
                            metadata,
                            created_at,
@@ -238,10 +240,11 @@ async function createProductForVendor(vendorId, payload) {
        name,
        description,
        unit_price,
+       low_stock_threshold,
        status,
        metadata
      )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING ${PRODUCT_RETURNING}`,
     [
       vendorId,
@@ -250,6 +253,7 @@ async function createProductForVendor(vendorId, payload) {
       payload.name,
       payload.description || null,
       payload.unit_price || 0,
+      payload.low_stock_threshold || 0,
       payload.status || "active",
       payload.metadata || {}
     ]

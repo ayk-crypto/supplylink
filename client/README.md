@@ -92,6 +92,8 @@ adding a routing dependency:
 - `/invoices/new`
 - `/invoices/from-order/:id`
 - `/invoices/:id`
+- `/inventory`
+- `/inventory/products/:id`
 - `/ledger`
 - `/ledger/customers/:id`
 - `/reports`
@@ -275,3 +277,41 @@ screens. No routes, APIs, or business flows changed.
 The polish is implemented as additive overrides at the bottom of the global
 stylesheet plus a small `MetricCard` enhancement on the dashboard. All other
 screens keep their existing markup and behavior.
+
+## Module 20O Inventory Screens
+
+The app shell now includes an Inventory section wired to the existing
+inventory backend (`/api/v1/inventory/*`). No backend contracts were
+changed and no new endpoints were added.
+
+Inventory overview (`/inventory`):
+
+- Lists products with search, status filter, and pagination using
+  `GET /api/v1/inventory/products`.
+- Shows current stock quantity, unit price, status, and a stock health
+  indicator: in stock, low stock (≤ 5), out of stock (= 0), or negative
+  (< 0).
+- Each row exposes View and Adjust actions.
+
+Product inventory detail (`/inventory/products/:id`):
+
+- Loads the product summary and current stock from
+  `GET /api/v1/inventory/products/:productId`.
+- Shows the full stock movement history with type, signed quantity,
+  reference type, reference id, notes, and created date from
+  `GET /api/v1/inventory/movements?productId=…`, with movement type
+  filter and pagination.
+- The Adjust stock action opens the manual adjustment form.
+
+Manual stock adjustment:
+
+- Posts to `POST /api/v1/inventory/adjust` with product, movement type
+  (adjustment, inbound, outbound), quantity, optional reference type,
+  and optional notes — matching the backend schema.
+- Inbound and outbound require a positive quantity; adjustment accepts
+  signed values so stock can be lowered with a negative number.
+- Success and failure both surface a toast, then reload the product and
+  movement history.
+
+The frontend reflects backend-supported behavior only and adds no
+client-side stock blocking or inventory rules.

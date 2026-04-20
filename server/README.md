@@ -235,7 +235,34 @@ curl http://localhost:4000/api/v1/products/%PRODUCT_ID% ^
 curl -X PATCH http://localhost:4000/api/v1/products/%PRODUCT_ID% ^
   -H "Authorization: Bearer %VENDOR_TOKEN%" ^
   -H "Content-Type: application/json" ^
-  -d "{\"unitPrice\":9.49,\"status\":\"active\",\"metadata\":{\"unit\":\"case\",\"cost\":6.25}}"
+  -d "{\"unitPrice\":9.49,\"lowStockThreshold\":10,\"status\":\"active\",\"metadata\":{\"unit\":\"case\",\"cost\":6.25}}"
+```
+
+## Inventory Notes
+
+- Inventory is vendor-scoped through `products.vendor_id` and `stock_movements.vendor_id`.
+- Product responses include `stockQuantity`, `lowStockThreshold`, and `isLowStock`.
+- Manual stock changes should use `POST /api/v1/inventory/adjust` so a movement trail is preserved.
+- Confirming an order creates outbound stock movements once per order and reduces product stock.
+- Cancelling a confirmed or packed order creates inbound reversal movements once per order and restores product stock.
+- Stock availability enforcement is controlled by `ENFORCE_STOCK_AVAILABILITY`; it defaults to `false` to preserve existing order flows. When set to `true`, confirmed orders are rejected if tracked product stock is insufficient.
+
+Example inventory requests:
+
+```bash
+curl "http://localhost:4000/api/v1/inventory/products?page=1&pageSize=20" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl http://localhost:4000/api/v1/inventory/products/%PRODUCT_ID% ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl "http://localhost:4000/api/v1/inventory/movements?productId=%PRODUCT_ID%" ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%"
+
+curl -X POST http://localhost:4000/api/v1/inventory/adjust ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"productId\":\"%PRODUCT_ID%\",\"type\":\"inbound\",\"quantity\":25,\"notes\":\"Initial stock receipt\"}"
 ```
 
 ## Quotation Notes
