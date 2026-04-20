@@ -8,6 +8,8 @@ import InvoiceDetailScreen from "../features/invoices/InvoiceDetailScreen.jsx";
 import InvoiceListScreen from "../features/invoices/InvoiceListScreen.jsx";
 import CustomerLedgerScreen from "../features/ledger/CustomerLedgerScreen.jsx";
 import LedgerOverviewScreen from "../features/ledger/LedgerOverviewScreen.jsx";
+import InventoryDetailScreen from "../features/inventory/InventoryDetailScreen.jsx";
+import InventoryListScreen from "../features/inventory/InventoryListScreen.jsx";
 import CategoriesScreen from "../features/master-data/CategoriesScreen.jsx";
 import CustomersScreen from "../features/master-data/CustomersScreen.jsx";
 import ProductsScreen from "../features/master-data/ProductsScreen.jsx";
@@ -39,6 +41,8 @@ const screens = {
   "invoice-new": InvoiceCreateScreen,
   "invoice-from-order": InvoiceCreateScreen,
   "invoice-detail": InvoiceDetailScreen,
+  inventory: InventoryListScreen,
+  "inventory-product": InventoryDetailScreen,
   ledger: LedgerOverviewScreen,
   "customer-ledger": CustomerLedgerScreen,
   notifications: NotificationsScreen,

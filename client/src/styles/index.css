@@ -3025,3 +3025,140 @@ canvas {
     font-size: 1.55rem;
   }
 }
+
+/* === Module 20O: Inventory screens =========================== */
+
+.inventory-grid {
+  grid-template-columns:
+    minmax(220px, 1.6fr)
+    minmax(120px, 0.9fr)
+    minmax(160px, 1.1fr)
+    minmax(110px, 0.7fr)
+    minmax(110px, 0.8fr)
+    minmax(150px, auto);
+  gap: 12px 18px;
+  align-items: center;
+}
+
+.movement-grid {
+  grid-template-columns:
+    minmax(180px, 1.1fr)
+    minmax(120px, 0.7fr)
+    minmax(120px, 0.7fr)
+    minmax(180px, 1.2fr)
+    minmax(200px, 1.4fr);
+  gap: 12px 18px;
+  align-items: center;
+}
+
+.stock-amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  font-size: 1.05rem;
+  display: block;
+}
+
+.stock-pill,
+.movement-pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.stock-pill.stock-ok {
+  background: rgba(16, 122, 78, 0.12);
+  color: #0f7a4d;
+}
+
+.stock-pill.stock-low {
+  background: rgba(214, 142, 0, 0.16);
+  color: #8a5a00;
+}
+
+.stock-pill.stock-out {
+  background: rgba(180, 40, 40, 0.14);
+  color: #a02020;
+}
+
+.stock-pill.stock-negative {
+  background: rgba(180, 40, 40, 0.18);
+  color: #841a1a;
+}
+
+.stock-amount.stock-low {
+  color: #8a5a00;
+}
+
+.stock-amount.stock-out,
+.stock-amount.stock-negative {
+  color: #a02020;
+}
+
+.movement-pill.movement-ok {
+  background: rgba(16, 122, 78, 0.12);
+  color: #0f7a4d;
+}
+
+.movement-pill.movement-warn {
+  background: rgba(214, 142, 0, 0.16);
+  color: #8a5a00;
+}
+
+.movement-pill.movement-neutral {
+  background: rgba(80, 90, 110, 0.12);
+  color: #4a5468;
+}
+
+.movement-quantity {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+}
+
+.movement-quantity.movement-ok {
+  color: #0f7a4d;
+}
+
+.movement-quantity.movement-warn {
+  color: #a55300;
+}
+
+.inventory-row-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.detail-field-wide {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1080px) {
+  .inventory-grid,
+  .movement-grid {
+    min-width: 720px;
+  }
+}
+
+@media (max-width: 768px) {
+  .inventory-grid,
+  .movement-grid {
+    grid-template-columns: 1fr;
+    min-width: 0;
+  }
+
+  .inventory-row-actions {
+    justify-content: stretch;
+  }
+
+  .inventory-row-actions .secondary-button {
+    flex: 1 1 auto;
+  }
+}
