@@ -18,6 +18,7 @@ import inventoryRoutes from "../../../modules/inventory/inventory.routes.js";
 import filesRoutes from "../../../modules/files/files.routes.js";
 import lookupsRoutes from "../../../modules/lookups/lookups.routes.js";
 import uiRoutes from "../../../modules/ui/ui.routes.js";
+import auditRoutes from "../../../modules/audit/audit.routes.js";
 
 const router = Router();
 
@@ -40,5 +41,6 @@ router.use("/inventory", inventoryRoutes);
 router.use("/files", filesRoutes);
 router.use("/lookups", lookupsRoutes);
 router.use("/ui", uiRoutes);
+router.use("/audit", auditRoutes);
 
 export default router;

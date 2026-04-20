@@ -10,6 +10,7 @@ import {
   listStockMovementsForVendor,
   reverseOrderOutboundStockMovements
 } from "./inventory.repository.js";
+import { recordAuditEvent } from "../audit/audit.service.js";
 
 function toNumber(value) {
   return Number(value || 0);
@@ -191,6 +192,24 @@ async function adjustInventory(vendorId, payload, actor = {}) {
     });
   }
 
+  await recordAuditEvent({
+    vendorId,
+    actor,
+    entityType: "product",
+    entityId: payload.productId,
+    eventType: "inventory.adjusted",
+    eventLabel: `Inventory was adjusted for product ${payload.productId}.`,
+    metadata: {
+      productId: payload.productId,
+      stockMovementId: movement.id,
+      type,
+      quantity: movementQuantity,
+      stockDelta,
+      referenceType: payload.referenceType || "manual",
+      referenceId: payload.referenceId || null
+    }
+  });
+
   return getInventoryProductDetail(vendorId, payload.productId);
 }
 
@@ -201,19 +220,58 @@ async function applyOutboundStockForOrder(vendorId, orderId, actor = {}) {
     return [];
   }
 
-  return createOrderOutboundStockMovements({
+  const movements = await createOrderOutboundStockMovements({
     vendorId,
     orderId,
     createdBy: actor.userId || null
   });
+
+  if (movements.length > 0) {
+    await recordAuditEvent({
+      vendorId,
+      actor,
+      entityType: "order",
+      entityId: orderId,
+      eventType: "order.stock_allocated",
+      eventLabel: `Inventory was allocated for order ${orderId}.`,
+      metadata: {
+        orderId,
+        movementIds: movements.map((movement) => movement.id),
+        movementCount: movements.length,
+        referenceType: "order"
+      }
+    });
+  }
+
+  return movements;
 }
 
 async function reverseOutboundStockForOrder(vendorId, orderId, actor = {}) {
-  return reverseOrderOutboundStockMovements({
+  const movements = await reverseOrderOutboundStockMovements({
     vendorId,
     orderId,
     createdBy: actor.userId || null
   });
+
+  if (movements.length > 0) {
+    await recordAuditEvent({
+      vendorId,
+      actor,
+      entityType: "order",
+      entityId: orderId,
+      eventType: "inventory.order_reversal",
+      eventLabel: `Inventory allocation was reversed for cancelled order ${orderId}.`,
+      metadata: {
+        orderId,
+        movementIds: movements.map((movement) => movement.id),
+        movementCount: movements.length,
+        referenceType: "order_cancellation",
+        reversesReferenceType: "order"
+      }
+    });
+  }
+
+  return movements;
 }
 
 async function assertSufficientStockForOrderItems(vendorId, items) {

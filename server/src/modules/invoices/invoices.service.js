@@ -13,6 +13,7 @@ import {
 } from "./invoices.repository.js";
 import { ensureInvoiceLedgerEntry, voidInvoiceLedgerEntry } from "../ledger/ledger.repository.js";
 import { notifyVendorUsers, runNotificationTask } from "../notifications/notifications.service.js";
+import { recordAuditEvent } from "../audit/audit.service.js";
 
 const EDITABLE_FIELDS_BY_STATUS = {
   draft: ["issueDate", "dueDate", "notes"],
@@ -548,12 +549,66 @@ async function createInvoice(vendorId, payload, actor) {
 
   const detail = await getInvoiceDetail(vendorId, invoice.id);
 
+  await recordAuditEvent({
+    vendorId,
+    actor,
+    entityType: "invoice",
+    entityId: detail.id,
+    eventType: "invoice.created",
+    eventLabel: `Invoice ${detail.invoiceNumber} was created.`,
+    metadata: {
+      invoiceId: detail.id,
+      invoiceNumber: detail.invoiceNumber,
+      status: detail.status,
+      customerId: detail.customerId,
+      orderId: detail.orderId,
+      grandTotal: detail.grandTotal,
+      balanceDue: detail.balanceDue
+    }
+  });
+
   if (detail.status === "issued") {
     notifyInvoiceEvent(vendorId, detail, INVOICE_EVENT_CONTENT.issued);
+
+    await recordAuditEvent({
+      vendorId,
+      actor,
+      entityType: "invoice",
+      entityId: detail.id,
+      eventType: "invoice.issued",
+      eventLabel: INVOICE_EVENT_CONTENT.issued.message(detail),
+      metadata: {
+        invoiceId: detail.id,
+        invoiceNumber: detail.invoiceNumber,
+        status: detail.status,
+        customerId: detail.customerId,
+        orderId: detail.orderId,
+        grandTotal: detail.grandTotal,
+        balanceDue: detail.balanceDue
+      }
+    });
   }
 
   if (detail.orderId) {
     notifyOrderConvertedToInvoice(vendorId, detail);
+
+    await recordAuditEvent({
+      vendorId,
+      actor,
+      entityType: "order",
+      entityId: detail.orderId,
+      eventType: "order.converted_to_invoice",
+      eventLabel: `Order ${detail.order?.orderNumber || detail.orderId} was converted to invoice ${detail.invoiceNumber}.`,
+      metadata: {
+        orderId: detail.orderId,
+        orderNumber: detail.order?.orderNumber,
+        invoiceId: detail.id,
+        invoiceNumber: detail.invoiceNumber,
+        customerId: detail.customerId,
+        grandTotal: detail.grandTotal,
+        balanceDue: detail.balanceDue
+      }
+    });
   }
 
   return detail;
@@ -642,6 +697,25 @@ async function transitionInvoice(vendorId, invoiceId, action, actor = {}) {
   if (content) {
     notifyInvoiceEvent(vendorId, detail, content);
   }
+
+  await recordAuditEvent({
+    vendorId,
+    actor,
+    entityType: "invoice",
+    entityId: detail.id,
+    eventType: content?.eventCode || `invoice.${transition.to}`,
+    eventLabel: content?.message(detail) || `Invoice ${detail.invoiceNumber} changed to ${transition.to}.`,
+    metadata: {
+      invoiceId: detail.id,
+      invoiceNumber: detail.invoiceNumber,
+      previousStatus: existing.status,
+      status: detail.status,
+      action,
+      customerId: detail.customerId,
+      orderId: detail.orderId,
+      balanceDue: detail.balanceDue
+    }
+  });
 
   return detail;
 }

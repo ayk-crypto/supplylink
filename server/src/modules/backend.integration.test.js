@@ -621,6 +621,82 @@ if (!testDatabaseUrl) {
       });
     });
 
+    await t.test("audit trail captures key events and stays vendor scoped", async () => {
+      const audit = await api.get("/audit?page=1&pageSize=100", {
+        token: state.vendorA.token
+      });
+      const events = audit.payload.data.items;
+      const eventTypes = new Set(events.map((event) => event.eventType));
+
+      [
+        "quotation.created",
+        "quotation.accepted",
+        "quotation.converted_to_order",
+        "order.created",
+        "order.confirmed",
+        "order.converted_to_invoice",
+        "invoice.created",
+        "invoice.issued",
+        "payment.received",
+        "inventory.adjusted",
+        "order.stock_allocated",
+        "inventory.order_reversal"
+      ].forEach((eventType) => assert.ok(eventTypes.has(eventType), `Missing audit ${eventType}`));
+
+      assert.ok(events.every((event) => event.vendorId === state.vendorA.vendor.id));
+      assert.ok(events.every((event) => event.actorUserId === state.vendorA.user.id));
+
+      const orderHistory = await api.get(`/audit/order/${state.order.id}`, {
+        token: state.vendorA.token
+      });
+      const orderHistoryTypes = new Set(
+        orderHistory.payload.data.items.map((event) => event.eventType)
+      );
+
+      assert.ok(orderHistoryTypes.has("order.created"));
+      assert.ok(orderHistoryTypes.has("order.confirmed"));
+      assert.ok(orderHistoryTypes.has("order.converted_to_invoice"));
+      assert.ok(
+        orderHistory.payload.data.items.every(
+          (event) => event.entityType === "order" && event.entityId === state.order.id
+        )
+      );
+
+      const paymentAudit = await api.get(
+        `/audit?entityType=payment&entityId=${state.partialPayment.id}&eventType=payment.received`,
+        {
+          token: state.vendorA.token
+        }
+      );
+      assert.equal(paymentAudit.payload.data.items.length, 1);
+      assert.equal(paymentAudit.payload.data.items[0].metadata.invoiceId, state.invoice.id);
+
+      const vendorBHistory = await api.get(`/audit/order/${state.order.id}`, {
+        token: state.vendorB.token
+      });
+      assert.equal(vendorBHistory.payload.data.items.length, 0);
+
+      await api.patch(`/audit/order/${state.order.id}`, {
+        token: state.vendorA.token,
+        body: { eventLabel: "mutated" },
+        expectedStatus: 404
+      });
+      await api.delete(`/audit/order/${state.order.id}`, {
+        token: state.vendorA.token,
+        expectedStatus: 404
+      });
+
+      const auditId = events[0].id;
+      await assert.rejects(
+        () => app.pool.query("UPDATE audit_logs SET event_label = event_label WHERE id = $1", [auditId]),
+        /append-only/
+      );
+      await assert.rejects(
+        () => app.pool.query("DELETE FROM audit_logs WHERE id = $1", [auditId]),
+        /append-only/
+      );
+    });
+
     await t.test("file tenant isolation uses attachment vendor ownership", async () => {
       const formData = new FormData();
       formData.set("entityType", "orders");

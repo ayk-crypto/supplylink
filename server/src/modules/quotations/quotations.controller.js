@@ -87,7 +87,8 @@ async function transition(action, request, response) {
   const result = await transitionQuotation(
     request.access.vendorId,
     request.params.quotationId,
-    action
+    action,
+    request.auth
   );
 
   sendSuccess(response, {

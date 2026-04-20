@@ -10,6 +10,7 @@ import {
   updateQuotationWithOptionalItems
 } from "./quotations.repository.js";
 import { notifyVendorUsers, runNotificationTask } from "../notifications/notifications.service.js";
+import { recordAuditEvent } from "../audit/audit.service.js";
 
 const EDITABLE_FIELDS_BY_STATUS = {
   draft: ["issueDate", "expiryDate", "notes"],
@@ -401,6 +402,22 @@ async function createQuotation(vendorId, payload, actor) {
       `Quotation ${quotationDetail.quoteNumber} was created for ${quotationDetail.customer.companyName || quotationDetail.customer.fullName}.`
   });
 
+  await recordAuditEvent({
+    vendorId,
+    actor,
+    entityType: "quotation",
+    entityId: detail.id,
+    eventType: "quotation.created",
+    eventLabel: `Quotation ${detail.quoteNumber} was created.`,
+    metadata: {
+      quotationId: detail.id,
+      quoteNumber: detail.quoteNumber,
+      status: detail.status,
+      customerId: detail.customerId,
+      grandTotal: detail.grandTotal
+    }
+  });
+
   return detail;
 }
 
@@ -427,7 +444,7 @@ async function updateQuotation(vendorId, quotationId, payload) {
   return detail;
 }
 
-async function transitionQuotation(vendorId, quotationId, action) {
+async function transitionQuotation(vendorId, quotationId, action, actor = {}) {
   const existing = await findQuotationForVendor(vendorId, quotationId);
 
   assertQuotationFound(existing, quotationId);
@@ -450,6 +467,23 @@ async function transitionQuotation(vendorId, quotationId, action) {
   if (content) {
     notifyQuotationEvent(vendorId, detail, content);
   }
+
+  await recordAuditEvent({
+    vendorId,
+    actor,
+    entityType: "quotation",
+    entityId: detail.id,
+    eventType: content?.eventCode || `quotation.${transition.to}`,
+    eventLabel: content?.message(detail) || `Quotation ${detail.quoteNumber} changed to ${transition.to}.`,
+    metadata: {
+      quotationId: detail.id,
+      quoteNumber: detail.quoteNumber,
+      previousStatus: existing.status,
+      status: detail.status,
+      action,
+      customerId: detail.customerId
+    }
+  });
 
   return detail;
 }

@@ -10,6 +10,7 @@ import {
   updatePaymentSafeFields
 } from "./ledger.repository.js";
 import { notifyVendorUsers, runNotificationTask } from "../notifications/notifications.service.js";
+import { recordAuditEvent } from "../audit/audit.service.js";
 
 const PAYMENT_UPDATE_FIELDS = {
   paymentMethod: "method",
@@ -304,6 +305,23 @@ async function createPayment(vendorId, payload, actor) {
       }
     })
   );
+
+  await recordAuditEvent({
+    vendorId,
+    actor,
+    entityType: "payment",
+    entityId: mappedPayment.id,
+    eventType: "payment.received",
+    eventLabel: `Payment ${mappedPayment.referenceNumber || mappedPayment.id} was received.`,
+    metadata: {
+      paymentId: mappedPayment.id,
+      customerId: mappedPayment.customerId,
+      invoiceId: mappedPayment.invoiceId,
+      amount: mappedPayment.amount,
+      paymentMethod: mappedPayment.paymentMethod,
+      referenceNumber: mappedPayment.referenceNumber
+    }
+  });
 
   return mappedPayment;
 }

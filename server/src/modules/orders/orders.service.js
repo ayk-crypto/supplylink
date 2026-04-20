@@ -18,6 +18,7 @@ import {
   reverseOutboundStockForOrder
 } from "../inventory/inventory.service.js";
 import { notifyVendorUsers, runNotificationTask } from "../notifications/notifications.service.js";
+import { recordAuditEvent } from "../audit/audit.service.js";
 
 const EDITABLE_FIELDS_BY_STATUS = {
   confirmed: ["requestedDeliveryDate", "deliveryDate", "notes"],
@@ -559,13 +560,63 @@ async function createOrder(vendorId, payload, actor) {
 
   const detail = await getOrderDetail(vendorId, order.id);
 
+  await recordAuditEvent({
+    vendorId,
+    actor,
+    entityType: "order",
+    entityId: detail.id,
+    eventType: "order.created",
+    eventLabel: `Order ${detail.orderNumber} was created.`,
+    metadata: {
+      orderId: detail.id,
+      orderNumber: detail.orderNumber,
+      status: detail.status,
+      customerId: detail.customerId,
+      quotationId: detail.quotationId,
+      grandTotal: detail.grandTotal
+    }
+  });
+
   if (detail.status === "confirmed") {
     await applyOutboundStockForOrder(vendorId, detail.id, actor);
     notifyOrderEvent(vendorId, detail, ORDER_EVENT_CONTENT.confirmed);
+
+    await recordAuditEvent({
+      vendorId,
+      actor,
+      entityType: "order",
+      entityId: detail.id,
+      eventType: "order.confirmed",
+      eventLabel: ORDER_EVENT_CONTENT.confirmed.message(detail),
+      metadata: {
+        orderId: detail.id,
+        orderNumber: detail.orderNumber,
+        status: detail.status,
+        customerId: detail.customerId,
+        quotationId: detail.quotationId
+      }
+    });
   }
 
   if (detail.quotationId) {
     notifyQuotationConvertedToOrder(vendorId, detail);
+
+    await recordAuditEvent({
+      vendorId,
+      actor,
+      entityType: "quotation",
+      entityId: detail.quotationId,
+      eventType: "quotation.converted_to_order",
+      eventLabel: `Quotation ${detail.quotation?.quoteNumber || detail.quotationId} was converted to order ${detail.orderNumber}.`,
+      metadata: {
+        quotationId: detail.quotationId,
+        quoteNumber: detail.quotation?.quoteNumber,
+        orderId: detail.id,
+        orderNumber: detail.orderNumber,
+        customerId: detail.customerId,
+        grandTotal: detail.grandTotal
+      }
+    });
   }
 
   return detail;
@@ -659,6 +710,24 @@ async function transitionOrder(vendorId, orderId, action, actor = {}) {
   if (content) {
     notifyOrderEvent(vendorId, detail, content);
   }
+
+  await recordAuditEvent({
+    vendorId,
+    actor,
+    entityType: "order",
+    entityId: detail.id,
+    eventType: content?.eventCode || `order.${transition.to}`,
+    eventLabel: content?.message(detail) || `Order ${detail.orderNumber} changed to ${transition.to}.`,
+    metadata: {
+      orderId: detail.id,
+      orderNumber: detail.orderNumber,
+      previousStatus: existing.status,
+      status: detail.status,
+      action,
+      customerId: detail.customerId,
+      quotationId: detail.quotationId
+    }
+  });
 
   return detail;
 }
