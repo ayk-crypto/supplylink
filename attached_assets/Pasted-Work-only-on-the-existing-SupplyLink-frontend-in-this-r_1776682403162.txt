@@ -1,0 +1,81 @@
+Work only on the existing SupplyLink frontend in this repo.
+
+Important constraints:
+- Do not change backend contracts
+- Do not rebuild the app from scratch
+- Do not change business logic
+- Reuse existing routing, auth flow, shell, toast, and service patterns
+- Keep UI professional, responsive, and consistent with the current app
+
+Goal:
+Implement Module 20O: Frontend Inventory Screens on top of the existing inventory backend.
+
+Backend already exists with:
+- GET /api/v1/inventory/products
+- GET /api/v1/inventory/products/:productId
+- GET /api/v1/inventory/movements
+- POST /api/v1/inventory/adjust
+
+What to do:
+
+1. Routes
+Add:
+- /inventory
+- /inventory/products/:id
+
+2. Inventory overview screen
+Build an inventory products screen with:
+- search
+- pagination
+- stock quantity column
+- low / negative stock visual indicators
+- responsive table/card layout
+- loading, empty, and error states
+
+3. Product inventory detail screen
+Show:
+- product summary
+- current stock quantity
+- stock movement history
+- movement type
+- quantity
+- reference type / reference id
+- created date
+
+4. Manual stock adjustment UI
+Add a simple adjustment form using the existing backend endpoint:
+- product
+- quantity
+- adjustment note or reference if supported
+- adjustment type handling based on backend contract
+- success/error toast feedback
+
+5. UX
+- reuse existing page header, toolbar, toast, pagination, and table patterns
+- keep design clean and operational
+- ensure mobile responsiveness
+
+6. Navigation
+- add Inventory to the sidebar
+- active route behavior must follow URL
+- preserve protected route handling
+
+7. Constraints
+- do not invent new endpoints
+- do not add stock blocking logic in frontend
+- only reflect backend-supported behavior
+- keep implementation additive and safe
+
+8. Documentation
+- update client README for inventory routes and usage
+
+Verification:
+- run client lint
+- run client build
+
+Deliverable:
+1. Summary
+2. Files changed
+3. Assumptions
+4. Verification results
+5. Any backend limitations noticed

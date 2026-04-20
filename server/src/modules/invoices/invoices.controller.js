@@ -1,0 +1,109 @@
+import { sendSuccess } from "../../core/http/apiResponse.js";
+import {
+  createInvoice,
+  getInvoiceDetail,
+  getInvoiceDirectory,
+  transitionInvoice,
+  updateInvoice
+} from "./invoices.service.js";
+import { buildInvoicePrintDocument } from "../documents/documents.service.js";
+
+async function list(request, response) {
+  const result = await getInvoiceDirectory(request.access.vendorId, request.query);
+
+  sendSuccess(response, {
+    message: "Invoices loaded",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId
+    }
+  });
+}
+
+async function getById(request, response) {
+  const result = await getInvoiceDetail(request.access.vendorId, request.params.invoiceId);
+
+  sendSuccess(response, {
+    message: "Invoice loaded",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId
+    }
+  });
+}
+
+async function print(request, response) {
+  const result = await buildInvoicePrintDocument(request.access.vendorId, request.params.invoiceId);
+
+  sendSuccess(response, {
+    message: "Invoice print document loaded",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId,
+      output: "structured-json"
+    }
+  });
+}
+
+async function create(request, response) {
+  const result = await createInvoice(request.access.vendorId, request.body, request.auth);
+
+  sendSuccess(response, {
+    statusCode: 201,
+    message: "Invoice created",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId
+    }
+  });
+}
+
+async function update(request, response) {
+  const result = await updateInvoice(
+    request.access.vendorId,
+    request.params.invoiceId,
+    request.body
+  );
+
+  sendSuccess(response, {
+    message: "Invoice updated",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId
+    }
+  });
+}
+
+async function transition(action, request, response) {
+  const result = await transitionInvoice(
+    request.access.vendorId,
+    request.params.invoiceId,
+    action,
+    request.auth
+  );
+
+  sendSuccess(response, {
+    message: "Invoice status updated",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId,
+      action
+    }
+  });
+}
+
+async function issue(request, response) {
+  return transition("issue", request, response);
+}
+
+async function voidInvoice(request, response) {
+  return transition("void", request, response);
+}
+
+export { create, getById, issue, list, print, update, voidInvoice };
