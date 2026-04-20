@@ -913,3 +913,56 @@ Constraints respected:
   `LoadingSkeleton`, `ErrorState`, `EmptyState`, `TableScroll`,
   metric tiles, `AttachmentsPanel`, `CustomerForm`,
   `ToastProvider`) are reused unchanged.
+
+## Module 20AJ — Hardening, edge cases, reliability pass
+
+A non-redesign hardening sweep over the existing detail screens.
+No backend changes; additive only.
+
+Stale state on id change (flash of previous record on
+`/orders/:id` → another `/orders/:id` navigation):
+- `InvoiceDetailScreen` resets `invoice`, `payments`, and
+  `pendingAction` at the start of the load effect so the
+  previous invoice does not flash before the new one loads.
+- `TransactionDetailScreen` (orders + quotations) resets
+  `detail`, `pendingAction`, and `isConverting` on id/kind
+  change.
+- `InventoryDetailScreen` resets `product` on id change.
+  All three screens already use `LoadingSkeleton` after the
+  reset, so the user now sees a clean skeleton between
+  records instead of stale fields.
+
+Destructive action guards:
+- Quotation `Reject` in `TransactionDetailScreen` now goes
+  through `confirmDestructive` with the same pattern used
+  by `Cancel` for orders. Other destructive actions
+  (`Void` invoice, `Delete` attachment, `Cancel` order)
+  were already guarded.
+
+Empty-state consistency:
+- Replaced raw `<p className="empty-panel">` and
+  `<p className="surface-message">` fallbacks with the
+  shared `EmptyState` primitive in `InvoiceDetailScreen`
+  (no invoice / no line items / no payments) and
+  `TransactionDetailScreen` (no detail / no line items)
+  so empty messages render with the same surface and
+  spacing as the rest of the app.
+
+Long-content overflow:
+- Added `overflow-wrap: anywhere` to `.resource-row strong`
+  and `.detail-field strong` so very long names, emails,
+  filenames, and reference numbers wrap inside their cells
+  instead of pushing layout. `.resource-row span` already
+  had this rule.
+
+Verification:
+- `npm run lint` clean.
+- `npm run build` green
+  (`index-IrsCjVR9.js 387.82 kB / gzip 107.57 kB`,
+  `index-DhQLVP-y.css 50.50 kB / gzip 9.59 kB`).
+
+Constraints respected:
+- No backend changes.
+- No redesign — same surfaces, classes, and layouts.
+- All shared primitives reused (`EmptyState`,
+  `LoadingSkeleton`, `ErrorState`, `confirmDestructive`).

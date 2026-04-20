@@ -738,6 +738,7 @@ a {
 .resource-row strong {
   display: block;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .resource-row span {
@@ -1154,6 +1155,7 @@ a {
 .totals-panel strong,
 .detail-field strong {
   font-size: 1.1rem;
+  overflow-wrap: anywhere;
 }
 
 .detail-grid {

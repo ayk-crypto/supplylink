@@ -40,6 +40,8 @@ function InventoryDetailScreen({ id, navigate }) {
     let active = true;
     const controller = new AbortController();
 
+    setProduct(null);
+
     async function load() {
       setProductLoading(true);
       setProductError("");

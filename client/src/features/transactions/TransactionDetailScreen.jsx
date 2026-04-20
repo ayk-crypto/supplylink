@@ -7,6 +7,7 @@ import {
   transitionQuotation
 } from "../../services/transactionApi.js";
 import {
+  EmptyState,
   ErrorState,
   LoadingSkeleton,
   PageHeader,
@@ -80,11 +81,14 @@ function TransactionDetailScreen({ id, kind, navigate }) {
     if (!detail || pendingAction) {
       return;
     }
-    if (
-      spec.action === "cancel" &&
-      !confirmDestructive(settings, "Cancel this order? This cannot be undone.")
-    ) {
-      return;
+    if (spec.action === "cancel" || spec.action === "reject") {
+      const message =
+        spec.action === "cancel"
+          ? "Cancel this order? This cannot be undone."
+          : "Reject this quotation? This cannot be undone.";
+      if (!confirmDestructive(settings, message)) {
+        return;
+      }
     }
     setPendingAction(spec.action);
     try {
@@ -146,6 +150,10 @@ function TransactionDetailScreen({ id, kind, navigate }) {
     let active = true;
     const controller = new AbortController();
 
+    setDetail(null);
+    setPendingAction("");
+    setIsConverting(false);
+
     async function loadDetail() {
       setIsLoading(true);
       setError("");
@@ -193,7 +201,7 @@ function TransactionDetailScreen({ id, kind, navigate }) {
   }
 
   if (!detail) {
-    return <p className="surface-message">No detail found.</p>;
+    return <EmptyState>{`No ${config.title.toLowerCase()} found.`}</EmptyState>;
   }
 
   return (
@@ -298,7 +306,7 @@ function TransactionDetailScreen({ id, kind, navigate }) {
           </div>
           </TableScroll>
         ) : (
-          <p className="empty-panel">No line items found.</p>
+          <EmptyState>No line items found.</EmptyState>
         )}
       </section>
 

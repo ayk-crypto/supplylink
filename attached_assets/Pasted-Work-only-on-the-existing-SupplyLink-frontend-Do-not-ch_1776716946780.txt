@@ -1,0 +1,99 @@
+Work only on the existing SupplyLink frontend.
+
+Do not change backend APIs.
+
+Goal:
+Implement Module 20AJ: Frontend Hardening, Edge Cases, and Reliability Pass.
+
+Context:
+SupplyLink now has strong operational coverage across customers, products, quotations, orders, invoices, payments, routes, attachments, reports, settings, and a unified customer detail screen.
+
+Core objective:
+Strengthen reliability, edge-case handling, and consistency across the existing frontend so the product feels production-ready under imperfect real-world conditions, without redesigning the app or changing backend APIs.
+
+What to do:
+
+1) Review and harden key operational flows
+Focus on existing major workflows:
+- customers
+- quotations / orders
+- invoices / payments
+- routes / stops
+- reports
+- attachments
+- customer detail
+
+Check for:
+- duplicate submit risks
+- stale loading states
+- missing disabled states while saving
+- retry gaps
+- empty/error inconsistencies
+- actions that can be triggered twice
+- brittle assumptions about partial data
+
+2) Strengthen form/action safety
+Where practical and low risk:
+- disable submit buttons while requests are in flight
+- prevent double-click duplicate actions
+- ensure destructive actions remain guarded consistently
+- improve inline error display consistency
+- preserve success toasts and existing flows
+
+3) Edge-case display handling
+Audit major screens for:
+- null / undefined optional fields
+- empty datasets
+- partial backend responses
+- long names / long filenames / long notes
+- status edge cases
+- missing dates
+- missing related records
+Add safe fallbacks without redesigning screens.
+
+4) Navigation and stale state checks
+Review route changes / modal close-open flows / detail reload patterns for:
+- stale content flash
+- incorrect retained state after switching records
+- loading reset issues
+- retry consistency
+Fix where practical and low risk.
+
+5) Lightweight performance and UX stability
+Without changing APIs:
+- avoid unnecessary refetches where easy to improve
+- ensure memoization is used where clearly beneficial
+- reduce visible layout jumps where possible
+- keep page interactions responsive
+
+6) Consistency completion
+Use the shared UI primitives consistently where a few older edge cases may still remain:
+- LoadingState
+- LoadingSkeleton
+- ErrorState
+- EmptyState
+- SectionHeader
+- TableScroll
+
+7) Documentation
+Update client README with a short section describing the hardening/reliability improvements added in this module.
+
+Constraints:
+- no backend changes
+- no redesign
+- no new product areas
+- keep changes additive, safe, and production-minded
+- avoid broad risky refactors
+
+Verification:
+- run client lint
+- run client build
+
+Deliverable:
+1. Summary
+2. Files changed
+3. What reliability / hardening improvements were made
+4. What edge cases were specifically handled
+5. Any performance/stability improvements made
+6. Verification results
+7. Any useful follow-up items

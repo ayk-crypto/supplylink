@@ -12,6 +12,7 @@ const INVOICE_ACTIONS = [
   { action: "void", label: "Void", from: ["issued"], successTitle: "Invoice voided", successMessage: "Invoice voided.", tone: "secondary" }
 ];
 import {
+  EmptyState,
   ErrorState,
   Field,
   LoadingSkeleton,
@@ -347,6 +348,10 @@ function InvoiceDetailScreen({ id, navigate }) {
     let active = true;
     const controller = new AbortController();
 
+    setInvoice(null);
+    setPayments([]);
+    setPendingAction("");
+
     async function load() {
       setIsLoading(true);
       setError("");
@@ -390,7 +395,7 @@ function InvoiceDetailScreen({ id, navigate }) {
   }
 
   if (!invoice) {
-    return <p className="surface-message">No invoice found.</p>;
+    return <EmptyState>No invoice found.</EmptyState>;
   }
 
   const paidAmount = Number(invoice.grandTotal || 0) - Number(invoice.balanceDue || 0);
@@ -516,7 +521,7 @@ function InvoiceDetailScreen({ id, navigate }) {
           </div>
           </TableScroll>
         ) : (
-          <p className="empty-panel">No line items found.</p>
+          <EmptyState>No line items found.</EmptyState>
         )}
       </section>
 
@@ -554,7 +559,7 @@ function InvoiceDetailScreen({ id, navigate }) {
             ))}
           </div>
         ) : (
-          <p className="empty-panel">No payments recorded for this invoice yet.</p>
+          <EmptyState>No payments recorded for this invoice yet.</EmptyState>
         )}
       </section>
     </div>
