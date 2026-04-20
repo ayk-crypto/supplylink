@@ -8,6 +8,7 @@ const PRODUCT_SELECT = `product.id,
                         product.description,
                         product.unit_price,
                         product.stock_quantity,
+                        product.low_stock_threshold,
                         product.status,
                         product.metadata,
                         product.created_at,
@@ -195,6 +196,22 @@ async function hasStockMovementForReference(vendorId, referenceType, referenceId
   return Boolean(result.rows[0]);
 }
 
+async function listOrderProductQuantities(vendorId, orderId, client = { query }) {
+  const result = await client.query(
+    `SELECT item.product_id,
+            SUM(item.quantity)::numeric AS quantity
+     FROM order_items item
+     INNER JOIN orders orders ON orders.id = item.order_id
+     WHERE orders.vendor_id = $1
+       AND item.order_id = $2
+       AND item.product_id IS NOT NULL
+     GROUP BY item.product_id`,
+    [vendorId, orderId]
+  );
+
+  return result.rows;
+}
+
 async function createStockMovementAndUpdateProduct({
   vendorId,
   productId,
@@ -270,21 +287,11 @@ async function createOrderOutboundStockMovements({ vendorId, orderId, createdBy 
       return [];
     }
 
-    const itemsResult = await client.query(
-      `SELECT item.product_id,
-              SUM(item.quantity)::numeric AS quantity
-       FROM order_items item
-       INNER JOIN orders orders ON orders.id = item.order_id
-       WHERE orders.vendor_id = $1
-         AND item.order_id = $2
-         AND item.product_id IS NOT NULL
-       GROUP BY item.product_id`,
-      [vendorId, orderId]
-    );
+    const items = await listOrderProductQuantities(vendorId, orderId, client);
 
     const movements = [];
 
-    for (const item of itemsResult.rows) {
+    for (const item of items) {
       await client.query(
         `UPDATE products
          SET stock_quantity = stock_quantity - $1,
@@ -326,11 +333,85 @@ async function createOrderOutboundStockMovements({ vendorId, orderId, createdBy 
   });
 }
 
+async function reverseOrderOutboundStockMovements({ vendorId, orderId, createdBy = null }) {
+  return withTransaction(async (client) => {
+    const existingReversal = await client.query(
+      `SELECT 1
+       FROM stock_movements
+       WHERE vendor_id = $1
+         AND reference_type = 'order_cancellation'
+         AND reference_id = $2
+       LIMIT 1`,
+      [vendorId, orderId]
+    );
+
+    if (existingReversal.rows[0]) {
+      return [];
+    }
+
+    const outboundResult = await client.query(
+      `SELECT product_id,
+              SUM(quantity)::numeric AS quantity
+       FROM stock_movements
+       WHERE vendor_id = $1
+         AND reference_type = 'order'
+         AND reference_id = $2
+         AND type = 'outbound'
+       GROUP BY product_id`,
+      [vendorId, orderId]
+    );
+
+    const movements = [];
+
+    for (const movement of outboundResult.rows) {
+      await client.query(
+        `UPDATE products
+         SET stock_quantity = stock_quantity + $1,
+             updated_at = NOW()
+         WHERE vendor_id = $2
+           AND id = $3`,
+        [movement.quantity, vendorId, movement.product_id]
+      );
+
+      const reversalResult = await client.query(
+        `INSERT INTO stock_movements (
+           vendor_id,
+           product_id,
+           type,
+           quantity,
+           reference_type,
+           reference_id,
+           notes,
+           metadata,
+           created_by
+         )
+         VALUES ($1, $2, 'inbound', $3, 'order_cancellation', $4, $5, $6, $7)
+         RETURNING id`,
+        [
+          vendorId,
+          movement.product_id,
+          movement.quantity,
+          orderId,
+          "Order cancellation stock reversal",
+          { orderId, reversesReferenceType: "order" },
+          createdBy
+        ]
+      );
+
+      movements.push(reversalResult.rows[0]);
+    }
+
+    return movements;
+  });
+}
+
 export {
   createOrderOutboundStockMovements,
   createStockMovementAndUpdateProduct,
   findInventoryProductForVendor,
   hasStockMovementForReference,
+  listOrderProductQuantities,
   listInventoryProductsForVendor,
-  listStockMovementsForVendor
+  listStockMovementsForVendor,
+  reverseOrderOutboundStockMovements
 };

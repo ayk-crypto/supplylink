@@ -8,6 +8,7 @@ import {
   getProductLookup
 } from "../lookups/lookups.service.js";
 import {
+  getDashboardAggregates,
   listRecentDashboardInvoices,
   listRecentDashboardOrders
 } from "./ui.repository.js";
@@ -80,11 +81,43 @@ function mapDashboardInvoice(invoice) {
   };
 }
 
+function numberMap(value = {}) {
+  return Object.fromEntries(
+    Object.entries(value || {}).map(([key, count]) => [key, Number(count || 0)])
+  );
+}
+
+function mapDashboardAggregates(row) {
+  return {
+    inventory: {
+      productCount: Number(row?.inventory_product_count || 0),
+      totalStockQuantity: Number(row?.inventory_total_stock_quantity || 0),
+      lowStockProductCount: Number(row?.inventory_low_stock_count || 0),
+      negativeStockProductCount: Number(row?.inventory_negative_stock_count || 0)
+    },
+    orders: {
+      total: Number(row?.orders_total_count || 0),
+      byStatus: numberMap(row?.orders_by_status)
+    },
+    invoices: {
+      total: Number(row?.invoices_total_count || 0),
+      byStatus: numberMap(row?.invoices_by_status)
+    },
+    receivables: {
+      openInvoiceCount: Number(row?.receivables_open_invoice_count || 0),
+      outstandingTotal: Number(row?.receivables_outstanding_total || 0),
+      overdueInvoiceCount: Number(row?.receivables_overdue_invoice_count || 0),
+      overdueTotal: Number(row?.receivables_overdue_total || 0)
+    }
+  };
+}
+
 async function getVendorUiDashboard(vendorId, userId, options = {}) {
   const includeNotifications = options.includeNotifications !== false;
   const dashboardQueries = [
     findVendorById(vendorId),
     getVendorSummaryReport(vendorId, {}),
+    getDashboardAggregates(vendorId),
     listRecentDashboardOrders(vendorId, 5),
     listRecentDashboardInvoices(vendorId, 5)
   ];
@@ -93,7 +126,7 @@ async function getVendorUiDashboard(vendorId, userId, options = {}) {
     dashboardQueries.push(getNotificationPanelSummary(userId, { limit: 5 }));
   }
 
-  const [vendor, summary, recentOrders, recentInvoices, notifications] =
+  const [vendor, summary, aggregates, recentOrders, recentInvoices, notifications] =
     await Promise.all(dashboardQueries);
 
   const result = {
@@ -104,6 +137,7 @@ async function getVendorUiDashboard(vendorId, userId, options = {}) {
       invoiceTotal: Number(summary.metrics.invoiceTotal || 0),
       paymentTotal: Number(summary.metrics.paymentTotal || 0)
     },
+    aggregates: mapDashboardAggregates(aggregates),
     recent: {
       orders: recentOrders.map(mapDashboardOrder),
       invoices: recentInvoices.map(mapDashboardInvoice)

@@ -1,11 +1,14 @@
 import AppError from "../../core/errors/AppError.js";
+import env from "../../config/env.js";
 import {
   createOrderOutboundStockMovements,
   createStockMovementAndUpdateProduct,
   findInventoryProductForVendor,
   hasStockMovementForReference,
   listInventoryProductsForVendor,
-  listStockMovementsForVendor
+  listOrderProductQuantities,
+  listStockMovementsForVendor,
+  reverseOrderOutboundStockMovements
 } from "./inventory.repository.js";
 
 function toNumber(value) {
@@ -34,6 +37,8 @@ function mapProduct(row) {
     description: row.description,
     unitPrice: row.unit_price,
     stockQuantity: row.stock_quantity,
+    lowStockThreshold: row.low_stock_threshold,
+    isLowStock: Number(row.stock_quantity || 0) <= Number(row.low_stock_threshold || 0),
     status: row.status,
     metadata: row.metadata || {},
     category: row.category_id
@@ -203,10 +208,79 @@ async function applyOutboundStockForOrder(vendorId, orderId, actor = {}) {
   });
 }
 
+async function reverseOutboundStockForOrder(vendorId, orderId, actor = {}) {
+  return reverseOrderOutboundStockMovements({
+    vendorId,
+    orderId,
+    createdBy: actor.userId || null
+  });
+}
+
+async function assertSufficientStockForOrderItems(vendorId, items) {
+  if (!env.ENFORCE_STOCK_AVAILABILITY) {
+    return;
+  }
+
+  const requiredByProduct = new Map();
+
+  items.forEach((item) => {
+    const productId = item.product_id || item.productId;
+
+    if (!productId) {
+      return;
+    }
+
+    requiredByProduct.set(productId, toNumber(requiredByProduct.get(productId)) + toNumber(item.quantity));
+  });
+
+  const insufficient = [];
+
+  for (const [productId, requiredQuantity] of requiredByProduct.entries()) {
+    const product = await findInventoryProductForVendor(vendorId, productId);
+
+    if (!product || toNumber(product.stock_quantity) < requiredQuantity) {
+      insufficient.push({
+        productId,
+        available: product ? toNumber(product.stock_quantity) : 0,
+        required: requiredQuantity
+      });
+    }
+  }
+
+  if (insufficient.length > 0) {
+    throw new AppError("Insufficient stock for one or more order items", {
+      statusCode: 409,
+      code: "INSUFFICIENT_STOCK",
+      details: insufficient.map((item) => ({
+        path: "items",
+        message: `Product ${item.productId} requires ${item.required} but only ${item.available} is available`
+      }))
+    });
+  }
+}
+
+async function assertSufficientStockForOrder(vendorId, orderId) {
+  if (!env.ENFORCE_STOCK_AVAILABILITY) {
+    return;
+  }
+
+  const existingMovement = await hasStockMovementForReference(vendorId, "order", orderId);
+
+  if (existingMovement) {
+    return;
+  }
+
+  const items = await listOrderProductQuantities(vendorId, orderId);
+  await assertSufficientStockForOrderItems(vendorId, items);
+}
+
 export {
   adjustInventory,
   applyOutboundStockForOrder,
+  assertSufficientStockForOrder,
+  assertSufficientStockForOrderItems,
   getInventoryProductDetail,
   getInventoryProductDirectory,
-  getStockMovementDirectory
+  getStockMovementDirectory,
+  reverseOutboundStockForOrder
 };

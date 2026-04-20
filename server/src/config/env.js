@@ -52,7 +52,8 @@ const env = {
   DEMO_SEED_PASSWORD: process.env.DEMO_SEED_PASSWORD || "Password123!",
   ALLOW_DEMO_SEED_IN_PRODUCTION: toBoolean(process.env.ALLOW_DEMO_SEED_IN_PRODUCTION, false),
   FILE_UPLOAD_DIR: path.resolve(rootDir, process.env.FILE_UPLOAD_DIR || "uploads"),
-  FILE_UPLOAD_MAX_BYTES: toNumber(process.env.FILE_UPLOAD_MAX_BYTES, 10 * 1024 * 1024)
+  FILE_UPLOAD_MAX_BYTES: toNumber(process.env.FILE_UPLOAD_MAX_BYTES, 10 * 1024 * 1024),
+  ENFORCE_STOCK_AVAILABILITY: toBoolean(process.env.ENFORCE_STOCK_AVAILABILITY, false)
 };
 
 export default env;

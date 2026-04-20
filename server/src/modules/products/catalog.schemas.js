@@ -58,6 +58,7 @@ const productBaseShape = {
   categoryId: uuidParam.nullable().optional(),
   unitPrice: z.coerce.number().min(0).optional(),
   price: z.coerce.number().min(0).optional(),
+  lowStockThreshold: z.coerce.number().min(0).optional(),
   status: productStatusEnum.optional(),
   metadata: jsonRecordSchema.optional()
 };

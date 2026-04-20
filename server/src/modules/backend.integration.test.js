@@ -129,6 +129,39 @@ if (!testDatabaseUrl) {
       });
       assert.equal(Number(stockedProduct.payload.data.stockQuantity), 50);
 
+      const thresholdProduct = await api.patch(`/products/${state.product.id}`, {
+        token: state.vendorA.token,
+        body: {
+          lowStockThreshold: 50
+        }
+      });
+      assert.equal(Number(thresholdProduct.payload.data.lowStockThreshold), 50);
+      assert.equal(thresholdProduct.payload.data.isLowStock, true);
+
+      const negativeStockProduct = await api.post("/products", {
+        token: state.vendorA.token,
+        body: {
+          sku: `NEG-${suffix}`.slice(0, 90),
+          name: "Negative Stock Product",
+          categoryId: state.category.id,
+          unitPrice: 5,
+          status: "active"
+        },
+        expectedStatus: 201
+      });
+      state.negativeStockProduct = negativeStockProduct.payload.data;
+      const negativeStockAdjustment = await api.post("/inventory/adjust", {
+        token: state.vendorA.token,
+        body: {
+          productId: state.negativeStockProduct.id,
+          type: "outbound",
+          quantity: 7,
+          notes: "Negative stock signal"
+        },
+        expectedStatus: 201
+      });
+      assert.equal(Number(negativeStockAdjustment.payload.data.stockQuantity), -7);
+
       const quotation = await api.post("/quotations", {
         token: state.vendorA.token,
         body: {
@@ -166,6 +199,8 @@ if (!testDatabaseUrl) {
         token: state.vendorA.token
       });
       assert.equal(Number(productAfterOrder.payload.data.stockQuantity), 48);
+      assert.equal(Number(productAfterOrder.payload.data.lowStockThreshold), 50);
+      assert.equal(productAfterOrder.payload.data.isLowStock, true);
 
       const adjustedProduct = await api.post("/inventory/adjust", {
         token: state.vendorA.token,
@@ -250,6 +285,30 @@ if (!testDatabaseUrl) {
       assert.equal(Number(ledger.payload.data.endingBalance), 0);
       assert.ok(ledger.payload.data.items.some((entry) => entry.sourceType === "invoice"));
       assert.ok(ledger.payload.data.items.some((entry) => entry.sourceType === "payment"));
+
+      const envModule = await import("../config/env.js");
+      const previousStockEnforcement = envModule.default.ENFORCE_STOCK_AVAILABILITY;
+      envModule.default.ENFORCE_STOCK_AVAILABILITY = true;
+
+      try {
+        await api.post("/orders", {
+          token: state.vendorA.token,
+          body: {
+            customerId: state.customer.id,
+            status: "confirmed",
+            items: [
+              {
+                productId: state.product.id,
+                quantity: 10000,
+                unitPrice: 10
+              }
+            ]
+          },
+          expectedStatus: 409
+        });
+      } finally {
+        envModule.default.ENFORCE_STOCK_AVAILABILITY = previousStockEnforcement;
+      }
     });
 
     await t.test("transaction lifecycle actions enforce valid transitions", async () => {
@@ -386,6 +445,53 @@ if (!testDatabaseUrl) {
         token: state.vendorA.token
       });
       assert.equal(cancelledOrder.payload.data.status, "cancelled");
+
+      const confirmedCancellableOrder = await api.post("/orders", {
+        token: state.vendorA.token,
+        body: {
+          customerId: state.customer.id,
+          status: "confirmed",
+          items: [
+            {
+              productId: state.product.id,
+              quantity: 4,
+              unitPrice: 10
+            }
+          ]
+        },
+        expectedStatus: 201
+      });
+      const stockBeforeCancellation = await api.get(`/inventory/products/${state.product.id}`, {
+        token: state.vendorA.token
+      });
+      await api.post(`/orders/${confirmedCancellableOrder.payload.data.id}/cancel`, {
+        token: state.vendorA.token
+      });
+      const stockAfterCancellation = await api.get(`/inventory/products/${state.product.id}`, {
+        token: state.vendorA.token
+      });
+      assert.equal(
+        Number(stockAfterCancellation.payload.data.stockQuantity),
+        Number(stockBeforeCancellation.payload.data.stockQuantity) + 4
+      );
+      await api.post(`/orders/${confirmedCancellableOrder.payload.data.id}/cancel`, {
+        token: state.vendorA.token,
+        expectedStatus: 409
+      });
+      const stockAfterDuplicateCancellation = await api.get(`/inventory/products/${state.product.id}`, {
+        token: state.vendorA.token
+      });
+      assert.equal(
+        Number(stockAfterDuplicateCancellation.payload.data.stockQuantity),
+        Number(stockAfterCancellation.payload.data.stockQuantity)
+      );
+      const cancellationMovements = await api.get(
+        `/inventory/movements?referenceType=order_cancellation&referenceId=${confirmedCancellableOrder.payload.data.id}`,
+        {
+          token: state.vendorA.token
+        }
+      );
+      assert.equal(cancellationMovements.payload.data.items.length, 1);
 
       const draftInvoice = await api.post("/invoices", {
         token: state.vendorA.token,
@@ -614,6 +720,23 @@ if (!testDatabaseUrl) {
       assert.equal(dashboard.payload.data.vendor.id, state.vendorA.vendor.id);
       assert.ok(Array.isArray(dashboard.payload.data.recent.orders));
       assert.ok(Array.isArray(dashboard.payload.data.notifications.latest));
+      assert.ok(dashboard.payload.data.aggregates.inventory.productCount >= 2);
+      assert.ok(dashboard.payload.data.aggregates.inventory.lowStockProductCount >= 2);
+      assert.ok(dashboard.payload.data.aggregates.inventory.negativeStockProductCount >= 1);
+      assert.ok(dashboard.payload.data.aggregates.orders.byStatus.confirmed >= 1);
+      assert.ok(dashboard.payload.data.aggregates.orders.byStatus.delivered >= 1);
+      assert.ok(dashboard.payload.data.aggregates.orders.byStatus.cancelled >= 1);
+      assert.ok(dashboard.payload.data.aggregates.invoices.byStatus.paid >= 1);
+      assert.ok(dashboard.payload.data.aggregates.invoices.byStatus.void >= 1);
+      assert.ok(dashboard.payload.data.aggregates.receivables.openInvoiceCount >= 0);
+
+      const vendorBDashboard = await api.get("/ui/dashboard", {
+        token: state.vendorB.token
+      });
+      assert.equal(vendorBDashboard.payload.data.vendor.id, state.vendorB.vendor.id);
+      assert.equal(vendorBDashboard.payload.data.aggregates.inventory.productCount, 0);
+      assert.equal(vendorBDashboard.payload.data.aggregates.orders.total, 0);
+      assert.equal(vendorBDashboard.payload.data.aggregates.invoices.total, 0);
 
       const customerLookup = await api.get("/lookups/customers?limit=5", {
         token: state.vendorA.token

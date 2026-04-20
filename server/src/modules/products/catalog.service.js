@@ -24,6 +24,7 @@ const PRODUCT_FIELDS = {
   unitPrice: "unit_price",
   price: "unit_price",
   status: "status",
+  lowStockThreshold: "low_stock_threshold",
   metadata: "metadata"
 };
 
@@ -78,6 +79,8 @@ function mapProduct(row) {
     description: row.description,
     unitPrice: row.unit_price,
     stockQuantity: row.stock_quantity,
+    lowStockThreshold: row.low_stock_threshold,
+    isLowStock: Number(row.stock_quantity || 0) <= Number(row.low_stock_threshold || 0),
     status: row.status,
     metadata: row.metadata || {},
     category: row.category_id
