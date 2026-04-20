@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { useAuth } from "../../features/auth/useAuth.js";
 
-function AppShell({ activePath = "/dashboard", children, navItems = [], onNavigate }) {
+function AppShell({
+  activePath = "/dashboard",
+  children,
+  headerExtras = null,
+  navItems = [],
+  onNavigate
+}) {
   const { logout, user } = useAuth();
   const [isNavOpen, setIsNavOpen] = useState(false);
   const activeVendor = user?.memberships?.find(
@@ -80,14 +86,17 @@ function AppShell({ activePath = "/dashboard", children, navItems = [], onNaviga
             <h1>{activeVendor?.vendorDisplayName || user?.currentVendorId || "SupplyLink"}</h1>
           </div>
 
-          <div className="session-chip">
-            <div>
-              <strong>{user?.fullName}</strong>
-              <span>{roleLabel}</span>
+          <div className="topbar-actions">
+            {headerExtras}
+            <div className="session-chip">
+              <div>
+                <strong>{user?.fullName}</strong>
+                <span>{roleLabel}</span>
+              </div>
+              <button onClick={logout} type="button">
+                Logout
+              </button>
             </div>
-            <button onClick={logout} type="button">
-              Logout
-            </button>
           </div>
         </header>
 

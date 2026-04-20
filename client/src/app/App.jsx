@@ -11,6 +11,9 @@ import LedgerOverviewScreen from "../features/ledger/LedgerOverviewScreen.jsx";
 import CategoriesScreen from "../features/master-data/CategoriesScreen.jsx";
 import CustomersScreen from "../features/master-data/CustomersScreen.jsx";
 import ProductsScreen from "../features/master-data/ProductsScreen.jsx";
+import NotificationBell from "../features/notifications/NotificationBell.jsx";
+import NotificationsProvider from "../features/notifications/NotificationsProvider.jsx";
+import NotificationsScreen from "../features/notifications/NotificationsScreen.jsx";
 import OperationalReportScreen from "../features/reports/OperationalReportScreen.jsx";
 import ReceivablesReportScreen from "../features/reports/ReceivablesReportScreen.jsx";
 import ReportsHomeScreen from "../features/reports/ReportsHomeScreen.jsx";
@@ -38,6 +41,7 @@ const screens = {
   "invoice-detail": InvoiceDetailScreen,
   ledger: LedgerOverviewScreen,
   "customer-ledger": CustomerLedgerScreen,
+  notifications: NotificationsScreen,
   reports: ReportsHomeScreen,
   "report-receivables": ReceivablesReportScreen,
   "report-invoices": (props) => <OperationalReportScreen kind="invoices" {...props} />,
@@ -72,17 +76,24 @@ function AuthenticatedApp() {
 
   return (
     <ProtectedRoute>
-      <AppShell
-        activePath={route?.navPath || route?.path || ""}
-        navItems={appRoutes}
-        onNavigate={(nextPath) => navigate(nextPath)}
-      >
-        {ActiveScreen ? (
-          <ActiveScreen id={route.params?.id} navigate={navigate} orderId={route.params?.orderId} />
-        ) : (
-          <NotFoundScreen onGoHome={() => navigate("/dashboard", { replace: true })} />
-        )}
-      </AppShell>
+      <NotificationsProvider>
+        <AppShell
+          activePath={route?.navPath || route?.path || ""}
+          headerExtras={<NotificationBell onNavigate={navigate} />}
+          navItems={appRoutes}
+          onNavigate={(nextPath) => navigate(nextPath)}
+        >
+          {ActiveScreen ? (
+            <ActiveScreen
+              id={route.params?.id}
+              navigate={navigate}
+              orderId={route.params?.orderId}
+            />
+          ) : (
+            <NotFoundScreen onGoHome={() => navigate("/dashboard", { replace: true })} />
+          )}
+        </AppShell>
+      </NotificationsProvider>
     </ProtectedRoute>
   );
 }

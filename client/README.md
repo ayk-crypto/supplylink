@@ -100,6 +100,7 @@ adding a routing dependency:
 - `/reports/payments`
 - `/reports/orders`
 - `/reports/statements`
+- `/notifications`
 
 Direct entry, refresh, and browser back/forward are handled with a small History
 API router in `client/src/app`. Unknown workspace paths render a safe not-found
@@ -201,3 +202,49 @@ The customer ledger detail screen also includes a CSV export action for the
 selected customer statement. Report filters intentionally match the backend
 schemas: date range, customer, status where supported, payment method where
 supported, and search where supported.
+
+## Module 20L Notifications / Activity Center
+
+The app shell now includes an activity center wired to the existing
+notifications backend (`/api/v1/notifications/*`). No backend contracts were
+changed and no new endpoints were added.
+
+Header bell:
+
+- A notification bell appears in the top header on every authenticated
+  workspace screen.
+- An unread badge surfaces the live unread count and refreshes on a 60 second
+  poll. The count also updates immediately after mark-as-read actions taken
+  anywhere in the app.
+- Clicking the bell opens a dropdown panel with the most recent notifications,
+  a Mark all as read action, and a View all notifications link.
+
+Activity center page (`/notifications`):
+
+- Lists every notification for the signed-in user with pagination and an
+  All / Unread filter.
+- Each row shows the title, message, relative time, type, related entity tag,
+  and per-row Mark read and Open actions.
+- Mark all as read clears the inbox in one click.
+
+Navigation behavior:
+
+- Clicking a notification (in either the dropdown or the page) marks it as
+  read and routes to the related entity using `relatedEntityType` and
+  `relatedEntityId`.
+- Mapped destinations: invoice → `/invoices/:id`, order → `/orders/:id`,
+  quotation → `/quotations/:id`, customer → `/ledger/customers/:id`,
+  ledger / payment → `/ledger`, report → `/reports`,
+  dashboard → `/dashboard`.
+- If a related entity type does not yet have a frontend destination, the
+  user stays in the activity center and a toast explains there is no link
+  available, so no broken navigation occurs.
+
+API service:
+
+- `client/src/services/notificationsApi.js` wraps the existing endpoints —
+  `GET /notifications`, `GET /notifications/unread-count`,
+  `GET /notifications/:id`, `PATCH /notifications/:id/read`, and
+  `PATCH /notifications/read-all` — using the shared `httpClient` and
+  `queryString` helpers, so auth, error shape, and request style match the
+  rest of the client.

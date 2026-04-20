@@ -120,6 +120,11 @@ const routeDefinitions = [
     id: "report-statements",
     path: "/reports/statements",
     navPath: "/reports"
+  },
+  {
+    id: "notifications",
+    path: "/notifications",
+    navPath: "/notifications"
   }
 ];
 
