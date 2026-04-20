@@ -629,3 +629,52 @@ UX notes / limitations:
 - All loading, empty, and error states use the shared primitives
   introduced in Module 20AC (`LoadingState`, `ErrorState`,
   `EmptyState`, `SectionHeader`).
+
+## Module 20AF Attachment Visibility on List Screens
+
+Module 20AF adds a lightweight at-a-glance attachment indicator to
+the major list screens. Users can now see which records have files
+attached without opening each detail screen. No backend changes,
+no redesign — purely additive on top of the row markup that
+already existed.
+
+New shared pieces:
+- `client/src/features/attachments/useAttachmentCounts.js` — small
+  hook that takes `(entityType, ids[])` and returns a map of
+  `{ entityId: count }`. Stabilizes the dependency by joining the
+  ids; cancels in-flight fetches via `AbortController` and a
+  cancelled flag when the page changes or the component unmounts;
+  swallows per-id failures silently so a single bad fetch never
+  blocks the rest.
+- `client/src/features/attachments/AttachmentBadge.jsx` — inline
+  pill rendering an SVG paperclip + the count. Renders nothing for
+  zero / undefined counts. Becomes a clickable `<button>` when an
+  `onClick` is provided (with `aria-label="N attachments"`),
+  otherwise a `<span>`.
+
+Wired into the row title cell of:
+- Customers — clicking the badge opens the customer edit modal,
+  where the attachments panel from Module 20AE lives.
+- Invoices — clicking navigates to the invoice detail screen.
+- Orders — clicking navigates to the order detail screen.
+- Quotations — clicking navigates to the quotation detail screen.
+
+Performance notes:
+- The backend `GET /files/entity/:entityType/:entityId` endpoint is
+  per-id only (no comma-separated batch), so the hook fires up to
+  N parallel small requests after the table has rendered. With the
+  default page size of ~10 (max ~25), modern browsers handle this
+  comfortably and the table is never blocked on attachment data.
+- The dependency key is `ids.join(",")` and the underlying
+  `items` array is memoized on `data`, so re-renders that don't
+  change the visible page do not refetch counts.
+- All fetches abort on page / filter change.
+
+Behavior:
+- The badge appears only when at least one file is present and
+  only after the count has resolved — the row never flickers a
+  zero count first.
+- If the attachment listing fails for any row, the badge is simply
+  not shown for that row; no toast, no error UI.
+- Below the existing 640px breakpoint the badge stays inline next
+  to the row title and wraps with the title text.

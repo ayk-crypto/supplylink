@@ -4,7 +4,9 @@ import {
   listCustomers,
   updateCustomer
 } from "../../services/masterDataApi.js";
+import AttachmentBadge from "../attachments/AttachmentBadge.jsx";
 import AttachmentsPanel from "../attachments/AttachmentsPanel.jsx";
+import { useAttachmentCounts } from "../attachments/useAttachmentCounts.js";
 import { useToast } from "../feedback/toastContext.js";
 import { useAppSettings } from "../system/settingsContext.js";
 import { getDefaultPageSize } from "../system/settingsFormat.js";
@@ -251,7 +253,9 @@ function CustomersScreen() {
   const { data, error, isLoading, reload } = useResourceDirectory(loadCustomers, query, {
     onError: handleListError
   });
-  const items = data?.items || [];
+  const items = useMemo(() => data?.items || [], [data]);
+  const customerIds = useMemo(() => items.map((record) => record.customer.id), [items]);
+  const attachmentCounts = useAttachmentCounts("customers", customerIds);
   const hasFilters = Boolean(search || status);
 
   function submitSearch(event) {
@@ -338,7 +342,13 @@ function CustomersScreen() {
           {items.map((record) => (
             <article className="resource-row customer-grid" key={record.customer.id}>
               <div>
-                <strong>{record.customer.fullName}</strong>
+                <strong>
+                  {record.customer.fullName}
+                  <AttachmentBadge
+                    count={attachmentCounts[record.customer.id]}
+                    onClick={() => setEditingRecord(record)}
+                  />
+                </strong>
                 <span>{record.customer.companyName || record.relationship?.accountCode || "No company"}</span>
               </div>
               <span>{record.customer.email || "No email"}</span>

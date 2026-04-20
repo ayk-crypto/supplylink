@@ -10,6 +10,8 @@ import {
   TableScroll,
   Toolbar
 } from "../../components/ui/ResourceScreens.jsx";
+import AttachmentBadge from "../attachments/AttachmentBadge.jsx";
+import { useAttachmentCounts } from "../attachments/useAttachmentCounts.js";
 import { useToast } from "../feedback/toastContext.js";
 import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
@@ -53,7 +55,9 @@ function InvoiceListScreen({ navigate }) {
   const { data, error, isLoading, reload } = useResourceDirectory(loadInvoices, query, {
     onError: handleListError
   });
-  const items = data?.items || [];
+  const items = useMemo(() => data?.items || [], [data]);
+  const itemIds = useMemo(() => items.map((item) => item.id), [items]);
+  const attachmentCounts = useAttachmentCounts("invoices", itemIds);
   const hasFilters = Boolean(customerId || search || status);
 
   useEffect(() => {
@@ -199,7 +203,13 @@ function InvoiceListScreen({ navigate }) {
           {items.map((invoice) => (
             <article className="resource-row invoice-grid" key={invoice.id}>
               <div>
-                <strong>{invoice.invoiceNumber}</strong>
+                <strong>
+                  {invoice.invoiceNumber}
+                  <AttachmentBadge
+                    count={attachmentCounts[invoice.id]}
+                    onClick={() => navigate(`/invoices/${invoice.id}`)}
+                  />
+                </strong>
                 <span>{invoice.issueDate || invoice.createdAt || "No issue date"}</span>
               </div>
               <span>{formatCustomer(invoice.customer)}</span>

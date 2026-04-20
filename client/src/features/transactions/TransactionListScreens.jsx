@@ -10,6 +10,8 @@ import {
   TableScroll,
   Toolbar
 } from "../../components/ui/ResourceScreens.jsx";
+import AttachmentBadge from "../attachments/AttachmentBadge.jsx";
+import { useAttachmentCounts } from "../attachments/useAttachmentCounts.js";
 import { useToast } from "../feedback/toastContext.js";
 import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
@@ -77,7 +79,9 @@ function TransactionListScreen({ kind, navigate }) {
   const { data, error, isLoading, reload } = useResourceDirectory(loadDirectory, query, {
     onError: handleListError
   });
-  const items = data?.items || [];
+  const items = useMemo(() => data?.items || [], [data]);
+  const itemIds = useMemo(() => items.map((item) => item.id), [items]);
+  const attachmentCounts = useAttachmentCounts(kind, itemIds);
   const hasFilters = Boolean(search || status || customerId);
 
   useEffect(() => {
@@ -220,7 +224,13 @@ function TransactionListScreen({ kind, navigate }) {
           {items.map((item) => (
             <article className="resource-row transaction-grid" key={item.id}>
               <div>
-                <strong>{item[config.numberKey]}</strong>
+                <strong>
+                  {item[config.numberKey]}
+                  <AttachmentBadge
+                    count={attachmentCounts[item.id]}
+                    onClick={() => navigate(`/${kind}/${item.id}`)}
+                  />
+                </strong>
                 <span>{item.orderDate || item.issueDate || item.createdAt || "No date"}</span>
               </div>
               <span>{formatCustomer(item.customer)}</span>
