@@ -29,6 +29,8 @@ function NotificationsScreen({ navigate }) {
   const [filter, setFilter] = useState("");
   const [actionPendingId, setActionPendingId] = useState(null);
   const [isMarkingAll, setIsMarkingAll] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [isMarkingSelected, setIsMarkingSelected] = useState(false);
 
   const query = useMemo(
     () => ({
@@ -68,6 +70,60 @@ function NotificationsScreen({ navigate }) {
   useEffect(() => {
     setPage(1);
   }, [filter]);
+
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [page, filter, recentVersion]);
+
+  function toggleSelected(id) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  async function handleMarkSelected() {
+    if (isMarkingSelected) {
+      return;
+    }
+    const targets = items.filter(
+      (item) => selectedIds.has(item.id) && !item.isRead
+    );
+    if (!targets.length) {
+      return;
+    }
+    setIsMarkingSelected(true);
+    let successCount = 0;
+    let failureCount = 0;
+    for (const target of targets) {
+      try {
+        await markRead(target.id);
+        successCount += 1;
+      } catch {
+        failureCount += 1;
+      }
+    }
+    setIsMarkingSelected(false);
+    setSelectedIds(new Set());
+    if (successCount > 0) {
+      showToast({
+        message: `${successCount} marked as read${failureCount ? `, ${failureCount} failed` : ""}.`,
+        title: "Selection updated",
+        tone: failureCount > 0 ? "info" : "success"
+      });
+    } else if (failureCount > 0) {
+      showToast({
+        message: "We could not update the selected notifications.",
+        title: "Action failed",
+        tone: "error"
+      });
+    }
+  }
 
   async function handleOpen(notification) {
     if (!notification.isRead) {
@@ -196,6 +252,30 @@ function NotificationsScreen({ navigate }) {
         </span>
       </Toolbar>
 
+      {selectedIds.size > 0 ? (
+        <div aria-live="polite" className="bulk-action-bar">
+          <span>{selectedIds.size} selected</span>
+          <div className="button-row">
+            <button
+              className="primary-button"
+              disabled={isMarkingSelected}
+              onClick={handleMarkSelected}
+              type="button"
+            >
+              {isMarkingSelected ? "Updating..." : "Mark selected as read"}
+            </button>
+            <button
+              className="secondary-button"
+              disabled={isMarkingSelected}
+              onClick={() => setSelectedIds(new Set())}
+              type="button"
+            >
+              Clear selection
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {error ? <p className="surface-message error">{error}</p> : null}
       {isLoading ? <p className="surface-message loading">Loading notifications...</p> : null}
 
@@ -248,6 +328,17 @@ function NotificationsScreen({ navigate }) {
                   </span>
                 </button>
                 <div className="notification-board-actions">
+                  {!notification.isRead ? (
+                    <label className="bulk-checkbox" title="Select to bulk-mark">
+                      <input
+                        checked={selectedIds.has(notification.id)}
+                        onChange={() => toggleSelected(notification.id)}
+                        onClick={(event) => event.stopPropagation()}
+                        type="checkbox"
+                      />
+                      <span className="visually-hidden">Select notification</span>
+                    </label>
+                  ) : null}
                   {!notification.isRead ? (
                     <button
                       className="secondary-button compact"

@@ -31,7 +31,14 @@ async function createOrder(payload) {
   });
 }
 
+async function convertQuotationToOrder(quotationId) {
+  return request(`/quotations/${quotationId}/convert-to-order`, {
+    method: "POST"
+  });
+}
+
 export {
+  convertQuotationToOrder,
   createOrder,
   createQuotation,
   getOrder,

@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
-import { getOrder, getQuotation } from "../../services/transactionApi.js";
+import {
+  convertQuotationToOrder,
+  getOrder,
+  getQuotation
+} from "../../services/transactionApi.js";
 import { PageHeader } from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
@@ -35,6 +39,40 @@ function TransactionDetailScreen({ id, kind, navigate }) {
   const [detail, setDetail] = useState(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isConverting, setIsConverting] = useState(false);
+
+  async function handleConvertToOrder() {
+    if (!detail || isConverting) {
+      return;
+    }
+    setIsConverting(true);
+    try {
+      const response = await convertQuotationToOrder(detail.id);
+      const newOrder = response?.data?.order || response?.data;
+      const orderNumber = newOrder?.orderNumber ? ` ${newOrder.orderNumber}` : "";
+      showToast({
+        message: `Quotation ${detail.quoteNumber || ""} became order${orderNumber}.`.trim(),
+        title: "Converted to order",
+        tone: "success"
+      });
+      if (newOrder?.id) {
+        navigate(`/orders/${newOrder.id}`);
+      } else {
+        navigate("/orders");
+      }
+    } catch (requestError) {
+      showToast({
+        message: getApiErrorMessage(
+          requestError,
+          "Quotation could not be converted to an order."
+        ),
+        title: "Conversion failed",
+        tone: "error"
+      });
+    } finally {
+      setIsConverting(false);
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -104,6 +142,28 @@ function TransactionDetailScreen({ id, kind, navigate }) {
                 Create invoice
               </button>
             ) : null}
+            {kind === "quotations" ? (
+              <button
+                className="primary-button"
+                disabled={isConverting || detail.status !== "accepted"}
+                onClick={handleConvertToOrder}
+                title={
+                  detail.status === "accepted"
+                    ? "Create a confirmed order from this quotation"
+                    : "Only accepted quotations can be converted"
+                }
+                type="button"
+              >
+                {isConverting ? "Converting..." : "Convert to order"}
+              </button>
+            ) : null}
+            <button
+              className="secondary-button"
+              onClick={() => navigate(`/audit/${kind === "orders" ? "order" : "quotation"}/${detail.id}`)}
+              type="button"
+            >
+              Audit history
+            </button>
             <button
               className="secondary-button"
               onClick={() => navigate(config.listPath)}

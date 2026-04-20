@@ -114,12 +114,14 @@ function InvoiceListScreen({ navigate }) {
 
       <Toolbar onSubmit={submitSearch}>
         <input
+          aria-label="Search invoices"
           onChange={(event) => setSearchDraft(event.target.value)}
-          placeholder="Search invoices"
+          placeholder="Search invoice number or notes"
           type="search"
           value={searchDraft}
         />
         <select
+          aria-label="Filter by customer"
           onChange={(event) => {
             setCustomerId(event.target.value);
             setPage(1);
@@ -134,6 +136,7 @@ function InvoiceListScreen({ navigate }) {
           ))}
         </select>
         <select
+          aria-label="Filter by status"
           onChange={(event) => {
             setStatus(event.target.value);
             setPage(1);
@@ -143,13 +146,28 @@ function InvoiceListScreen({ navigate }) {
           <option value="">All statuses</option>
           {invoiceStatuses.map((statusOption) => (
             <option key={statusOption} value={statusOption}>
-              {statusOption}
+              {statusOption.replace("_", " ")}
             </option>
           ))}
         </select>
         <button className="secondary-button" type="submit">
           Search
         </button>
+        {hasFilters ? (
+          <button
+            className="secondary-button"
+            onClick={() => {
+              setSearchDraft("");
+              setSearch("");
+              setCustomerId("");
+              setStatus("");
+              setPage(1);
+            }}
+            type="button"
+          >
+            Reset
+          </button>
+        ) : null}
       </Toolbar>
 
       {error ? <p className="surface-message error">{error}</p> : null}

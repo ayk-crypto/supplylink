@@ -63,12 +63,14 @@ function InventoryListScreen({ navigate }) {
 
       <Toolbar onSubmit={submitSearch}>
         <input
+          aria-label="Search products"
           onChange={(event) => setSearchDraft(event.target.value)}
           placeholder="Search name or SKU"
           type="search"
           value={searchDraft}
         />
         <select
+          aria-label="Filter by status"
           onChange={(event) => {
             setStatus(event.target.value);
             setPage(1);
@@ -83,6 +85,20 @@ function InventoryListScreen({ navigate }) {
         <button className="secondary-button" type="submit">
           Search
         </button>
+        {hasFilters ? (
+          <button
+            className="secondary-button"
+            onClick={() => {
+              setSearchDraft("");
+              setSearch("");
+              setStatus("");
+              setPage(1);
+            }}
+            type="button"
+          >
+            Reset
+          </button>
+        ) : null}
       </Toolbar>
 
       {error ? <p className="surface-message error">{error}</p> : null}

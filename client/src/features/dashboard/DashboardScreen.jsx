@@ -120,7 +120,34 @@ function NotificationsList({ notifications }) {
   );
 }
 
-function DashboardScreen() {
+function QuickActions({ navigate }) {
+  if (typeof navigate !== "function") {
+    return null;
+  }
+  const actions = [
+    { label: "New order", path: "/orders/new", tone: "primary" },
+    { label: "New invoice", path: "/invoices/new", tone: "primary" },
+    { label: "Adjust stock", path: "/inventory", tone: "secondary" },
+    { label: "View notifications", path: "/notifications", tone: "secondary" },
+    { label: "Audit history", path: "/audit", tone: "secondary" }
+  ];
+  return (
+    <section aria-label="Quick actions" className="quick-actions">
+      {actions.map((action) => (
+        <button
+          className={`${action.tone}-button`}
+          key={action.path}
+          onClick={() => navigate(action.path)}
+          type="button"
+        >
+          {action.label}
+        </button>
+      ))}
+    </section>
+  );
+}
+
+function DashboardScreen({ navigate }) {
   const {
     areNotificationsLoading,
     dashboard,
@@ -183,6 +210,8 @@ function DashboardScreen() {
         </div>
       </section>
 
+      <QuickActions navigate={navigate} />
+
       <section className="metric-strip">
         <MetricCard
           detail="Customers linked to this vendor"
@@ -214,6 +243,15 @@ function DashboardScreen() {
         <div className="panel-block">
           <div className="panel-heading">
             <h3>Recent orders</h3>
+            {typeof navigate === "function" ? (
+              <button
+                className="link-button"
+                onClick={() => navigate("/orders")}
+                type="button"
+              >
+                Open orders
+              </button>
+            ) : null}
           </div>
           <RecordList emptyLabel="No recent orders." items={dashboard.recent.orders} kind="order" />
         </div>
@@ -221,6 +259,15 @@ function DashboardScreen() {
         <div className="panel-block">
           <div className="panel-heading">
             <h3>Recent invoices</h3>
+            {typeof navigate === "function" ? (
+              <button
+                className="link-button"
+                onClick={() => navigate("/invoices")}
+                type="button"
+              >
+                Open invoices
+              </button>
+            ) : null}
           </div>
           <RecordList
             emptyLabel="No recent invoices."
@@ -235,6 +282,15 @@ function DashboardScreen() {
             <span>
               {areNotificationsLoading ? "Loading" : `${notifications?.unreadCount || 0} unread`}
             </span>
+            {typeof navigate === "function" ? (
+              <button
+                className="link-button"
+                onClick={() => navigate("/notifications")}
+                type="button"
+              >
+                Open inbox
+              </button>
+            ) : null}
           </div>
           {notificationsError ? (
             <p className="surface-message error">{notificationsError}</p>
