@@ -4,7 +4,8 @@ import {
   getNotificationDirectory,
   getUnreadNotificationCount,
   markAllNotificationsRead,
-  markNotificationRead
+  markNotificationRead,
+  markNotificationsRead
 } from "./notifications.service.js";
 
 async function list(request, response) {
@@ -55,6 +56,18 @@ async function markRead(request, response) {
   });
 }
 
+async function bulkRead(request, response) {
+  const result = await markNotificationsRead(request.auth.userId, request.body.notificationIds);
+
+  sendSuccess(response, {
+    message: "Notifications marked as read",
+    data: result,
+    meta: {
+      requestId: request.context.requestId
+    }
+  });
+}
+
 async function markAllRead(request, response) {
   const result = await markAllNotificationsRead(request.auth.userId);
 
@@ -67,4 +80,4 @@ async function markAllRead(request, response) {
   });
 }
 
-export { getById, list, markAllRead, markRead, unreadCount };
+export { bulkRead, getById, list, markAllRead, markRead, unreadCount };

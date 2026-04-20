@@ -8,7 +8,8 @@ import {
   listLatestNotificationsForUser,
   listNotificationsForUser,
   markAllNotificationsReadForUser,
-  markNotificationReadForUser
+  markNotificationReadForUser,
+  markNotificationsReadForUser
 } from "./notifications.repository.js";
 
 function mapNotification(row) {
@@ -22,6 +23,14 @@ function mapNotification(row) {
     message: row.message,
     relatedEntityType: row.related_entity_type,
     relatedEntityId: row.related_entity_id,
+    relatedEntity: row.related_entity_type && row.related_entity_id
+      ? {
+          type: row.related_entity_type,
+          id: row.related_entity_id,
+          reference: row.related_entity_reference,
+          label: row.related_entity_label || row.related_entity_reference
+        }
+      : null,
     status: row.status,
     isRead: row.status === "read",
     metadata: row.metadata || {},
@@ -120,6 +129,17 @@ async function markNotificationRead(userId, notificationId) {
   return mapNotification(notification);
 }
 
+async function markNotificationsRead(userId, notificationIds) {
+  const result = await markNotificationsReadForUser(userId, notificationIds);
+
+  return {
+    requestedCount: result.requestedCount,
+    updatedCount: result.updatedCount,
+    skippedCount: result.skippedCount,
+    updatedIds: result.updatedIds
+  };
+}
+
 async function markAllNotificationsRead(userId) {
   return {
     updatedCount: await markAllNotificationsReadForUser(userId),
@@ -190,6 +210,7 @@ export {
   getUnreadNotificationCount,
   markAllNotificationsRead,
   markNotificationRead,
+  markNotificationsRead,
   notifySuperAdmins,
   notifyVendorUsers,
   runNotificationTask

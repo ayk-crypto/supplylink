@@ -5,8 +5,27 @@ function mapAuditEvent(row) {
     id: row.id,
     vendorId: row.vendor_id,
     actorUserId: row.actor_user_id,
+    actorDisplay: row.actor_full_name || row.actor_email || null,
+    actor: row.actor_user_id
+      ? {
+          id: row.actor_user_id,
+          display: row.actor_full_name || row.actor_email || null,
+          fullName: row.actor_full_name,
+          email: row.actor_email
+        }
+      : null,
     entityType: row.entity_type,
     entityId: row.entity_id,
+    entityReference: row.entity_reference,
+    entityLabel: row.entity_label || row.entity_reference,
+    entity: row.entity_id
+      ? {
+          type: row.entity_type,
+          id: row.entity_id,
+          reference: row.entity_reference,
+          label: row.entity_label || row.entity_reference
+        }
+      : null,
     eventType: row.event_type,
     eventLabel: row.event_label,
     metadata: row.metadata || {},

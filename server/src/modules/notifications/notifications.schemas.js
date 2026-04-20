@@ -13,6 +13,10 @@ const notificationIdParamsSchema = z.object({
   notificationId: uuidParam
 });
 
+const notificationBulkReadBodySchema = z.object({
+  notificationIds: z.array(uuidParam).min(1).max(100)
+});
+
 const notificationQuerySchema = z
   .object({
     page: z.coerce.number().int().min(1).optional(),
@@ -28,4 +32,4 @@ const notificationQuerySchema = z
     path: ["dateFrom"]
   });
 
-export { notificationIdParamsSchema, notificationQuerySchema };
+export { notificationBulkReadBodySchema, notificationIdParamsSchema, notificationQuerySchema };

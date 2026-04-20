@@ -2,8 +2,9 @@ import { Router } from "express";
 import authenticate from "../../middlewares/authenticate.js";
 import validateRequest from "../../middlewares/validateRequest.js";
 import asyncHandler from "../../utils/asyncHandler.js";
-import { getById, list, markAllRead, markRead, unreadCount } from "./notifications.controller.js";
+import { bulkRead, getById, list, markAllRead, markRead, unreadCount } from "./notifications.controller.js";
 import {
+  notificationBulkReadBodySchema,
   notificationIdParamsSchema,
   notificationQuerySchema
 } from "./notifications.schemas.js";
@@ -27,6 +28,13 @@ notificationsRoutes.patch(
   "/read-all",
   authenticate,
   asyncHandler(markAllRead)
+);
+
+notificationsRoutes.post(
+  "/bulk-read",
+  authenticate,
+  validateRequest({ body: notificationBulkReadBodySchema }),
+  asyncHandler(bulkRead)
 );
 
 notificationsRoutes.post(

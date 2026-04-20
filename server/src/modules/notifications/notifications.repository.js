@@ -57,12 +57,48 @@ async function notificationSelect() {
           notification.created_at,
           notification.updated_at,
           vendor.display_name AS vendor_display_name,
-          vendor.slug AS vendor_slug`;
+          vendor.slug AS vendor_slug,
+          CASE notification.related_entity_type
+            WHEN 'quotation' THEN quotation.quote_number
+            WHEN 'order' THEN orders.order_number
+            WHEN 'invoice' THEN invoice.invoice_number
+            WHEN 'payment' THEN payment.payment_reference
+            WHEN 'product' THEN product.sku
+            ELSE NULL
+          END AS related_entity_reference,
+          CASE notification.related_entity_type
+            WHEN 'quotation' THEN quotation.quote_number
+            WHEN 'order' THEN orders.order_number
+            WHEN 'invoice' THEN invoice.invoice_number
+            WHEN 'payment' THEN COALESCE(payment.payment_reference, payment.id::text)
+            WHEN 'product' THEN COALESCE(product.name, product.sku)
+            ELSE NULL
+          END AS related_entity_label`;
 }
 
 function notificationJoinClause() {
   return `FROM notifications notification
-          LEFT JOIN vendors vendor ON vendor.id = notification.vendor_id`;
+          LEFT JOIN vendors vendor ON vendor.id = notification.vendor_id
+          LEFT JOIN quotations quotation
+            ON notification.related_entity_type = 'quotation'
+           AND quotation.id = notification.related_entity_id
+           AND quotation.vendor_id = notification.vendor_id
+          LEFT JOIN orders orders
+            ON notification.related_entity_type = 'order'
+           AND orders.id = notification.related_entity_id
+           AND orders.vendor_id = notification.vendor_id
+          LEFT JOIN invoices invoice
+            ON notification.related_entity_type = 'invoice'
+           AND invoice.id = notification.related_entity_id
+           AND invoice.vendor_id = notification.vendor_id
+          LEFT JOIN payments payment
+            ON notification.related_entity_type = 'payment'
+           AND payment.id = notification.related_entity_id
+           AND payment.vendor_id = notification.vendor_id
+          LEFT JOIN products product
+            ON notification.related_entity_type = 'product'
+           AND product.id = notification.related_entity_id
+           AND product.vendor_id = notification.vendor_id`;
 }
 
 async function listNotificationsForUser({
@@ -187,6 +223,39 @@ async function markNotificationReadForUser(userId, notificationId) {
   }
 
   return findNotificationForUser(userId, notificationId);
+}
+
+async function markNotificationsReadForUser(userId, notificationIds) {
+  const uniqueNotificationIds = [...new Set(notificationIds)];
+
+  if (uniqueNotificationIds.length === 0) {
+    return {
+      updatedIds: [],
+      updatedCount: 0,
+      skippedCount: 0,
+      requestedCount: 0
+    };
+  }
+
+  const result = await query(
+    `UPDATE notifications notification
+     SET status = 'read',
+         read_at = COALESCE(notification.read_at, NOW()),
+         updated_at = NOW()
+     WHERE notification.user_id = $1
+       AND notification.id = ANY($2::uuid[])
+       AND notification.status = 'unread'
+     RETURNING notification.id`,
+    [userId, uniqueNotificationIds]
+  );
+  const updatedIds = result.rows.map((row) => row.id);
+
+  return {
+    updatedIds,
+    updatedCount: updatedIds.length,
+    skippedCount: uniqueNotificationIds.length - updatedIds.length,
+    requestedCount: uniqueNotificationIds.length
+  };
 }
 
 async function markAllNotificationsReadForUser(userId) {
@@ -317,5 +386,6 @@ export {
   listLatestNotificationsForUser,
   listNotificationsForUser,
   markAllNotificationsReadForUser,
-  markNotificationReadForUser
+  markNotificationReadForUser,
+  markNotificationsReadForUser
 };

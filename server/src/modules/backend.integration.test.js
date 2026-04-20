@@ -657,6 +657,16 @@ if (!testDatabaseUrl) {
       assert.ok(orderHistoryTypes.has("order.confirmed"));
       assert.ok(orderHistoryTypes.has("order.converted_to_invoice"));
       assert.ok(
+        orderHistory.payload.data.items.some(
+          (event) =>
+            event.eventType === "order.created" &&
+            event.actorDisplay === state.vendorA.user.fullName &&
+            event.entityReference === state.order.orderNumber &&
+            event.entityLabel === state.order.orderNumber &&
+            event.entity?.reference === state.order.orderNumber
+        )
+      );
+      assert.ok(
         orderHistory.payload.data.items.every(
           (event) => event.entityType === "order" && event.entityId === state.order.id
         )
@@ -670,6 +680,21 @@ if (!testDatabaseUrl) {
       );
       assert.equal(paymentAudit.payload.data.items.length, 1);
       assert.equal(paymentAudit.payload.data.items[0].metadata.invoiceId, state.invoice.id);
+      assert.equal(paymentAudit.payload.data.items[0].entityType, "payment");
+      assert.equal(paymentAudit.payload.data.items[0].actorUserId, state.vendorA.user.id);
+      assert.ok(Object.prototype.hasOwnProperty.call(paymentAudit.payload.data.items[0], "entityLabel"));
+
+      const productAudit = await api.get(`/audit/product/${state.product.id}`, {
+        token: state.vendorA.token
+      });
+      assert.ok(
+        productAudit.payload.data.items.some(
+          (event) =>
+            event.eventType === "inventory.adjusted" &&
+            event.entityReference === state.product.sku &&
+            event.entityLabel === state.product.name
+        )
+      );
 
       const vendorBHistory = await api.get(`/audit/order/${state.order.id}`, {
         token: state.vendorB.token
@@ -747,6 +772,44 @@ if (!testDatabaseUrl) {
       assert.equal(notificationDetail.payload.data.isRead, true);
       assert.ok(notificationDetail.payload.data.relatedEntityType);
       assert.ok(notificationDetail.payload.data.relatedEntityId);
+      assert.equal(notificationDetail.payload.data.relatedEntity.id, notificationDetail.payload.data.relatedEntityId);
+      assert.equal(notificationDetail.payload.data.relatedEntity.type, notificationDetail.payload.data.relatedEntityType);
+
+      const unreadNotifications = await api.get("/notifications?unreadOnly=true&page=1&pageSize=10", {
+        token: state.vendorA.token
+      });
+      assert.ok(unreadNotifications.payload.data.items.length >= 1);
+      const unreadNotificationId = unreadNotifications.payload.data.items[0].id;
+
+      const vendorBBulkRead = await api.post("/notifications/bulk-read", {
+        token: state.vendorB.token,
+        body: {
+          notificationIds: [unreadNotificationId]
+        }
+      });
+      assert.equal(vendorBBulkRead.payload.data.updatedCount, 0);
+      assert.equal(vendorBBulkRead.payload.data.skippedCount, 1);
+
+      const stillUnread = await api.get(`/notifications/${unreadNotificationId}`, {
+        token: state.vendorA.token
+      });
+      assert.equal(stillUnread.payload.data.isRead, false);
+
+      const bulkRead = await api.post("/notifications/bulk-read", {
+        token: state.vendorA.token,
+        body: {
+          notificationIds: [unreadNotificationId, notificationId, unreadNotificationId]
+        }
+      });
+      assert.equal(bulkRead.payload.data.requestedCount, 2);
+      assert.equal(bulkRead.payload.data.updatedCount, 1);
+      assert.equal(bulkRead.payload.data.skippedCount, 1);
+      assert.ok(bulkRead.payload.data.updatedIds.includes(unreadNotificationId));
+
+      const bulkReadDetail = await api.get(`/notifications/${unreadNotificationId}`, {
+        token: state.vendorA.token
+      });
+      assert.equal(bulkReadDetail.payload.data.isRead, true);
 
       const eventDirectory = await waitFor(async () => {
         const result = await api.get("/notifications?page=1&pageSize=50", {
