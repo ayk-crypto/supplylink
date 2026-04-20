@@ -2,7 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { getCustomer } from "../../services/masterDataApi.js";
 import { getCustomerLedger } from "../../services/ledgerApi.js";
 import { exportCustomerStatementCsv } from "../../services/reportApi.js";
-import { Field, PageHeader } from "../../components/ui/ResourceScreens.jsx";
+import {
+  ErrorState,
+  Field,
+  LoadingSkeleton,
+  PageHeader,
+  TableScroll
+} from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage } from "../master-data/resourceUtils.js";
 import {
@@ -155,11 +161,11 @@ function CustomerLedgerScreen({ id, navigate }) {
   }
 
   if (isLoading) {
-    return <p className="surface-message loading">Loading customer statement...</p>;
+    return <LoadingSkeleton label="Loading customer statement" rows={5} />;
   }
 
   if (error) {
-    return <p className="surface-message error">{error}</p>;
+    return <ErrorState message={error} />;
   }
 
   if (!statement) {
@@ -254,6 +260,7 @@ function CustomerLedgerScreen({ id, navigate }) {
         </div>
 
         {filteredEntries.length ? (
+          <TableScroll>
           <div className="resource-table">
             <div className="resource-table-head statement-grid">
               <span>Date</span>
@@ -277,6 +284,7 @@ function CustomerLedgerScreen({ id, navigate }) {
               </article>
             ))}
           </div>
+          </TableScroll>
         ) : (
           <p className="empty-panel">No ledger entries match the current filters.</p>
         )}

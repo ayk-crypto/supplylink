@@ -9,10 +9,13 @@ import { useAppSettings } from "../system/settingsContext.js";
 import { getDefaultPageSize } from "../system/settingsFormat.js";
 import {
   EmptyState,
+  ErrorState,
   Field,
   FormPanel,
+  LoadingState,
   PageHeader,
   Pagination,
+  TableScroll,
   Toolbar
 } from "../../components/ui/ResourceScreens.jsx";
 import {
@@ -317,6 +320,7 @@ function CustomersScreen() {
       ) : null}
 
       {items.length ? (
+        <TableScroll>
         <div className="resource-table">
           <div className="resource-table-head customer-grid">
             <span>Name</span>
@@ -344,6 +348,7 @@ function CustomersScreen() {
             </article>
           ))}
         </div>
+        </TableScroll>
       ) : null}
 
       <Pagination pagination={data?.pagination} onPageChange={setPage} />

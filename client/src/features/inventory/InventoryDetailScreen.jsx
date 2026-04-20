@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   EmptyState,
+  ErrorState,
+  LoadingState,
   PageHeader,
   Pagination
 } from "../../components/ui/ResourceScreens.jsx";
@@ -149,10 +151,8 @@ function InventoryDetailScreen({ id, navigate }) {
         title={product?.name || "Product inventory"}
       />
 
-      {productError ? <p className="surface-message error">{productError}</p> : null}
-      {productLoading ? (
-        <p className="surface-message loading">Loading product...</p>
-      ) : null}
+      <ErrorState message={productError} />
+      {productLoading ? <LoadingState>Loading product…</LoadingState> : null}
 
       {product ? (
         <section className="panel-block">
@@ -216,12 +216,8 @@ function InventoryDetailScreen({ id, navigate }) {
           </select>
         </header>
 
-        {movementsResult.error ? (
-          <p className="surface-message error">{movementsResult.error}</p>
-        ) : null}
-        {movementsResult.isLoading ? (
-          <p className="surface-message loading">Loading movements...</p>
-        ) : null}
+        <ErrorState message={movementsResult.error} onRetry={movementsResult.reload} />
+        {movementsResult.isLoading ? <LoadingState>Loading movements…</LoadingState> : null}
         {!movementsResult.isLoading && !movements.length ? (
           <EmptyState>No stock movements recorded yet.</EmptyState>
         ) : null}

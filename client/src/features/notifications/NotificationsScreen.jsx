@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { listNotifications } from "../../services/notificationsApi.js";
 import {
   EmptyState,
+  ErrorState,
+  LoadingState,
   PageHeader,
   Pagination,
   Toolbar
@@ -278,8 +280,8 @@ function NotificationsScreen({ navigate }) {
         </div>
       ) : null}
 
-      {error ? <p className="surface-message error">{error}</p> : null}
-      {isLoading ? <p className="surface-message loading">Loading notifications...</p> : null}
+      <ErrorState message={error} onRetry={reload} />
+      {isLoading ? <LoadingState>Loading notifications…</LoadingState> : null}
 
       {!isLoading && items.length === 0 ? (
         <EmptyState>

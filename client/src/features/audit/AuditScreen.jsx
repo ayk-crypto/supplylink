@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
 import {
   EmptyState,
+  ErrorState,
+  LoadingState,
   PageHeader,
   Pagination,
   Toolbar
@@ -64,7 +66,7 @@ function AuditScreen({ navigate }) {
     [showToast]
   );
 
-  const { data, error, isLoading } = useResourceDirectory(loadEvents, query, {
+  const { data, error, isLoading, reload } = useResourceDirectory(loadEvents, query, {
     onError: handleListError
   });
   const items = data?.items || [];
@@ -143,8 +145,8 @@ function AuditScreen({ navigate }) {
         ) : null}
       </Toolbar>
 
-      {error ? <p className="surface-message error">{error}</p> : null}
-      {isLoading ? <p className="surface-message loading">Loading audit history...</p> : null}
+      <ErrorState message={error} onRetry={reload} />
+      {isLoading ? <LoadingState>Loading audit history…</LoadingState> : null}
       {!isLoading && !items.length ? (
         <EmptyState>
           {hasFilters

@@ -2,9 +2,12 @@ import { useCallback, useMemo, useState } from "react";
 import { exportInvoicesCsv, listInvoiceReport } from "../../services/reportApi.js";
 import {
   EmptyState,
+  ErrorState,
   Field,
+  LoadingState,
   PageHeader,
-  Pagination
+  Pagination,
+  TableScroll
 } from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
@@ -73,7 +76,7 @@ function ReceivablesReportScreen({ navigate }) {
     },
     [showToast]
   );
-  const { data, error, isLoading } = useResourceDirectory(loadInvoices, query, {
+  const { data, error, isLoading, reload } = useResourceDirectory(loadInvoices, query, {
     onError: handleListError
   });
   const invoices = data?.items || [];
@@ -206,11 +209,12 @@ function ReceivablesReportScreen({ navigate }) {
         </div>
       </form>
 
-      {error ? <p className="surface-message error">{error}</p> : null}
-      {isLoading ? <p className="surface-message loading">Loading receivables...</p> : null}
+      <ErrorState message={error} onRetry={reload} />
+      {isLoading ? <LoadingState>Loading receivables…</LoadingState> : null}
       {!isLoading && !rows.length ? <EmptyState>No receivables match the current filters.</EmptyState> : null}
 
       {rows.length ? (
+        <TableScroll>
         <div className="resource-table">
           <div className="resource-table-head report-receivable-grid">
             <span>Customer</span>
@@ -241,6 +245,7 @@ function ReceivablesReportScreen({ navigate }) {
             </article>
           ))}
         </div>
+        </TableScroll>
       ) : null}
 
       <Pagination pagination={data?.pagination} onPageChange={setPage} />

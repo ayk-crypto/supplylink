@@ -11,7 +11,13 @@ const INVOICE_ACTIONS = [
   { action: "issue", label: "Issue", from: ["draft"], successTitle: "Invoice issued", successMessage: "Invoice issued.", tone: "primary" },
   { action: "void", label: "Void", from: ["issued"], successTitle: "Invoice voided", successMessage: "Invoice voided.", tone: "secondary" }
 ];
-import { Field, PageHeader } from "../../components/ui/ResourceScreens.jsx";
+import {
+  ErrorState,
+  Field,
+  LoadingSkeleton,
+  PageHeader,
+  TableScroll
+} from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
 import { useAppSettings } from "../system/settingsContext.js";
@@ -375,11 +381,11 @@ function InvoiceDetailScreen({ id, navigate }) {
   }, [loadInvoice, showToast]);
 
   if (isLoading) {
-    return <p className="surface-message loading">Loading invoice...</p>;
+    return <LoadingSkeleton label="Loading invoice" rows={4} />;
   }
 
   if (error) {
-    return <p className="surface-message error">{error}</p>;
+    return <ErrorState message={error} onRetry={loadInvoice} />;
   }
 
   if (!invoice) {
@@ -487,6 +493,7 @@ function InvoiceDetailScreen({ id, navigate }) {
           <h3>Line items</h3>
         </div>
         {invoice.items?.length ? (
+          <TableScroll>
           <div className="resource-table">
             <div className="resource-table-head detail-line-grid">
               <span>Product</span>
@@ -506,6 +513,7 @@ function InvoiceDetailScreen({ id, navigate }) {
               </article>
             ))}
           </div>
+          </TableScroll>
         ) : (
           <p className="empty-panel">No line items found.</p>
         )}

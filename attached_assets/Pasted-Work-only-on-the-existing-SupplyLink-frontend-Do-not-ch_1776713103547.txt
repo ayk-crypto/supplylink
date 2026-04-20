@@ -1,0 +1,87 @@
+Work only on the existing SupplyLink frontend.
+
+Do not change backend APIs.
+
+Goal:
+Implement Module 20AD: Frontend Screen Consistency Completion.
+
+Context:
+Module 20AC introduced shared UI primitives and improved polish across several operational screens:
+- LoadingState
+- LoadingSkeleton
+- ErrorState
+- SectionHeader
+- TableScroll
+
+Adoption is currently partial. Several screens still use older raw loading/error markup, and wide tables do not yet consistently use the new responsive wrapper.
+
+Core objective:
+Complete practical adoption of the new shared UI patterns across the remaining major frontend surfaces so the app feels consistent, responsive, and production-minded.
+
+What to do:
+
+1) Table responsiveness completion
+Wrap wide resource tables with the shared TableScroll component wherever practical and safe, especially on:
+- Customers
+- Products
+- Inventory
+- Invoices
+- Orders / Quotations
+- any other wide operational table already using the standard resource-table pattern
+Do not redesign tables or rewrite their internal structure unless necessary.
+
+2) Loading and error state consistency
+Replace remaining raw inline loading/error surface-message patterns with shared LoadingState and ErrorState where practical, prioritizing:
+- InvoiceDetailScreen
+- TransactionDetailScreen
+- InventoryDetailScreen
+- CustomerLedgerScreen
+- NotificationsScreen
+- AuditScreen
+- EntityAuditScreen
+- report screens
+Keep retry behavior wired where reload/refetch actions already exist.
+
+3) Section header consistency
+Adopt SectionHeader in remaining screens/panels where title + hint + action layouts already exist and can be migrated safely, especially:
+- Dashboard panels
+- Settings sections
+- Reports sections
+Do not redesign headings; just unify implementation where practical.
+
+4) Skeleton polish where high value
+Use LoadingSkeleton selectively on screens/panels where layout jump is still noticeable and centralized enough to improve safely, especially:
+- report tables
+- ledger tables
+- detail screen loading surfaces
+Avoid overusing skeletons where a simple loading state is better.
+
+5) Final consistency hardening
+Ensure:
+- no regressions in spacing or overflow
+- no broken small-screen action bars
+- no duplicate loading/error UI
+- accessibility remains intact
+
+6) Documentation
+Update client README with the final shared UI adoption coverage from this module.
+
+Constraints:
+- no backend changes
+- no redesign
+- no new product features
+- keep changes additive and low risk
+- preserve current flows and data usage
+
+Verification:
+- run client lint
+- run client build
+
+Deliverable:
+1. Summary
+2. Files changed
+3. Which screens now use TableScroll
+4. Which screens now use LoadingState / ErrorState / LoadingSkeleton
+5. Which screens/sections now use SectionHeader
+6. Verification results
+7. Any useful follow-up items

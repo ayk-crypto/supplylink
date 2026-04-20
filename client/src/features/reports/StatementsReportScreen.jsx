@@ -4,7 +4,13 @@ import {
   exportCustomerStatementCsv,
   getCustomerStatementReport
 } from "../../services/reportApi.js";
-import { Field, PageHeader } from "../../components/ui/ResourceScreens.jsx";
+import {
+  ErrorState,
+  Field,
+  LoadingState,
+  PageHeader,
+  TableScroll
+} from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import {
   formatCustomer,
@@ -207,6 +213,7 @@ function StatementsReportScreen({ navigate }) {
               <span>{statement.items.length} entries</span>
             </div>
             {statement.items.length ? (
+              <TableScroll>
               <div className="resource-table">
                 <div className="resource-table-head statement-grid">
                   <span>Date</span>
@@ -230,6 +237,7 @@ function StatementsReportScreen({ navigate }) {
                   </article>
                 ))}
               </div>
+              </TableScroll>
             ) : (
               <p className="empty-panel">No statement entries found for this period.</p>
             )}

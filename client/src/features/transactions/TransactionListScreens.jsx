@@ -3,8 +3,11 @@ import { listCustomers } from "../../services/masterDataApi.js";
 import { listOrders, listQuotations } from "../../services/transactionApi.js";
 import {
   EmptyState,
+  ErrorState,
+  LoadingState,
   PageHeader,
   Pagination,
+  TableScroll,
   Toolbar
 } from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
@@ -205,6 +208,7 @@ function TransactionListScreen({ kind, navigate }) {
       ) : null}
 
       {items.length ? (
+        <TableScroll>
         <div className="resource-table">
           <div className="resource-table-head transaction-grid">
             <span>Number</span>
@@ -232,6 +236,7 @@ function TransactionListScreen({ kind, navigate }) {
             </article>
           ))}
         </div>
+        </TableScroll>
       ) : null}
 
       <Pagination pagination={data?.pagination} onPageChange={setPage} />

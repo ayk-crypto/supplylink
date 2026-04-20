@@ -6,7 +6,12 @@ import {
   transitionOrder,
   transitionQuotation
 } from "../../services/transactionApi.js";
-import { PageHeader } from "../../components/ui/ResourceScreens.jsx";
+import {
+  ErrorState,
+  LoadingSkeleton,
+  PageHeader,
+  TableScroll
+} from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
 import { useAppSettings } from "../system/settingsContext.js";
@@ -179,11 +184,11 @@ function TransactionDetailScreen({ id, kind, navigate }) {
   }, [config, id, showToast]);
 
   if (isLoading) {
-    return <p className="surface-message loading">Loading {config.title.toLowerCase()}...</p>;
+    return <LoadingSkeleton label={`Loading ${config.title.toLowerCase()}`} rows={4} />;
   }
 
   if (error) {
-    return <p className="surface-message error">{error}</p>;
+    return <ErrorState message={error} />;
   }
 
   if (!detail) {
@@ -270,6 +275,7 @@ function TransactionDetailScreen({ id, kind, navigate }) {
           <h3>Line items</h3>
         </div>
         {detail.items?.length ? (
+          <TableScroll>
           <div className="resource-table">
             <div className="resource-table-head detail-line-grid">
               <span>Product</span>
@@ -289,6 +295,7 @@ function TransactionDetailScreen({ id, kind, navigate }) {
               </article>
             ))}
           </div>
+          </TableScroll>
         ) : (
           <p className="empty-panel">No line items found.</p>
         )}

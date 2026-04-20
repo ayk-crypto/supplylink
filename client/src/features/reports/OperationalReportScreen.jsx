@@ -10,9 +10,12 @@ import {
 } from "../../services/reportApi.js";
 import {
   EmptyState,
+  ErrorState,
   Field,
+  LoadingState,
   PageHeader,
   Pagination,
+  TableScroll,
   Toolbar
 } from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
@@ -127,6 +130,7 @@ function ReportFilters({ customers, filters, kind, onChange, onSubmit }) {
 
 function InvoiceRows({ items, navigate }) {
   return (
+    <TableScroll>
     <div className="resource-table">
       <div className="resource-table-head report-invoice-grid">
         <span>Invoice</span>
@@ -154,11 +158,13 @@ function InvoiceRows({ items, navigate }) {
         </article>
       ))}
     </div>
+    </TableScroll>
   );
 }
 
 function PaymentRows({ items }) {
   return (
+    <TableScroll>
     <div className="resource-table">
       <div className="resource-table-head report-payment-grid">
         <span>Date</span>
@@ -182,11 +188,13 @@ function PaymentRows({ items }) {
         </article>
       ))}
     </div>
+    </TableScroll>
   );
 }
 
 function OrderRows({ items, navigate }) {
   return (
+    <TableScroll>
     <div className="resource-table">
       <div className="resource-table-head report-order-grid">
         <span>Order</span>
@@ -210,6 +218,7 @@ function OrderRows({ items, navigate }) {
         </article>
       ))}
     </div>
+    </TableScroll>
   );
 }
 
@@ -255,7 +264,7 @@ function OperationalReportScreen({ kind, navigate }) {
     },
     [config, showToast]
   );
-  const { data, error, isLoading } = useResourceDirectory(loadReport, query, {
+  const { data, error, isLoading, reload } = useResourceDirectory(loadReport, query, {
     onError: handleListError
   });
   const items = data?.items || [];
@@ -362,8 +371,8 @@ function OperationalReportScreen({ kind, navigate }) {
         onSubmit={applyFilters}
       />
 
-      {error ? <p className="surface-message error">{error}</p> : null}
-      {isLoading ? <p className="surface-message loading">Loading {kind} report...</p> : null}
+      <ErrorState message={error} onRetry={reload} />
+      {isLoading ? <LoadingState>Loading {kind} report…</LoadingState> : null}
       {!isLoading && !items.length ? <EmptyState>No report rows match the current filters.</EmptyState> : null}
 
       {items.length && kind === "invoices" ? <InvoiceRows items={items} navigate={navigate} /> : null}

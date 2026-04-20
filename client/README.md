@@ -518,3 +518,57 @@ Constraints respected:
 - Existing CSS classes and visual language preserved; new utilities are
   additive.
 - All flows and API contracts unchanged.
+
+## Module 20AD Frontend Screen Consistency Completion
+
+Module 20AD completes practical adoption of the shared UI primitives
+introduced in Module 20AC across the remaining major frontend
+surfaces. Additive only — no backend changes, no redesign, no new
+product features.
+
+Shared UI adoption coverage after this module:
+
+- `TableScroll` (horizontal-scroll wrapper) is now applied to every
+  wide `.resource-table` block in the operational app: master-data
+  Customers / Products / Categories, Invoices list and detail line
+  items, Orders / Quotations list and detail line items, Inventory
+  detail movements (already a card list), the customer Ledger
+  Overview and Customer Statement, the Receivables and Statements
+  reports, and all three Operational report row blocks (invoices /
+  payments / orders).
+- `LoadingState` and `ErrorState` (with retry where reload exists)
+  now back the loading and error surfaces of: InvoiceDetailScreen,
+  TransactionDetailScreen (orders + quotations detail),
+  InventoryDetailScreen (product + movements panels),
+  CustomerLedgerScreen, LedgerOverviewScreen, NotificationsScreen,
+  AuditScreen, EntityAuditScreen, ReportsHomeScreen,
+  OperationalReportScreen, ReceivablesReportScreen.
+- `LoadingSkeleton` is used for layout-stable loading on heavy detail
+  pages: InvoiceDetailScreen, TransactionDetailScreen, and
+  CustomerLedgerScreen. The dashboard hero / KPI tiles and recent
+  notifications panel continue to use it from Module 20AC.
+- `SectionHeader` now backs the three dashboard column panels
+  (Recent orders, Recent invoices, Notifications) so the title +
+  hint + action row uses a single consistent implementation that
+  wraps cleanly on small screens.
+
+Retry wiring:
+
+- All adopting screens that already had a `reload` action from
+  `useResourceDirectory` now thread it into `ErrorState.onRetry`.
+  Two screens did not previously destructure `reload` and were
+  updated: `OperationalReportScreen` and `ReceivablesReportScreen`.
+- Detail screens that load via a one-shot effect (Invoice / Order /
+  Quotation / Customer Statement) render `ErrorState` without
+  `onRetry`; the existing back-to-list / refresh path is preserved.
+
+Constraints respected:
+
+- No backend changes.
+- No redesign of tables, panels, or layouts.
+- All flows, API contracts, and class names preserved; the only
+  structural change to existing markup is wrapping `.resource-table`
+  blocks with `<TableScroll>`.
+- Empty-state ("No detail found.") messages on detail screens are
+  intentionally left as `surface-message` because they are neither a
+  loading nor an error state.

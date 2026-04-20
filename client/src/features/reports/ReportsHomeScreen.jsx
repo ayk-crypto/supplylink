@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getReportSummary } from "../../services/reportApi.js";
-import { PageHeader } from "../../components/ui/ResourceScreens.jsx";
+import { LoadingState, PageHeader } from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import { formatReportError, toMoney } from "./reportUtils.js";
 
@@ -83,7 +83,7 @@ function ReportsHomeScreen({ navigate }) {
         title="Reports and exports"
       />
 
-      {isLoading ? <p className="surface-message loading">Loading report summary...</p> : null}
+      {isLoading ? <LoadingState>Loading report summary…</LoadingState> : null}
 
       {summary ? (
         <section className="metric-strip reports-summary-strip">

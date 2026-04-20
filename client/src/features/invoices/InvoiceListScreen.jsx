@@ -3,8 +3,11 @@ import { listCustomers } from "../../services/masterDataApi.js";
 import { listInvoices } from "../../services/invoiceApi.js";
 import {
   EmptyState,
+  ErrorState,
+  LoadingState,
   PageHeader,
   Pagination,
+  TableScroll,
   Toolbar
 } from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
@@ -183,6 +186,7 @@ function InvoiceListScreen({ navigate }) {
       ) : null}
 
       {items.length ? (
+        <TableScroll>
         <div className="resource-table">
           <div className="resource-table-head invoice-grid">
             <span>Invoice</span>
@@ -212,6 +216,7 @@ function InvoiceListScreen({ navigate }) {
             </article>
           ))}
         </div>
+        </TableScroll>
       ) : null}
 
       <Pagination pagination={data?.pagination} onPageChange={setPage} />

@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
 import {
   EmptyState,
+  ErrorState,
+  LoadingState,
   PageHeader,
   Pagination
 } from "../../components/ui/ResourceScreens.jsx";
@@ -41,7 +43,7 @@ function EntityAuditScreen({ entityType, entityId, navigate }) {
     [showToast]
   );
 
-  const { data, error, isLoading } = useResourceDirectory(loadEvents, query, {
+  const { data, error, isLoading, reload } = useResourceDirectory(loadEvents, query, {
     onError: handleListError
   });
   const items = data?.items || [];
@@ -78,8 +80,8 @@ function EntityAuditScreen({ entityType, entityId, navigate }) {
         }
       />
 
-      {error ? <p className="surface-message error">{error}</p> : null}
-      {isLoading ? <p className="surface-message loading">Loading audit history...</p> : null}
+      <ErrorState message={error} onRetry={reload} />
+      {isLoading ? <LoadingState>Loading audit history…</LoadingState> : null}
       {!isLoading && !items.length ? (
         <EmptyState>No audit events recorded for this entity yet.</EmptyState>
       ) : null}

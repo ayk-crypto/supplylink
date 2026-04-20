@@ -1,4 +1,4 @@
-import { ErrorState, LoadingSkeleton } from "../../components/ui/ResourceScreens.jsx";
+import { ErrorState, LoadingSkeleton, SectionHeader } from "../../components/ui/ResourceScreens.jsx";
 import { useAppSettings } from "../system/settingsContext.js";
 import { formatMoneyWith } from "../system/settingsFormat.js";
 import { useDashboardData } from "./useDashboardData.js";
@@ -250,18 +250,20 @@ function DashboardScreen({ navigate }) {
 
       <section className="dashboard-columns">
         <div className="panel-block">
-          <div className="panel-heading">
-            <h3>Recent orders</h3>
-            {typeof navigate === "function" ? (
-              <button
-                className="link-button"
-                onClick={() => navigate("/orders")}
-                type="button"
-              >
-                Open orders
-              </button>
-            ) : null}
-          </div>
+          <SectionHeader
+            action={
+              typeof navigate === "function" ? (
+                <button
+                  className="link-button"
+                  onClick={() => navigate("/orders")}
+                  type="button"
+                >
+                  Open orders
+                </button>
+              ) : null
+            }
+            title="Recent orders"
+          />
           <RecordList
             emptyLabel="No recent orders."
             formatMoney={formatMoney}
@@ -271,18 +273,20 @@ function DashboardScreen({ navigate }) {
         </div>
 
         <div className="panel-block">
-          <div className="panel-heading">
-            <h3>Recent invoices</h3>
-            {typeof navigate === "function" ? (
-              <button
-                className="link-button"
-                onClick={() => navigate("/invoices")}
-                type="button"
-              >
-                Open invoices
-              </button>
-            ) : null}
-          </div>
+          <SectionHeader
+            action={
+              typeof navigate === "function" ? (
+                <button
+                  className="link-button"
+                  onClick={() => navigate("/invoices")}
+                  type="button"
+                >
+                  Open invoices
+                </button>
+              ) : null
+            }
+            title="Recent invoices"
+          />
           <RecordList
             emptyLabel="No recent invoices."
             formatMoney={formatMoney}
@@ -292,21 +296,21 @@ function DashboardScreen({ navigate }) {
         </div>
 
         <div className="panel-block notifications-panel">
-          <div className="panel-heading">
-            <h3>Notifications</h3>
-            <span>
-              {areNotificationsLoading ? "Loading" : `${notifications?.unreadCount || 0} unread`}
-            </span>
-            {typeof navigate === "function" ? (
-              <button
-                className="link-button"
-                onClick={() => navigate("/notifications")}
-                type="button"
-              >
-                Open inbox
-              </button>
-            ) : null}
-          </div>
+          <SectionHeader
+            action={
+              typeof navigate === "function" ? (
+                <button
+                  className="link-button"
+                  onClick={() => navigate("/notifications")}
+                  type="button"
+                >
+                  Open inbox
+                </button>
+              ) : null
+            }
+            hint={areNotificationsLoading ? "Loading" : `${notifications?.unreadCount || 0} unread`}
+            title="Notifications"
+          />
           {notificationsError ? (
             <ErrorState message={notificationsError} />
           ) : areNotificationsLoading && !notifications ? (

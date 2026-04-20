@@ -3,8 +3,11 @@ import { listCustomers } from "../../services/masterDataApi.js";
 import { listInvoices } from "../../services/invoiceApi.js";
 import {
   EmptyState,
+  ErrorState,
+  LoadingState,
   PageHeader,
   Pagination,
+  TableScroll,
   Toolbar
 } from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
@@ -64,7 +67,7 @@ function LedgerOverviewScreen({ navigate }) {
     },
     [showToast]
   );
-  const { data, error, isLoading } = useResourceDirectory(loadCustomers, query, {
+  const { data, error, isLoading, reload } = useResourceDirectory(loadCustomers, query, {
     onError: handleListError
   });
   const customers = useMemo(() => data?.items || [], [data]);
@@ -199,9 +202,9 @@ function LedgerOverviewScreen({ navigate }) {
         </button>
       </Toolbar>
 
-      {error ? <p className="surface-message error">{error}</p> : null}
-      {isLoading ? <p className="surface-message loading">Loading customer ledger...</p> : null}
-      {isLoadingReceivables ? <p className="surface-message loading">Refreshing receivable balances...</p> : null}
+      <ErrorState message={error} onRetry={reload} />
+      {isLoading ? <LoadingState>Loading customer ledger…</LoadingState> : null}
+      {isLoadingReceivables ? <LoadingState>Refreshing receivable balances…</LoadingState> : null}
       {!isLoading && !rows.length ? (
         <EmptyState>
           {hasFilters ? "No customers match the current ledger filters." : "No customer ledger records found."}
@@ -209,6 +212,7 @@ function LedgerOverviewScreen({ navigate }) {
       ) : null}
 
       {rows.length ? (
+        <TableScroll>
         <div className="resource-table">
           <div className="resource-table-head ledger-customer-grid">
             <span>Customer</span>
@@ -236,6 +240,7 @@ function LedgerOverviewScreen({ navigate }) {
             </article>
           ))}
         </div>
+        </TableScroll>
       ) : null}
 
       <Pagination pagination={data?.pagination} onPageChange={setPage} />
