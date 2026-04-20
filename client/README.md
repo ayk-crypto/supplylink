@@ -835,3 +835,81 @@ Constraints respected:
   `Pagination`, `TableScroll`, `LoadingSkeleton`, `ErrorState`,
   `EmptyState`, metric-tile, ToastProvider, useResourceDirectory)
   are reused unchanged.
+
+## Module 20AI Customer Detail Screen
+
+Module 20AI introduces a dedicated Customer Detail screen at
+`/customers/:id` so customer-related data is no longer
+fragmented across the list, the ledger, the orders/quotations
+lists, the invoices list, and the attachments modal. It is
+purely additive — no backend endpoints were added or changed,
+and the existing edit modal on the list still works for quick
+edits.
+
+New files:
+- `client/src/features/master-data/CustomerDetailScreen.jsx` —
+  the unified view. Each section loads independently so the
+  page is interactive while data streams in.
+- `client/src/features/master-data/CustomerForm.jsx` — the
+  customer create / edit form, extracted from the previously
+  inline form in `CustomersScreen.jsx` so it can be reused on
+  the detail screen's Edit action.
+
+Sections (all rendered with the shared `SectionHeader`):
+1. **Overview** — profile fields (full name, company, email,
+   phone, account code, relationship status), notes, and a
+   four-tile metric strip: invoices on file (count from
+   pagination), outstanding (sum of the loaded invoices),
+   invoiced (sum of the loaded invoices), and ledger ending
+   balance. Sample-based totals are clearly labelled.
+2. **Ledger** — links to the existing `CustomerLedgerScreen`
+   for the full statement (filters, totals, CSV export); the
+   detail screen only surfaces a quick summary so logic isn't
+   duplicated.
+3. **Recent orders** — last five orders for the customer with
+   a "View all" link to `/orders`.
+4. **Recent quotations** — last five quotations for the
+   customer with a "View all" link to `/quotations`.
+5. **Recent invoices** — last five invoices for the customer
+   with a "View all" link to `/invoices`.
+6. **Recent payments** — last five payments via the existing
+   `listPaymentReport` endpoint with a link to the payments
+   report.
+7. **Attachments** — reuses `AttachmentsPanel` with
+   `entityType="customers"`, identical to the modal panel.
+8. **Recent activity** — last ten audit events via
+   `getEntityAuditHistory("customers", id)`, with a link to
+   the full audit history at `/audit/customers/:id`.
+
+Header actions: Back, Open statement, Full audit, Edit. The
+Edit action opens the same `CustomerForm` modal used on the
+list screen and refreshes the customer section on save.
+
+Loading strategy:
+- A small `useAsyncSection` hook fetches each section with an
+  `AbortController` and an `active` flag to avoid setState
+  after unmount.
+- `SectionShell` renders a `LoadingSkeleton` while loading,
+  an `ErrorState` with retry on failure, and an `EmptyState`
+  when the response has no items, so failures in one section
+  never block the rest of the page.
+- All seven fetches run in parallel on mount and are cancelled
+  if the customer id changes.
+
+Navigation integration:
+- Customer name, attachment badge, and a new "View" button on
+  each `CustomersScreen` row navigate to `/customers/:id`.
+- The existing "Edit" button on each row still opens the quick
+  edit modal so the modal flow remains usable.
+- New route `customer-detail` added to `routes.js` and
+  `App.jsx`.
+
+Constraints respected:
+- No backend changes. All sections use existing endpoints:
+  `getCustomer`, `listOrders`, `listQuotations`, `listInvoices`,
+  `listPaymentReport`, `getCustomerLedger`,
+  `getEntityAuditHistory`.
+- All shared primitives (`PageHeader`, `SectionHeader`, `Field`,
+  `LoadingSkeleton`, `ErrorState`, `EmptyState`, `TableScroll`,
+  metric tiles, `AttachmentsPanel`, `CustomerForm`,
+  `ToastProvider`) are reused unchanged.

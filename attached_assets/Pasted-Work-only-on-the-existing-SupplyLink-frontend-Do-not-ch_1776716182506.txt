@@ -1,0 +1,151 @@
+Work only on the existing SupplyLink frontend.
+
+Do not change backend APIs.
+
+Goal:
+Implement Module 20AI: Customer Detail Screen (Unified Customer View).
+
+Context:
+Currently, customer-related data is fragmented across:
+- Customers list + edit modal
+- Customer ledger screen
+- Orders / Quotations lists
+- Invoices list
+- Attachments panel (in edit modal)
+
+The system now supports strong operational workflows (orders, invoices, routes, attachments, reports), but lacks a single unified customer-centric view.
+
+Core objective:
+Create a dedicated Customer Detail screen that becomes the central place to view all information related to a customer, without redesigning the system or changing backend APIs.
+
+---
+
+## What to do
+
+### 1) Create Customer Detail screen
+
+Add a new screen:
+- path: `/customers/:id`
+- new file: `CustomerDetailScreen.jsx`
+
+This screen should fetch and display:
+- customer basic details
+- related operational data (orders, invoices, ledger, etc.)
+
+Use existing API services — do not create new backend endpoints.
+
+---
+
+### 2) Layout structure (VERY IMPORTANT)
+
+Keep layout clean and structured using existing primitives.
+
+Top section:
+- Customer name (primary heading)
+- Basic info (phone, email, status if available)
+- Optional quick actions (Edit, Back)
+
+Below that, create sections using SectionHeader:
+
+#### Sections:
+
+1. **Overview**
+- Basic customer info
+- Optional summary:
+  - total invoices (count)
+  - total outstanding
+  - total payments
+(derive from existing endpoints if already available; do not add new backend calls if not trivial)
+
+2. **Ledger**
+- Reuse or embed existing CustomerLedgerScreen logic or component
+- Do NOT duplicate logic — reuse where possible
+
+3. **Orders / Quotations**
+- Show recent items (table or list)
+- Reuse existing list components where possible (limit to recent N items)
+
+4. **Invoices**
+- Show recent invoices
+- Include totals, status, dates
+
+5. **Payments**
+- Show recent payments if already available via existing APIs
+
+6. **Attachments**
+- Reuse existing AttachmentsPanel with entityType="customers"
+
+7. **Audit / Activity (if already available)**
+- Reuse existing audit screens/components if feasible
+
+---
+
+### 3) Navigation integration
+
+Modify:
+- Customers list row click → navigate to `/customers/:id`
+- Keep existing edit modal, but ensure:
+  - detail screen is primary view
+  - modal is still usable for quick edits
+
+---
+
+### 4) Data loading strategy
+
+- Do NOT block entire screen on one request
+- Load sections independently where possible
+- Use:
+  - LoadingState
+  - LoadingSkeleton
+  - ErrorState (with retry where applicable)
+
+- Avoid N+1 patterns where possible
+- Keep it performant and responsive
+
+---
+
+### 5) UX requirements
+
+- Keep layout readable on all screen sizes
+- Avoid clutter
+- Use TableScroll for tables
+- Use SectionHeader consistently
+- Keep visual hierarchy strong
+
+---
+
+### 6) Constraints
+
+- no backend changes
+- no redesign of entire system
+- reuse existing components/services as much as possible
+- keep implementation modular and clean
+- do not introduce unnecessary complexity
+
+---
+
+### 7) Documentation
+
+Update client README:
+- describe Customer Detail screen
+- list sections included
+- mention reuse of existing modules
+
+---
+
+## Verification
+
+- run client lint
+- run client build
+
+---
+
+## Deliverable
+
+1. Summary
+2. Files changed
+3. What sections were added to Customer Detail
+4. How existing components were reused
+5. Any performance considerations
+6. Verification results
+7. Any useful follow-up items

@@ -72,6 +72,12 @@ const routeDefinitions = [
     navPath: route.path
   })),
   {
+    id: "customer-detail",
+    path: /^\/customers\/([^/]+)$/,
+    navPath: "/customers",
+    paramNames: ["id"]
+  },
+  {
     id: "quotation-new",
     path: "/quotations/new",
     navPath: "/quotations"

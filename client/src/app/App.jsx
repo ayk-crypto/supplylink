@@ -13,6 +13,7 @@ import LedgerOverviewScreen from "../features/ledger/LedgerOverviewScreen.jsx";
 import InventoryDetailScreen from "../features/inventory/InventoryDetailScreen.jsx";
 import InventoryListScreen from "../features/inventory/InventoryListScreen.jsx";
 import CategoriesScreen from "../features/master-data/CategoriesScreen.jsx";
+import CustomerDetailScreen from "../features/master-data/CustomerDetailScreen.jsx";
 import CustomersScreen from "../features/master-data/CustomersScreen.jsx";
 import ProductsScreen from "../features/master-data/ProductsScreen.jsx";
 import NotificationBell from "../features/notifications/NotificationBell.jsx";
@@ -35,6 +36,7 @@ import { useBrowserRoute } from "./useBrowserRoute.js";
 const screens = {
   categories: CategoriesScreen,
   customers: CustomersScreen,
+  "customer-detail": CustomerDetailScreen,
   dashboard: DashboardScreen,
   products: ProductsScreen,
   quotations: (props) => <TransactionListScreen kind="quotations" {...props} />,
