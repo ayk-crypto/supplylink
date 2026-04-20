@@ -79,7 +79,7 @@ function TransactionDetailScreen({ id, kind, navigate }) {
   }, [config, id, showToast]);
 
   if (isLoading) {
-    return <p className="surface-message">Loading {config.title.toLowerCase()}...</p>;
+    return <p className="surface-message loading">Loading {config.title.toLowerCase()}...</p>;
   }
 
   if (error) {

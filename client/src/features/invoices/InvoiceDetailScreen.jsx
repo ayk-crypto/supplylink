@@ -332,7 +332,7 @@ function InvoiceDetailScreen({ id, navigate }) {
   }, [loadInvoice, showToast]);
 
   if (isLoading) {
-    return <p className="surface-message">Loading invoice...</p>;
+    return <p className="surface-message loading">Loading invoice...</p>;
   }
 
   if (error) {

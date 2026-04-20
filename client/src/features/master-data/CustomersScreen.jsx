@@ -305,7 +305,7 @@ function CustomersScreen() {
       </Toolbar>
 
       {error ? <p className="surface-message error">{error}</p> : null}
-      {isLoading ? <p className="surface-message">Loading customers...</p> : null}
+      {isLoading ? <p className="surface-message loading">Loading customers...</p> : null}
       {!isLoading && !items.length ? (
         <EmptyState>
           {hasFilters ? "No customers match the current filters." : "No customers found."}

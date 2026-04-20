@@ -179,7 +179,7 @@ function NotificationBell({ onNavigate }) {
             ) : null}
 
             {isLoadingRecent && recent.length === 0 ? (
-              <p className="surface-message">Loading notifications...</p>
+              <p className="surface-message loading">Loading notifications...</p>
             ) : null}
 
             {!isLoadingRecent && recent.length === 0 && !recentError ? (

@@ -248,3 +248,30 @@ API service:
   `PATCH /notifications/read-all` — using the shared `httpClient` and
   `queryString` helpers, so auth, error shape, and request style match the
   rest of the client.
+
+## Module 20M Frontend Polish
+
+A visual polish pass has been applied across the app shell and existing
+screens. No routes, APIs, or business flows changed.
+
+- Refined design tokens (slightly cooler neutrals, larger card radius, focus
+  ring) defined at the bottom of `client/src/styles/index.css` so the rest of
+  the original stylesheet is untouched.
+- Sidebar now uses softer hover/active states with an accent rail on the
+  active item, and the brand mark uses a subtle gradient.
+- Top bar is more compact, the session chip is pill-shaped, and the
+  notifications bell sits inline cleanly on every authenticated screen.
+- Workspace content is now centered with a max width on large monitors so
+  long pages don't stretch uncomfortably wide.
+- Dashboard hero uses a soft gradient surface, the receivables card is a
+  dark accent panel with a small collected-vs-invoiced progress bar, and
+  KPI tiles have an accent top border, monochrome glyph, and hover lift.
+- Tables get hover row highlighting; on small screens table rows convert to
+  individual cards (existing breakpoint behavior preserved).
+- Loading messages are now opt-in via the `loading` modifier on
+  `surface-message`, which adds a small inline spinner. Non-loading
+  informational messages (for example "No invoice found.") render plain.
+
+The polish is implemented as additive overrides at the bottom of the global
+stylesheet plus a small `MetricCard` enhancement on the dashboard. All other
+screens keep their existing markup and behavior.

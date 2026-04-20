@@ -155,7 +155,7 @@ function CustomerLedgerScreen({ id, navigate }) {
   }
 
   if (isLoading) {
-    return <p className="surface-message">Loading customer statement...</p>;
+    return <p className="surface-message loading">Loading customer statement...</p>;
   }
 
   if (error) {

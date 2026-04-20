@@ -153,7 +153,7 @@ function InvoiceListScreen({ navigate }) {
       </Toolbar>
 
       {error ? <p className="surface-message error">{error}</p> : null}
-      {isLoading ? <p className="surface-message">Loading invoices...</p> : null}
+      {isLoading ? <p className="surface-message loading">Loading invoices...</p> : null}
       {!isLoading && !items.length ? (
         <EmptyState>
           {hasFilters ? "No invoices match the current filters." : "No invoices found."}

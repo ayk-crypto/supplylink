@@ -196,8 +196,8 @@ function LedgerOverviewScreen({ navigate }) {
       </Toolbar>
 
       {error ? <p className="surface-message error">{error}</p> : null}
-      {isLoading ? <p className="surface-message">Loading customer ledger...</p> : null}
-      {isLoadingReceivables ? <p className="surface-message">Refreshing receivable balances...</p> : null}
+      {isLoading ? <p className="surface-message loading">Loading customer ledger...</p> : null}
+      {isLoadingReceivables ? <p className="surface-message loading">Refreshing receivable balances...</p> : null}
       {!isLoading && !rows.length ? (
         <EmptyState>
           {hasFilters ? "No customers match the current ledger filters." : "No customer ledger records found."}

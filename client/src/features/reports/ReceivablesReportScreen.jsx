@@ -207,7 +207,7 @@ function ReceivablesReportScreen({ navigate }) {
       </form>
 
       {error ? <p className="surface-message error">{error}</p> : null}
-      {isLoading ? <p className="surface-message">Loading receivables...</p> : null}
+      {isLoading ? <p className="surface-message loading">Loading receivables...</p> : null}
       {!isLoading && !rows.length ? <EmptyState>No receivables match the current filters.</EmptyState> : null}
 
       {rows.length ? (

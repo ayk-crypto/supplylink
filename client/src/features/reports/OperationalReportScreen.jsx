@@ -359,7 +359,7 @@ function OperationalReportScreen({ kind, navigate }) {
       />
 
       {error ? <p className="surface-message error">{error}</p> : null}
-      {isLoading ? <p className="surface-message">Loading {kind} report...</p> : null}
+      {isLoading ? <p className="surface-message loading">Loading {kind} report...</p> : null}
       {!isLoading && !items.length ? <EmptyState>No report rows match the current filters.</EmptyState> : null}
 
       {items.length && kind === "invoices" ? <InvoiceRows items={items} navigate={navigate} /> : null}

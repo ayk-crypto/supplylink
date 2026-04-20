@@ -197,7 +197,7 @@ function NotificationsScreen({ navigate }) {
       </Toolbar>
 
       {error ? <p className="surface-message error">{error}</p> : null}
-      {isLoading ? <p className="surface-message">Loading notifications...</p> : null}
+      {isLoading ? <p className="surface-message loading">Loading notifications...</p> : null}
 
       {!isLoading && items.length === 0 ? (
         <EmptyState>

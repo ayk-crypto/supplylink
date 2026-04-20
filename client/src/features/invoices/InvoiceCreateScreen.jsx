@@ -304,8 +304,8 @@ function InvoiceCreateScreen({ navigate, orderId: routeOrderId }) {
 
       {optionsError ? <p className="surface-message error">{optionsError}</p> : null}
       {formError ? <p className="surface-message error">{formError}</p> : null}
-      {isLoading ? <p className="surface-message">Loading customers and products...</p> : null}
-      {isLoadingOrder ? <p className="surface-message">Loading order details...</p> : null}
+      {isLoading ? <p className="surface-message loading">Loading customers and products...</p> : null}
+      {isLoadingOrder ? <p className="surface-message loading">Loading order details...</p> : null}
 
       <section className="transaction-panel">
         <div className="form-grid">

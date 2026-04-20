@@ -177,7 +177,7 @@ function TransactionListScreen({ kind, navigate }) {
       </Toolbar>
 
       {error ? <p className="surface-message error">{error}</p> : null}
-      {isLoading ? <p className="surface-message">Loading {kind}...</p> : null}
+      {isLoading ? <p className="surface-message loading">Loading {kind}...</p> : null}
       {!isLoading && !items.length ? (
         <EmptyState>{hasFilters ? config.filteredEmpty : config.empty}</EmptyState>
       ) : null}

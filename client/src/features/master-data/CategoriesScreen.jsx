@@ -242,7 +242,7 @@ function CategoriesScreen() {
       </Toolbar>
 
       {error ? <p className="surface-message error">{error}</p> : null}
-      {isLoading ? <p className="surface-message">Loading categories...</p> : null}
+      {isLoading ? <p className="surface-message loading">Loading categories...</p> : null}
       {!isLoading && !items.length ? (
         <EmptyState>
           {hasFilters ? "No categories match the current search." : "No categories found."}

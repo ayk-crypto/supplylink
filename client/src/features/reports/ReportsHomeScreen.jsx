@@ -83,7 +83,7 @@ function ReportsHomeScreen({ navigate }) {
         title="Reports and exports"
       />
 
-      {isLoading ? <p className="surface-message">Loading report summary...</p> : null}
+      {isLoading ? <p className="surface-message loading">Loading report summary...</p> : null}
 
       {summary ? (
         <section className="metric-strip reports-summary-strip">

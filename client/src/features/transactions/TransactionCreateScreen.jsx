@@ -172,7 +172,7 @@ function TransactionCreateScreen({ kind, navigate }) {
 
       {optionsError ? <p className="surface-message error">{optionsError}</p> : null}
       {formError ? <p className="surface-message error">{formError}</p> : null}
-      {isLoading ? <p className="surface-message">Loading customers and products...</p> : null}
+      {isLoading ? <p className="surface-message loading">Loading customers and products...</p> : null}
 
       <section className="transaction-panel">
         <div className="form-grid">

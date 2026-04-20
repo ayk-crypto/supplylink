@@ -1,0 +1,91 @@
+Work only on the existing SupplyLink frontend in this repo.
+
+Important constraints:
+- Do not rebuild the app from scratch
+- Do not change backend contracts
+- Do not invent new endpoints unless a very small frontend-safe fallback is clearly necessary
+- Reuse the existing routing, auth, shell, toast, API service, and screen patterns
+- Keep the UI professional, responsive, and SaaS-quality
+- Focus on frontend polish, layout quality, and consistency
+
+Goal:
+Implement Module 20M: Frontend Dashboard and App Polish.
+
+Core objective:
+Upgrade the current SupplyLink frontend into a more polished, competitive, and responsive SaaS UI, while preserving the existing app structure and business flows.
+
+What to do:
+
+1. Dashboard polish
+- improve the dashboard layout and visual hierarchy
+- add stronger KPI/stat card presentation using the existing dashboard data
+- improve spacing, headings, section balance, and responsiveness
+- if current dashboard data is limited, present it cleanly without inventing unsupported metrics
+
+2. App shell polish
+- refine header, sidebar, content spacing, and page framing
+- keep the existing navigation structure
+- improve active states, visual consistency, and mobile behavior
+- keep the notifications bell integrated cleanly
+
+3. Shared UI consistency
+- improve consistency across:
+  - page headers
+  - toolbars
+  - cards
+  - tables
+  - forms
+  - empty states
+  - section spacing
+- keep styling modern, clean, and business-oriented
+
+4. Screen polish across existing modules
+Apply visual improvements to existing screens without changing their core behavior:
+- dashboard
+- customers
+- categories
+- products
+- quotations
+- orders
+- invoices
+- ledger
+- reports
+- notifications
+
+5. Responsive improvements
+- improve tablet and mobile layouts
+- ensure tables degrade gracefully
+- improve form layout and page spacing on smaller screens
+- avoid horizontal overflow where possible
+
+6. UX polish
+- improve loading, empty, and error presentation where easy to do
+- keep interactions clear and lightweight
+- do not over-animate or over-design
+
+7. Design direction
+- aim for a professional B2B SaaS look
+- strong readability
+- clean hierarchy
+- modern but restrained styling
+- competitive layout quality
+
+8. Constraints
+- do not break existing routes or flows
+- do not change backend APIs
+- do not remove working functionality
+- prefer additive polish and refactoring over risky rewrites
+
+9. Documentation
+- update client README if needed for any important UI structure notes
+
+Verification:
+- run client lint
+- run client build
+
+Deliverable:
+1. Summary
+2. Files changed
+3. Assumptions
+4. Verification results
+5. Any areas intentionally left for later
