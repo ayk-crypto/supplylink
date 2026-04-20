@@ -14,7 +14,8 @@ import {
   buildNotificationRoute,
   describeRelatedEntity,
   formatAbsoluteTime,
-  formatRelativeTime
+  formatRelativeTime,
+  relatedEntityLabel
 } from "./notificationUtils.js";
 
 const FILTER_OPTIONS = [
@@ -24,7 +25,7 @@ const FILTER_OPTIONS = [
 
 function NotificationsScreen({ navigate }) {
   const { showToast } = useToast();
-  const { markAllRead, markRead, recentVersion, unreadCount } = useNotificationsCenter();
+  const { markAllRead, markManyRead, markRead, recentVersion, unreadCount } = useNotificationsCenter();
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState("");
   const [actionPendingId, setActionPendingId] = useState(null);
@@ -98,30 +99,27 @@ function NotificationsScreen({ navigate }) {
       return;
     }
     setIsMarkingSelected(true);
-    let successCount = 0;
-    let failureCount = 0;
-    for (const target of targets) {
-      try {
-        await markRead(target.id);
-        successCount += 1;
-      } catch {
-        failureCount += 1;
-      }
-    }
-    setIsMarkingSelected(false);
-    setSelectedIds(new Set());
-    if (successCount > 0) {
+    try {
+      const summary = await markManyRead(targets.map((target) => target.id));
+      const updated = summary?.updatedCount || 0;
+      const skipped = summary?.skippedCount || 0;
       showToast({
-        message: `${successCount} marked as read${failureCount ? `, ${failureCount} failed` : ""}.`,
-        title: "Selection updated",
-        tone: failureCount > 0 ? "info" : "success"
+        message:
+          updated > 0
+            ? `${updated} marked as read${skipped ? `, ${skipped} already up to date` : ""}.`
+            : "No notifications needed updating.",
+        title: updated > 0 ? "Selection updated" : "Nothing to do",
+        tone: updated > 0 ? "success" : "info"
       });
-    } else if (failureCount > 0) {
+    } catch (requestError) {
       showToast({
-        message: "We could not update the selected notifications.",
+        message: getApiErrorMessage(requestError, "We could not update the selected notifications."),
         title: "Action failed",
         tone: "error"
       });
+    } finally {
+      setIsMarkingSelected(false);
+      setSelectedIds(new Set());
     }
   }
 
@@ -317,8 +315,18 @@ function NotificationsScreen({ navigate }) {
                         <span className="notification-chip">{notification.type}</span>
                       ) : null}
                       {notification.relatedEntityType ? (
-                        <span className="notification-chip">
+                        <span
+                          className="notification-chip"
+                          title={
+                            notification.relatedEntity?.id
+                              ? `${describeRelatedEntity(notification)} · ${notification.relatedEntity.id}`
+                              : describeRelatedEntity(notification)
+                          }
+                        >
                           {describeRelatedEntity(notification)}
+                          {notification.relatedEntity?.label || notification.relatedEntity?.reference
+                            ? ` · ${relatedEntityLabel(notification)}`
+                            : ""}
                         </span>
                       ) : null}
                       {notification.relatedEntityType && !route ? (

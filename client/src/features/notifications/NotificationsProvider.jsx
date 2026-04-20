@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../auth/useAuth.js";
 import {
+  bulkReadNotifications,
   getUnreadCount,
   listNotifications,
   markAllNotificationsRead,
@@ -158,6 +159,39 @@ function NotificationsProvider({ children }) {
     [recent, refreshRecent, refreshUnreadCount]
   );
 
+  const markManyRead = useCallback(
+    async (notificationIds) => {
+      const ids = Array.from(new Set(notificationIds || [])).filter(Boolean);
+
+      if (!ids.length) {
+        return { requestedCount: 0, updatedCount: 0, skippedCount: 0, updatedIds: [] };
+      }
+
+      const idSet = new Set(ids);
+      setRecent((current) =>
+        current.map((item) =>
+          idSet.has(item.id) && !item.isRead
+            ? { ...item, isRead: true, status: "read", readAt: new Date().toISOString() }
+            : item
+        )
+      );
+
+      try {
+        const response = await bulkReadNotifications(ids);
+        const summary = response?.data || { updatedCount: 0, skippedCount: 0, requestedCount: ids.length, updatedIds: [] };
+
+        await refreshUnreadCount();
+        setRecentVersion((value) => value + 1);
+        return summary;
+      } catch (requestError) {
+        await refreshUnreadCount();
+        await refreshRecent();
+        throw requestError;
+      }
+    },
+    [refreshRecent, refreshUnreadCount]
+  );
+
   const markAllRead = useCallback(async () => {
     setRecent((current) =>
       current.map((item) =>
@@ -185,6 +219,7 @@ function NotificationsProvider({ children }) {
       isAuthenticated,
       isLoadingRecent,
       markAllRead,
+      markManyRead,
       markRead,
       recent,
       recentError,
@@ -197,6 +232,7 @@ function NotificationsProvider({ children }) {
       isAuthenticated,
       isLoadingRecent,
       markAllRead,
+      markManyRead,
       markRead,
       recent,
       recentError,

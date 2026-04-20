@@ -11,6 +11,8 @@ import { getApiErrorMessage } from "../master-data/resourceUtils.js";
 import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
 import {
   ENTITY_TYPE_OPTIONS,
+  actorDisplayLabel,
+  entityDisplayLabel,
   entityHrefFor,
   eventLabelOf,
   formatAuditDateTime,
@@ -153,6 +155,8 @@ function AuditScreen({ navigate }) {
           {items.map((event) => {
             const href = entityHrefFor(event.entityType, event.entityId);
             const metaSummary = formatMetadataSummary(event.metadata);
+            const entityLabel = entityDisplayLabel(event);
+            const actorLabel = actorDisplayLabel(event);
             return (
               <article className="audit-card" key={event.id}>
                 <header className="audit-card-head">
@@ -166,42 +170,30 @@ function AuditScreen({ navigate }) {
                     {formatAuditDateTime(event.createdAt)}
                   </time>
                 </header>
-                <dl className="audit-card-meta">
-                  <div>
-                    <dt>Entity</dt>
-                    <dd>
-                      <strong>{event.entityType || "—"}</strong>
-                      {event.entityId ? (
-                        href && navigate ? (
-                          <button
-                            className="link-button"
-                            onClick={() => navigate(href)}
-                            type="button"
-                            title={event.entityId}
-                          >
-                            {shortId(event.entityId)}
-                          </button>
-                        ) : (
-                          <span title={event.entityId}>{shortId(event.entityId)}</span>
-                        )
-                      ) : null}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Actor</dt>
-                    <dd>
-                      <span title={event.actorUserId || ""}>
-                        {event.actorUserId ? shortId(event.actorUserId) : "System"}
-                      </span>
-                    </dd>
-                  </div>
-                  {metaSummary ? (
-                    <div className="audit-meta-wide">
-                      <dt>Details</dt>
-                      <dd>{metaSummary}</dd>
-                    </div>
+                <p className="audit-summary">
+                  <strong title={event.actorUserId || ""}>{actorLabel}</strong>
+                  {entityLabel ? (
+                    <>
+                      {" "}on{" "}
+                      <span className="audit-entity-type">{event.entityType || "record"}</span>{" "}
+                      {href && navigate ? (
+                        <button
+                          className="link-button"
+                          onClick={() => navigate(href)}
+                          type="button"
+                          title={event.entityId || undefined}
+                        >
+                          {entityLabel}
+                        </button>
+                      ) : (
+                        <span title={event.entityId || undefined}>{entityLabel}</span>
+                      )}
+                    </>
                   ) : null}
-                </dl>
+                </p>
+                {metaSummary ? (
+                  <p className="audit-detail-line">{metaSummary}</p>
+                ) : null}
               </article>
             );
           })}

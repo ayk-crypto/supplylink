@@ -50,6 +50,32 @@ function shortId(value) {
   return text.length > 10 ? `${text.slice(0, 8)}…` : text;
 }
 
+function entityDisplayLabel(event) {
+  if (!event) {
+    return null;
+  }
+  return (
+    event.entityLabel ||
+    event.entityReference ||
+    event.entity?.label ||
+    event.entity?.reference ||
+    (event.entityId ? shortId(event.entityId) : null)
+  );
+}
+
+function actorDisplayLabel(event) {
+  if (!event) {
+    return "System";
+  }
+  return (
+    event.actorDisplay ||
+    event.actor?.display ||
+    event.actor?.fullName ||
+    event.actor?.email ||
+    (event.actorUserId ? shortId(event.actorUserId) : "System")
+  );
+}
+
 function formatMetadataSummary(metadata) {
   if (!metadata || typeof metadata !== "object") {
     return null;
@@ -83,6 +109,8 @@ function eventLabelOf(event) {
 
 export {
   ENTITY_TYPE_OPTIONS,
+  actorDisplayLabel,
+  entityDisplayLabel,
   entityHrefFor,
   eventLabelOf,
   formatAuditDateTime,

@@ -96,9 +96,24 @@ function describeRelatedEntity(notification) {
   return notification.relatedEntityType.replace(/_/g, " ");
 }
 
+function relatedEntityLabel(notification) {
+  if (!notification) {
+    return "";
+  }
+  const related = notification.relatedEntity;
+  if (related?.label) {
+    return related.label;
+  }
+  if (related?.reference) {
+    return related.reference;
+  }
+  return describeRelatedEntity(notification);
+}
+
 export {
   buildNotificationRoute,
   describeRelatedEntity,
   formatAbsoluteTime,
-  formatRelativeTime
+  formatRelativeTime,
+  relatedEntityLabel
 };

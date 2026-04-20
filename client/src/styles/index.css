@@ -3381,3 +3381,25 @@ canvas {
   margin-left: auto;
   font-size: 0.85rem;
 }
+
+/* Module 20X: audit feed readability */
+.audit-summary {
+  margin: 4px 0 0;
+  color: var(--text-secondary, #475569);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+.audit-summary strong {
+  color: var(--text-primary, #0f172a);
+  font-weight: 600;
+}
+.audit-summary .audit-entity-type {
+  color: var(--text-tertiary, #64748b);
+  text-transform: capitalize;
+}
+.audit-detail-line {
+  margin: 6px 0 0;
+  color: var(--text-tertiary, #64748b);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}

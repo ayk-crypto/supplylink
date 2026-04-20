@@ -25,7 +25,15 @@ async function markAllNotificationsRead() {
   });
 }
 
+async function bulkReadNotifications(notificationIds) {
+  return request("/notifications/bulk-read", {
+    method: "POST",
+    body: { notificationIds }
+  });
+}
+
 export {
+  bulkReadNotifications,
   getNotification,
   getUnreadCount,
   listNotifications,

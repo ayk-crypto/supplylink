@@ -9,6 +9,8 @@ import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage } from "../master-data/resourceUtils.js";
 import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
 import {
+  actorDisplayLabel,
+  entityDisplayLabel,
   entityHrefFor,
   eventLabelOf,
   formatAuditDateTime,
@@ -41,11 +43,12 @@ function EntityAuditScreen({ entityType, entityId, navigate }) {
   });
   const items = data?.items || [];
   const entityHref = entityHrefFor(entityType, entityId);
+  const entityHeadline = entityDisplayLabel(items[0]) || shortId(entityId);
 
   return (
     <div className="resource-page">
       <PageHeader
-        description={`History for ${entityType} ${shortId(entityId)}.`}
+        description={`History for ${entityType} ${entityHeadline}.`}
         eyebrow="Audit"
         title="Entity history"
         action={
@@ -82,6 +85,7 @@ function EntityAuditScreen({ entityType, entityId, navigate }) {
         <div className="audit-list">
           {items.map((event) => {
             const metaSummary = formatMetadataSummary(event.metadata);
+            const actorLabel = actorDisplayLabel(event);
             return (
               <article className="audit-card" key={event.id}>
                 <header className="audit-card-head">
@@ -95,22 +99,12 @@ function EntityAuditScreen({ entityType, entityId, navigate }) {
                     {formatAuditDateTime(event.createdAt)}
                   </time>
                 </header>
-                <dl className="audit-card-meta">
-                  <div>
-                    <dt>Actor</dt>
-                    <dd>
-                      <span title={event.actorUserId || ""}>
-                        {event.actorUserId ? shortId(event.actorUserId) : "System"}
-                      </span>
-                    </dd>
-                  </div>
-                  {metaSummary ? (
-                    <div className="audit-meta-wide">
-                      <dt>Details</dt>
-                      <dd>{metaSummary}</dd>
-                    </div>
-                  ) : null}
-                </dl>
+                <p className="audit-summary">
+                  by <strong title={event.actorUserId || ""}>{actorLabel}</strong>
+                </p>
+                {metaSummary ? (
+                  <p className="audit-detail-line">{metaSummary}</p>
+                ) : null}
               </article>
             );
           })}
