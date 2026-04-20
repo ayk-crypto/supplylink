@@ -19,6 +19,8 @@ import NotificationBell from "../features/notifications/NotificationBell.jsx";
 import NotificationsProvider from "../features/notifications/NotificationsProvider.jsx";
 import NotificationsScreen from "../features/notifications/NotificationsScreen.jsx";
 import OperationalReportScreen from "../features/reports/OperationalReportScreen.jsx";
+import RouteDetailScreen from "../features/routes/RouteDetailScreen.jsx";
+import RoutesListScreen from "../features/routes/RoutesListScreen.jsx";
 import ReceivablesReportScreen from "../features/reports/ReceivablesReportScreen.jsx";
 import ReportsHomeScreen from "../features/reports/ReportsHomeScreen.jsx";
 import StatementsReportScreen from "../features/reports/StatementsReportScreen.jsx";
@@ -47,6 +49,8 @@ const screens = {
   "invoice-detail": InvoiceDetailScreen,
   inventory: InventoryListScreen,
   "inventory-product": InventoryDetailScreen,
+  routes: RoutesListScreen,
+  "route-detail": RouteDetailScreen,
   ledger: LedgerOverviewScreen,
   "customer-ledger": CustomerLedgerScreen,
   notifications: NotificationsScreen,

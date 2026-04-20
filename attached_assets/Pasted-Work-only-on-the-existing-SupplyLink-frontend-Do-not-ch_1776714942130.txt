@@ -1,0 +1,70 @@
+Work only on the existing SupplyLink frontend.
+
+Do not change backend APIs.
+
+Goal:
+Implement Module 20AG: Frontend Delivery / Fulfillment UX Strengthening.
+
+Context:
+SupplyLink already has backend support for delivery routes and route stops. The frontend has strong operational foundations, polished list/detail experiences, settings propagation, and attachments support.
+
+Core objective:
+Strengthen the frontend delivery / fulfillment experience so route-related workflows feel operationally useful, clear, and production-minded, without redesigning the app or changing backend APIs.
+
+What to do:
+
+1) Inspect existing route-related frontend/backend coverage
+- understand what delivery route APIs already exist
+- inspect any current frontend route screens or placeholders
+- integrate only with existing backend contracts
+- do not change backend APIs
+
+2) Build or improve route list and route detail UX
+Where needed, implement or improve route-related screens so users can:
+- view routes clearly
+- open a route detail view
+- understand route status and stop sequence
+- see linked customers/orders/stops in a readable way
+
+3) Route creation/editing flow polish
+Where backend already supports it, make route creation/editing more usable:
+- clear route form structure
+- stop ordering visibility
+- customer/order association clarity
+- validation and error feedback
+- success toasts and retry/error states consistent with the rest of the app
+
+4) Stop management usability
+Where practical and supported by the backend:
+- improve visibility of stop sequence
+- make status/progression easier to understand
+- show key stop data cleanly
+- preserve existing backend behavior and validations
+
+5) Responsive and operational polish
+- make route screens readable on smaller widths
+- avoid cramped stop tables/lists
+- use shared UI primitives where practical
+- keep the UX professional and additive, not redesigned
+
+6) Constraints
+- no backend changes
+- no redesign
+- no unrelated new features
+- keep changes additive and production-minded
+
+7) Documentation
+- update client README with delivery/route UX coverage added in this module
+
+Verification:
+- run client lint
+- run client build
+
+Deliverable:
+1. Summary
+2. Files changed
+3. What route/delivery UX was added or improved
+4. What stop-management improvements were made
+5. Any backend limitations encountered
+6. Verification results
+7. Any useful follow-up items

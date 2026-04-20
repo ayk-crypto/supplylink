@@ -40,6 +40,11 @@ const appRoutes = [
     path: "/inventory"
   },
   {
+    id: "routes",
+    label: "Routes",
+    path: "/routes"
+  },
+  {
     id: "ledger",
     label: "Ledger",
     path: "/ledger"
@@ -115,6 +120,12 @@ const routeDefinitions = [
     id: "customer-ledger",
     path: /^\/ledger\/customers\/([^/]+)$/,
     navPath: "/ledger",
+    paramNames: ["id"]
+  },
+  {
+    id: "route-detail",
+    path: /^\/routes\/([^/]+)$/,
+    navPath: "/routes",
     paramNames: ["id"]
   },
   {

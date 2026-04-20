@@ -678,3 +678,98 @@ Behavior:
   not shown for that row; no toast, no error UI.
 - Below the existing 640px breakpoint the badge stays inline next
   to the row title and wraps with the title text.
+
+## Module 20AG Delivery Routes UX
+
+Module 20AG fills in the missing frontend coverage for the delivery
+routes / route stops APIs that the backend already exposes. No
+backend changes — the new screens consume the existing
+`/api/v1/routes` endpoints and the same attachments allow-list
+that already includes the `routes` entity type. All shared
+primitives (PageHeader, Toolbar, Pagination, FormPanel, Field,
+TableScroll, SectionHeader, AttachmentBadge, AttachmentsPanel,
+ToastProvider, useResourceDirectory) are reused exactly as on
+the other operational screens.
+
+New service:
+- `client/src/services/routeApi.js` — `listRoutes`, `getRoute`,
+  `createRoute`, `updateRoute`, `listRouteStops`,
+  `createRouteStop`, `updateRouteStop`.
+
+New shared utilities:
+- `client/src/features/routes/routeUtils.js` — route status enum
+  (draft / planned / in_progress / completed / cancelled), stop
+  status enum (pending / completed / skipped), label maps, date
+  and date-time formatters, customer label resolver, and
+  `nextSequenceNumber(stops)` helper for the next stop slot.
+
+New screens:
+- `client/src/features/routes/RoutesListScreen.jsx` — paginated
+  list with search by route name, status filter, reset action,
+  status pill, vehicle / driver summary, and per-row attachment
+  badge fed by the shared `useAttachmentCounts` hook. The "New
+  route" modal collects name (required, ≥ 2 chars), date,
+  vehicle label, status, and notes; on success the user is
+  navigated straight into the new route's detail screen so the
+  next natural action — adding stops — is one click away.
+- `client/src/features/routes/RouteDetailScreen.jsx` — header
+  with status pill, status-transition buttons gated by the
+  current state (`draft → planned → in_progress → completed`,
+  plus `cancel` from any non-terminal state, gated by the same
+  destructive-action confirmation preference used elsewhere). A
+  detail grid summarises status / date / driver / vehicle /
+  stop count / last-update. The Stops table renders each stop
+  with a numbered sequence pill, customer name, status pill,
+  planned arrival, linked order number (when present), notes,
+  and per-row Complete / Skip / Edit actions wired to PATCH on
+  the stop. The "Add stop" modal pre-fills the next sequence
+  number, lets the user pick a customer from the active
+  customer list, and accepts status, planned arrival, and
+  notes. Edit mode keeps the customer association immutable
+  (the backend allows reassignment, but the v1 UI keeps the
+  stop locked to its original customer to avoid accidentally
+  rewiring an in-flight stop). The screen embeds the standard
+  attachments panel with `entityType="routes"`.
+
+Wiring:
+- `client/src/app/routes.js` — added a `routes` nav entry
+  (between Inventory and Ledger) and a `route-detail` regex
+  matching `/routes/:id`.
+- `client/src/app/App.jsx` — imports and screens-map entries
+  for `routes` and `route-detail`.
+
+Styling:
+- `.route-grid` — list row layout (route / date / status /
+  vehicle / action).
+- `.route-stop-grid` — detail row layout (sequence pill /
+  customer / status / planned arrival / order / actions).
+- `.route-stop-grid .stop-sequence` — circular numbered pill
+  for the visible stop ordering.
+- `.route-stop-grid .stop-actions` — wrappable flex row for the
+  Complete / Skip / Edit buttons.
+- Both grids are added to the existing mobile breakpoint that
+  collapses the desktop grid columns into stacked cards, so
+  routes and stops remain readable on narrow viewports.
+
+Backend limitations preserved (not changed):
+- The frontend has no users-list API yet, so driver assignment
+  is not part of the route create/edit form. Driver name is
+  shown read-only on the detail page when the backend response
+  includes it.
+- The customer selector on the Add Stop form loads the first
+  100 active customers; tenants beyond that page would need a
+  typeahead, which is left as a future enhancement.
+- The backend supports linking a stop to an order. The v1 form
+  does not collect `orderId`, but the detail row surfaces the
+  linked order number whenever the backend returns one.
+
+Behavior notes:
+- Failed list / detail / mutation calls show a toast and
+  preserve the rest of the screen (no full-page error wipe-
+  outs).
+- Per-row attachment counts and customer-list lookups use
+  AbortController plus an `active` flag so re-renders and
+  unmounts cannot leak stale state.
+- Status-transition buttons are disabled when the current
+  status does not allow that transition; the disabled state
+  carries a `title` explaining why.

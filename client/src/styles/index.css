@@ -776,6 +776,36 @@ a {
     minmax(120px, 0.7fr) auto;
 }
 
+.route-grid {
+  grid-template-columns: minmax(190px, 1.4fr) minmax(120px, 0.7fr) 130px minmax(120px, 0.7fr) auto;
+}
+
+.route-stop-grid {
+  grid-template-columns:
+    52px minmax(180px, 1.3fr) 120px minmax(150px, 0.9fr)
+    minmax(110px, 0.7fr) auto;
+}
+
+.route-stop-grid .stop-sequence {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: var(--surface-subtle, rgba(0, 0, 0, 0.06));
+  color: var(--text-strong, #111);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.route-stop-grid .stop-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
 .ledger-customer-grid {
   grid-template-columns:
     minmax(220px, 1.3fr) minmax(120px, 0.7fr) minmax(120px, 0.7fr)
@@ -1169,6 +1199,8 @@ a {
   }
 
   .resource-row,
+  .route-grid,
+  .route-stop-grid,
   .customer-grid,
   .category-grid,
     .product-grid,
@@ -2765,6 +2797,8 @@ canvas {
   }
 
   .resource-row,
+  .route-grid,
+  .route-stop-grid,
   .customer-grid,
   .category-grid,
   .product-grid,
@@ -2809,6 +2843,8 @@ canvas {
   }
 
   .resource-row,
+  .route-grid,
+  .route-stop-grid,
   .customer-grid,
   .category-grid,
   .product-grid,
