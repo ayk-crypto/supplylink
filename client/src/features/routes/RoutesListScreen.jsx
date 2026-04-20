@@ -5,7 +5,7 @@ import {
   ErrorState,
   Field,
   FormPanel,
-  LoadingState,
+  LoadingSkeleton,
   PageHeader,
   Pagination,
   TableScroll,
@@ -249,7 +249,7 @@ function RoutesListScreen({ navigate }) {
       </Toolbar>
 
       <ErrorState message={error} onRetry={reload} />
-      {isLoading ? <LoadingState>Loading routes…</LoadingState> : null}
+      {isLoading && !items.length ? <LoadingSkeleton label="Loading routes" rows={5} /> : null}
       {!isLoading && !items.length ? (
         <EmptyState>
           {hasFilters ? "No routes match the current filters." : "No routes found."}

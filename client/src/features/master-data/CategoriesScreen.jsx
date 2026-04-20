@@ -12,7 +12,7 @@ import {
   ErrorState,
   Field,
   FormPanel,
-  LoadingState,
+  LoadingSkeleton,
   PageHeader,
   Pagination,
   TableScroll,
@@ -249,7 +249,7 @@ function CategoriesScreen() {
       </Toolbar>
 
       <ErrorState message={error} onRetry={reload} />
-      {isLoading ? <LoadingState>Loading categories…</LoadingState> : null}
+      {isLoading && !items.length ? <LoadingSkeleton label="Loading categories" rows={5} /> : null}
       {!isLoading && !items.length ? (
         <EmptyState>
           {hasFilters ? "No categories match the current search." : "No categories found."}

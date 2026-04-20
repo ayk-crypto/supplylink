@@ -4,7 +4,7 @@ import { listOrders, listQuotations } from "../../services/transactionApi.js";
 import {
   EmptyState,
   ErrorState,
-  LoadingState,
+  LoadingSkeleton,
   PageHeader,
   Pagination,
   TableScroll,
@@ -206,7 +206,9 @@ function TransactionListScreen({ kind, navigate }) {
       </Toolbar>
 
       <ErrorState message={error} onRetry={reload} />
-      {isLoading ? <LoadingState>Loading {kind}…</LoadingState> : null}
+      {isLoading && !items.length ? (
+        <LoadingSkeleton label={`Loading ${kind}`} rows={5} />
+      ) : null}
       {!isLoading && !items.length ? (
         <EmptyState>{hasFilters ? config.filteredEmpty : config.empty}</EmptyState>
       ) : null}

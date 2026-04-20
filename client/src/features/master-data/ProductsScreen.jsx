@@ -13,7 +13,7 @@ import {
   ErrorState,
   Field,
   FormPanel,
-  LoadingState,
+  LoadingSkeleton,
   PageHeader,
   Pagination,
   TableScroll,
@@ -354,7 +354,7 @@ function ProductsScreen() {
 
       <ErrorState message={categoryError} />
       <ErrorState message={error} onRetry={reload} />
-      {isLoading ? <LoadingState>Loading products…</LoadingState> : null}
+      {isLoading && !items.length ? <LoadingSkeleton label="Loading products" rows={5} /> : null}
       {!isLoading && !items.length ? (
         <EmptyState>
           {hasFilters ? "No products match the current filters." : "No products found."}

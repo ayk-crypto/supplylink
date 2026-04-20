@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import {
   EmptyState,
   ErrorState,
-  LoadingState,
+  LoadingSkeleton,
   PageHeader,
   Pagination,
   Toolbar
@@ -108,7 +108,7 @@ function InventoryListScreen({ navigate }) {
       </Toolbar>
 
       <ErrorState message={error} onRetry={reload} />
-      {isLoading ? <LoadingState>Loading inventory…</LoadingState> : null}
+      {isLoading && !items.length ? <LoadingSkeleton label="Loading inventory" rows={5} /> : null}
       {!isLoading && !items.length ? (
         <EmptyState>
           {hasFilters ? "No products match the current filters." : "No products found."}

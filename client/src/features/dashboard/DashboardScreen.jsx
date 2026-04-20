@@ -1,4 +1,4 @@
-import { ErrorState, LoadingSkeleton, SectionHeader } from "../../components/ui/ResourceScreens.jsx";
+import { EmptyState, ErrorState, LoadingSkeleton, SectionHeader } from "../../components/ui/ResourceScreens.jsx";
 import { useAppSettings } from "../system/settingsContext.js";
 import { formatMoneyWith } from "../system/settingsFormat.js";
 import { useDashboardData } from "./useDashboardData.js";
@@ -70,7 +70,7 @@ function MetricCard({ detail, glyph, label, value }) {
 
 function RecordList({ emptyLabel, formatMoney, items, kind }) {
   if (!items?.length) {
-    return <p className="empty-state">{emptyLabel}</p>;
+    return <EmptyState>{emptyLabel}</EmptyState>;
   }
 
   return (
@@ -97,7 +97,7 @@ function RecordList({ emptyLabel, formatMoney, items, kind }) {
 
 function NotificationsList({ notifications }) {
   if (!notifications?.latest?.length) {
-    return <p className="empty-state">No recent notifications.</p>;
+    return <EmptyState>No recent notifications.</EmptyState>;
   }
 
   return (

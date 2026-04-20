@@ -12,7 +12,7 @@ import { getDefaultPageSize } from "../system/settingsFormat.js";
 import {
   EmptyState,
   ErrorState,
-  LoadingState,
+  LoadingSkeleton,
   PageHeader,
   Pagination,
   TableScroll,
@@ -124,7 +124,7 @@ function CustomersScreen({ navigate }) {
       </Toolbar>
 
       <ErrorState message={error} onRetry={reload} />
-      {isLoading ? <LoadingState>Loading customers…</LoadingState> : null}
+      {isLoading && !items.length ? <LoadingSkeleton label="Loading customers" rows={5} /> : null}
       {!isLoading && !items.length ? (
         <EmptyState>
           {hasFilters ? "No customers match the current filters." : "No customers found."}

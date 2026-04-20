@@ -274,7 +274,7 @@ function RouteDetailScreen({ id, navigate }) {
   }
 
   if (!route) {
-    return <p className="surface-message">No route found.</p>;
+    return <EmptyState>No route found.</EmptyState>;
   }
 
   async function transitionRouteStatus(spec) {
@@ -476,7 +476,7 @@ function RouteDetailScreen({ id, navigate }) {
                           onClick={() => transitionStopStatus(stop, "completed")}
                           type="button"
                         >
-                          Complete
+                          {isBusy ? "Saving…" : "Complete"}
                         </button>
                       ) : null}
                       {stop.status === "pending" ? (
@@ -486,7 +486,7 @@ function RouteDetailScreen({ id, navigate }) {
                           onClick={() => transitionStopStatus(stop, "skipped")}
                           type="button"
                         >
-                          Skip
+                          {isBusy ? "Saving…" : "Skip"}
                         </button>
                       ) : null}
                       <button

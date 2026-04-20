@@ -4,7 +4,7 @@ import { listInvoices } from "../../services/invoiceApi.js";
 import {
   EmptyState,
   ErrorState,
-  LoadingState,
+  LoadingSkeleton,
   PageHeader,
   Pagination,
   TableScroll,
@@ -182,7 +182,7 @@ function InvoiceListScreen({ navigate }) {
       </Toolbar>
 
       <ErrorState message={error} onRetry={reload} />
-      {isLoading ? <LoadingState>Loading invoices…</LoadingState> : null}
+      {isLoading && !items.length ? <LoadingSkeleton label="Loading invoices" rows={5} /> : null}
       {!isLoading && !items.length ? (
         <EmptyState>
           {hasFilters ? "No invoices match the current filters." : "No invoices found."}

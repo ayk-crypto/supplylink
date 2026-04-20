@@ -1,0 +1,89 @@
+Work only on the existing SupplyLink frontend.
+
+Do not change backend APIs.
+
+Goal:
+Implement Module 20AK: Final Polish, Demo Readiness, and Launch Confidence Pass.
+
+Context:
+SupplyLink now has strong operational coverage across customers, products, quotations, orders, invoices, payments, routes, attachments, reports, settings, and customer detail. Recent modules completed UX polish, consistency, attachment workflows, route workflows, reporting UX, and a reliability hardening pass.
+
+Core objective:
+Apply a final frontend polish pass focused on demo readiness, perceived quality, and launch confidence, without redesigning the system or changing backend APIs.
+
+What to do:
+
+1) Demo-path polish
+Review the main end-to-end flows a new user/demo reviewer is most likely to touch:
+- dashboard
+- customers
+- products
+- quotations
+- orders
+- invoices
+- routes
+- reports
+- customer detail
+
+Improve small but high-impact details where practical:
+- clearer empty states
+- stronger visual hierarchy
+- smoother action feedback
+- cleaner first impressions on important screens
+
+2) Button/action polish
+Where practical and low risk:
+- make in-flight states more obvious on important actions
+- add lightweight per-button busy indication where actions are currently only disabled
+- improve action labeling consistency
+- ensure major primary actions are visually clear
+
+3) High-visibility screen refinement
+Focus especially on:
+- dashboard
+- routes
+- customer detail
+- reports home
+- invoice detail
+
+Polish spacing, section rhythm, and readability where practical using existing primitives and styles.
+Do not redesign screens.
+
+4) List/detail consistency completion
+Audit remaining list/detail screens for minor inconsistencies in:
+- headings
+- action placement
+- empty-state wording
+- loading-state presentation
+- overflow handling
+Apply low-risk cleanups only.
+
+5) Presentation quality
+Make the app feel better in demos:
+- reduce rough edges
+- improve clarity of status/totals where practical
+- ensure important values are easy to scan
+- keep mobile/tablet behavior safe
+
+6) Constraints
+- no backend changes
+- no redesign
+- no new product areas
+- no broad risky refactors
+- keep changes additive, safe, and production-minded
+
+7) Documentation
+Update client README with a short section describing the final polish/demo-readiness improvements in this module.
+
+Verification:
+- run client lint
+- run client build
+
+Deliverable:
+1. Summary
+2. Files changed
+3. What demo-readiness / polish improvements were made
+4. What high-visibility screens were refined
+5. Any action-feedback improvements added
+6. Verification results
+7. Any useful follow-up items

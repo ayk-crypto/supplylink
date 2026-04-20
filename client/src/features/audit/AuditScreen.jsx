@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import {
   EmptyState,
   ErrorState,
-  LoadingState,
+  LoadingSkeleton,
   PageHeader,
   Pagination,
   Toolbar
@@ -146,7 +146,7 @@ function AuditScreen({ navigate }) {
       </Toolbar>
 
       <ErrorState message={error} onRetry={reload} />
-      {isLoading ? <LoadingState>Loading audit history…</LoadingState> : null}
+      {isLoading && !items.length ? <LoadingSkeleton label="Loading audit history" rows={5} /> : null}
       {!isLoading && !items.length ? (
         <EmptyState>
           {hasFilters

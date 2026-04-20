@@ -966,3 +966,53 @@ Constraints respected:
 - No redesign — same surfaces, classes, and layouts.
 - All shared primitives reused (`EmptyState`,
   `LoadingSkeleton`, `ErrorState`, `confirmDestructive`).
+
+## Module 20AK — Final polish, demo readiness, launch confidence
+
+A focused presentation pass over high-traffic screens. No
+backend changes, no redesign, additive only.
+
+Loading-state consistency on list screens:
+- `CustomersScreen`, `ProductsScreen`, `CategoriesScreen`,
+  `TransactionListScreens` (orders + quotations),
+  `InvoiceListScreen`, `RoutesListScreen`,
+  `InventoryListScreen`, and `AuditScreen` all migrated from
+  the older `LoadingState` paragraph spinner to the shared
+  `LoadingSkeleton` rows component used by the detail
+  screens. Each one passes a meaningful `label` (e.g.
+  "Loading customers") for screen readers.
+- The skeleton now only renders when the list is empty
+  AND loading, so re-fetches triggered by pagination or
+  filter changes no longer push a skeleton above the
+  existing rows — the table simply updates in place.
+
+Per-button busy feedback on route stops:
+- Stop `Complete` and `Skip` buttons in
+  `RouteDetailScreen` now show "Saving…" while the
+  transition is in flight, matching the pattern used by
+  invoice / order / quotation lifecycle buttons. Buttons
+  are still disabled during the request to prevent
+  double-submit; the label change makes the busy state
+  obvious in demos.
+
+Empty-state primitive consistency on the dashboard:
+- `DashboardScreen` `RecordList` (recent orders, recent
+  invoices) and `NotificationsList` now render their
+  empty messages through the shared `EmptyState`
+  component instead of a one-off `<p class="empty-state">`,
+  so empty panels share the same surface and spacing as
+  every other section in the app.
+- `RouteDetailScreen` "No route found" fallback also moved
+  from raw `<p class="surface-message">` to `EmptyState`.
+
+Verification:
+- `npm run lint` clean.
+- `npm run build` green
+  (`index-B7u9Sjgf.js 387.86 kB / gzip 107.61 kB`,
+  `index-DhQLVP-y.css 50.50 kB / gzip 9.59 kB`).
+
+Constraints respected:
+- No backend changes.
+- No redesign — same surfaces, classes, layouts.
+- All shared primitives reused (`LoadingSkeleton`,
+  `EmptyState`).
