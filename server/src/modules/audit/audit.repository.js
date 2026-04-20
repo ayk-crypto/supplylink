@@ -24,15 +24,15 @@ async function createAuditEvent({
        metadata
      )
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9)
-     RETURNING id,
-               vendor_id,
-               actor_user_id,
-               entity_type,
-               entity_id,
-               event_type,
-               event_label,
-               metadata,
-               created_at`,
+     RETURNING audit_logs.id AS id,
+               audit_logs.vendor_id AS vendor_id,
+               audit_logs.actor_user_id AS actor_user_id,
+               audit_logs.entity_type AS entity_type,
+               audit_logs.entity_id AS entity_id,
+               audit_logs.event_type AS event_type,
+               audit_logs.event_label AS event_label,
+               audit_logs.metadata AS metadata,
+               audit_logs.created_at AS created_at`,
     [
       vendorId,
       actorUserId,
@@ -99,15 +99,15 @@ async function listAuditEventsForVendor({
   values.push(offset);
 
   const result = await query(
-    `SELECT id,
-            audit.vendor_id,
-            audit.actor_user_id,
-            audit.entity_type,
-            audit.entity_id,
-            audit.event_type,
-            audit.event_label,
-            audit.metadata,
-            audit.created_at,
+    `SELECT audit.id AS id,
+            audit.vendor_id AS vendor_id,
+            audit.actor_user_id AS actor_user_id,
+            audit.entity_type AS entity_type,
+            audit.entity_id AS entity_id,
+            audit.event_type AS event_type,
+            audit.event_label AS event_label,
+            audit.metadata AS metadata,
+            audit.created_at AS created_at,
             actor.full_name AS actor_full_name,
             actor.email AS actor_email,
             CASE audit.entity_type
