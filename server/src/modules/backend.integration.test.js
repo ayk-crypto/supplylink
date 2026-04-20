@@ -115,6 +115,19 @@ if (!testDatabaseUrl) {
         expectedStatus: 201
       });
       state.product = product.payload.data;
+      assert.equal(Number(state.product.stockQuantity), 0);
+
+      const stockedProduct = await api.post("/inventory/adjust", {
+        token: state.vendorA.token,
+        body: {
+          productId: state.product.id,
+          type: "inbound",
+          quantity: 50,
+          notes: "Initial integration stock"
+        },
+        expectedStatus: 201
+      });
+      assert.equal(Number(stockedProduct.payload.data.stockQuantity), 50);
 
       const quotation = await api.post("/quotations", {
         token: state.vendorA.token,
@@ -148,6 +161,29 @@ if (!testDatabaseUrl) {
       state.order = order.payload.data;
       assert.equal(state.order.quotationId, state.quotation.id);
       assert.equal(state.order.status, "confirmed");
+
+      const productAfterOrder = await api.get(`/inventory/products/${state.product.id}`, {
+        token: state.vendorA.token
+      });
+      assert.equal(Number(productAfterOrder.payload.data.stockQuantity), 48);
+
+      const adjustedProduct = await api.post("/inventory/adjust", {
+        token: state.vendorA.token,
+        body: {
+          productId: state.product.id,
+          quantity: -3,
+          notes: "Manual shrinkage adjustment"
+        },
+        expectedStatus: 201
+      });
+      assert.equal(Number(adjustedProduct.payload.data.stockQuantity), 45);
+
+      const stockMovements = await api.get(`/inventory/movements?productId=${state.product.id}`, {
+        token: state.vendorA.token
+      });
+      assert.ok(stockMovements.payload.data.items.some((item) => item.type === "inbound"));
+      assert.ok(stockMovements.payload.data.items.some((item) => item.type === "outbound"));
+      assert.ok(stockMovements.payload.data.items.some((item) => item.type === "adjustment"));
 
       const invoice = await api.post(`/orders/${state.order.id}/create-invoice`, {
         token: state.vendorA.token,
@@ -314,6 +350,10 @@ if (!testDatabaseUrl) {
         expectedStatus: 409
       });
       assert.equal((await api.post(`/orders/${orderId}/confirm`, { token: state.vendorA.token })).payload.data.status, "confirmed");
+      const movementForConfirmedOrder = await api.get(`/inventory/movements?referenceType=order&referenceId=${orderId}`, {
+        token: state.vendorA.token
+      });
+      assert.ok(movementForConfirmedOrder.payload.data.items.length >= 1);
       await api.patch(`/orders/${orderId}`, {
         token: state.vendorA.token,
         body: { orderDate: "2026-04-20" },
@@ -454,6 +494,10 @@ if (!testDatabaseUrl) {
         expectedStatus: 404
       });
       await api.get(`/products/${state.product.id}`, {
+        token: state.vendorB.token,
+        expectedStatus: 404
+      });
+      await api.get(`/inventory/products/${state.product.id}`, {
         token: state.vendorB.token,
         expectedStatus: 404
       });

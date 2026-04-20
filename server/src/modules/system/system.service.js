@@ -35,6 +35,12 @@ const MODULES = [
     description: "Catalog and category base."
   },
   {
+    key: "inventory",
+    scope: "vendor",
+    path: `${API_INFO.basePath}/inventory`,
+    description: "Stock balances and movement history foundation."
+  },
+  {
     key: "orders",
     scope: "vendor",
     path: `${API_INFO.basePath}/orders`,

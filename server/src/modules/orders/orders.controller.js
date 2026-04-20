@@ -62,7 +62,12 @@ async function update(request, response) {
 }
 
 async function transition(action, request, response) {
-  const result = await transitionOrder(request.access.vendorId, request.params.orderId, action);
+  const result = await transitionOrder(
+    request.access.vendorId,
+    request.params.orderId,
+    action,
+    request.auth
+  );
 
   sendSuccess(response, {
     message: "Order status updated",

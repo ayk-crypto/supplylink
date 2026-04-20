@@ -30,6 +30,7 @@ const DATA_TABLES = [
   "quotations",
   "route_stops",
   "routes",
+  "stock_movements",
   "products",
   "categories",
   "vendor_customer_relationships",

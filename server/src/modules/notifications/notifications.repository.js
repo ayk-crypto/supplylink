@@ -1,21 +1,64 @@
 import { query } from "../../config/db.js";
 
-const NOTIFICATION_SELECT = `notification.id,
-                             notification.vendor_id,
-                             notification.user_id,
-                             notification.type,
-                             notification.event_code,
-                             notification.title,
-                             notification.message,
-                             notification.related_entity_type,
-                             notification.related_entity_id,
-                             notification.status,
-                             notification.metadata,
-                             notification.read_at,
-                             notification.created_at,
-                             notification.updated_at,
-                             vendor.display_name AS vendor_display_name,
-                             vendor.slug AS vendor_slug`;
+let relatedEntityColumnCheck = {
+  checkedAt: 0,
+  supported: null
+};
+
+const RELATED_ENTITY_COLUMN_CHECK_TTL_MS = 60_000;
+
+async function supportsRelatedEntityColumns() {
+  const now = Date.now();
+
+  if (
+    relatedEntityColumnCheck.supported !== null &&
+    now - relatedEntityColumnCheck.checkedAt < RELATED_ENTITY_COLUMN_CHECK_TTL_MS
+  ) {
+    return relatedEntityColumnCheck.supported;
+  }
+
+  const result = await query(
+    `SELECT COUNT(*)::int AS total
+     FROM information_schema.columns
+     WHERE table_schema = current_schema()
+       AND table_name = 'notifications'
+       AND column_name = ANY($1::text[])`,
+    [["related_entity_type", "related_entity_id"]]
+  );
+  const supported = result.rows[0]?.total === 2;
+
+  relatedEntityColumnCheck = {
+    checkedAt: now,
+    supported
+  };
+
+  return supported;
+}
+
+async function notificationSelect() {
+  const hasRelatedEntityColumns = await supportsRelatedEntityColumns();
+  const relatedEntitySelect = hasRelatedEntityColumns
+    ? `notification.related_entity_type,
+       notification.related_entity_id,`
+    : `NULL::text AS related_entity_type,
+       NULL::uuid AS related_entity_id,`;
+
+  return `notification.id,
+          notification.vendor_id,
+          notification.user_id,
+          notification.type,
+          notification.event_code,
+          notification.title,
+          notification.message,
+          ${relatedEntitySelect}
+          notification.status,
+          notification.metadata,
+          notification.read_at,
+          notification.created_at,
+          notification.updated_at,
+          vendor.display_name AS vendor_display_name,
+          vendor.slug AS vendor_slug`;
+}
 
 function notificationJoinClause() {
   return `FROM notifications notification
@@ -60,6 +103,7 @@ async function listNotificationsForUser({
   }
 
   const whereClause = `WHERE ${conditions.join(" AND ")}`;
+  const selectColumns = await notificationSelect();
   const countResult = await query(
     `SELECT COUNT(*)::int AS total
      ${notificationJoinClause()}
@@ -71,7 +115,7 @@ async function listNotificationsForUser({
   values.push(offset);
 
   const result = await query(
-    `SELECT ${NOTIFICATION_SELECT}
+    `SELECT ${selectColumns}
      ${notificationJoinClause()}
      ${whereClause}
      ORDER BY notification.created_at DESC, notification.id DESC
@@ -99,8 +143,9 @@ async function countUnreadNotificationsForUser(userId) {
 }
 
 async function listLatestNotificationsForUser(userId, limit = 10) {
+  const selectColumns = await notificationSelect();
   const result = await query(
-    `SELECT ${NOTIFICATION_SELECT}
+    `SELECT ${selectColumns}
      ${notificationJoinClause()}
      WHERE notification.user_id = $1
      ORDER BY notification.created_at DESC, notification.id DESC
@@ -112,8 +157,9 @@ async function listLatestNotificationsForUser(userId, limit = 10) {
 }
 
 async function findNotificationForUser(userId, notificationId) {
+  const selectColumns = await notificationSelect();
   const result = await query(
-    `SELECT ${NOTIFICATION_SELECT}
+    `SELECT ${selectColumns}
      ${notificationJoinClause()}
      WHERE notification.user_id = $1
        AND notification.id = $2
@@ -212,23 +258,36 @@ async function createNotificationsForUsers({
     return [];
   }
 
+  const hasRelatedEntityColumns = await supportsRelatedEntityColumns();
   const values = [];
   const placeholders = uniqueUserIds.map((userId, index) => {
-    const offset = index * 9;
-    values.push(
-      vendorId,
-      userId,
-      type,
-      eventCode,
-      title,
-      message,
-      relatedEntityType,
-      relatedEntityId,
-      metadata
-    );
+    const columnCount = hasRelatedEntityColumns ? 9 : 7;
+    const offset = index * columnCount;
 
-    return `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9})`;
+    if (hasRelatedEntityColumns) {
+      values.push(
+        vendorId,
+        userId,
+        type,
+        eventCode,
+        title,
+        message,
+        relatedEntityType,
+        relatedEntityId,
+        metadata
+      );
+
+      return `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9})`;
+    }
+
+    values.push(vendorId, userId, type, eventCode, title, message, metadata);
+
+    return `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7})`;
   });
+  const relatedEntityColumns = hasRelatedEntityColumns
+    ? `related_entity_type,
+       related_entity_id,`
+    : "";
 
   const result = await query(
     `INSERT INTO notifications (
@@ -238,8 +297,7 @@ async function createNotificationsForUsers({
        event_code,
        title,
        message,
-       related_entity_type,
-       related_entity_id,
+       ${relatedEntityColumns}
        metadata
      )
      VALUES ${placeholders.join(", ")}

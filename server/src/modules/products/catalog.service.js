@@ -77,6 +77,7 @@ function mapProduct(row) {
     name: row.name,
     description: row.description,
     unitPrice: row.unit_price,
+    stockQuantity: row.stock_quantity,
     status: row.status,
     metadata: row.metadata || {},
     category: row.category_id

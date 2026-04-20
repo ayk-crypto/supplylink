@@ -11,6 +11,7 @@ import {
   listQuotationItemsForOrder,
   updateOrderWithOptionalItems
 } from "./orders.repository.js";
+import { applyOutboundStockForOrder } from "../inventory/inventory.service.js";
 import { notifyVendorUsers, runNotificationTask } from "../notifications/notifications.service.js";
 
 const EDITABLE_FIELDS_BY_STATUS = {
@@ -548,6 +549,7 @@ async function createOrder(vendorId, payload, actor) {
   const detail = await getOrderDetail(vendorId, order.id);
 
   if (detail.status === "confirmed") {
+    await applyOutboundStockForOrder(vendorId, detail.id, actor);
     notifyOrderEvent(vendorId, detail, ORDER_EVENT_CONTENT.confirmed);
   }
 
@@ -610,7 +612,7 @@ async function updateOrder(vendorId, orderId, payload) {
   return detail;
 }
 
-async function transitionOrder(vendorId, orderId, action) {
+async function transitionOrder(vendorId, orderId, action, actor = {}) {
   const existing = await findOrderForVendor(vendorId, orderId);
 
   assertOrderFound(existing, orderId);
@@ -627,6 +629,10 @@ async function transitionOrder(vendorId, orderId, action) {
   assertOrderFound(updated, orderId);
 
   const detail = await getOrderDetail(vendorId, orderId);
+
+  if (["confirmed", "delivered"].includes(transition.to)) {
+    await applyOutboundStockForOrder(vendorId, detail.id, actor);
+  }
 
   const content = ORDER_EVENT_CONTENT[transition.to];
 
