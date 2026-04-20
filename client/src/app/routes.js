@@ -45,6 +45,11 @@ const appRoutes = [
     path: "/routes"
   },
   {
+    id: "route-templates",
+    label: "Route Templates",
+    path: "/route-templates"
+  },
+  {
     id: "ledger",
     label: "Ledger",
     path: "/ledger"
@@ -132,6 +137,12 @@ const routeDefinitions = [
     id: "route-detail",
     path: /^\/routes\/([^/]+)$/,
     navPath: "/routes",
+    paramNames: ["id"]
+  },
+  {
+    id: "route-template-detail",
+    path: /^\/route-templates\/([^/]+)$/,
+    navPath: "/route-templates",
     paramNames: ["id"]
   },
   {

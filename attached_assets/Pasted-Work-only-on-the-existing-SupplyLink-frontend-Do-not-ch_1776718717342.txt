@@ -1,0 +1,176 @@
+Work only on the existing SupplyLink frontend.
+
+Do not change backend APIs.
+
+Goal:
+Implement Module 20AL Frontend: Route Templates and Template-Based Route Generation.
+
+Context:
+Backend now supports route templates, template stops, and generation of normal routes from templates.
+
+Available backend endpoints:
+- GET /api/v1/route-templates
+- POST /api/v1/route-templates
+- GET /api/v1/route-templates/:templateId
+- PATCH /api/v1/route-templates/:templateId
+- DELETE /api/v1/route-templates/:templateId
+- GET /api/v1/route-templates/:templateId/stops
+- POST /api/v1/route-templates/:templateId/stops
+- PATCH /api/v1/route-templates/:templateId/stops/:stopId
+- DELETE /api/v1/route-templates/:templateId/stops/:stopId
+- POST /api/v1/route-templates/:templateId/generate
+
+Backend behavior:
+- route template = reusable recurring plan
+- route = dated execution instance
+- generated routes remain editable through existing /routes flows
+- template edits do not change already-generated routes
+- recurrenceType currently supports only weekly
+- recurrenceDays supports multiple weekdays as 0-6
+- generated routes may include sourceRouteTemplateId
+
+Core objective:
+Add a frontend Route Templates experience so vendors can manage recurring route plans and generate dated route instances from them, without redesigning the app or changing backend APIs.
+
+What to do:
+
+1) Inspect backend contracts first
+- understand exact request/response shapes
+- follow existing frontend API/service patterns
+- do not change backend APIs
+
+2) Add frontend API layer
+Create route-template API services using existing auth-aware patterns for:
+- list route templates
+- get route template
+- create route template
+- update route template
+- delete route template
+- list template stops
+- create template stop
+- update template stop
+- delete template stop
+- generate route from template
+
+3) Add navigation
+Add a new frontend navigation entry near Routes:
+- Route Templates
+
+Recommended routes:
+- /route-templates
+- /route-templates/:id
+
+Keep existing Routes screens intact.
+
+4) Route Templates list screen
+Build a paginated list screen with:
+- template name
+- active/inactive status
+- recurrence summary
+- vehicle label
+- stop count if practical from backend response
+- actions: View, Edit, Generate
+
+Include:
+- search by name
+- active/inactive filter if backend supports it
+- reset filters
+- loading / error / empty states using shared primitives
+- pagination using existing patterns and settings page-size preferences where practical
+
+5) Route Template detail screen
+Add a detail screen with sections such as:
+- overview
+- recurrence
+- default stops
+- notes
+- generate route action
+
+Use shared primitives:
+- PageHeader
+- SectionHeader
+- TableScroll
+- LoadingState / LoadingSkeleton / ErrorState / EmptyState
+
+6) Template create/edit UX
+Support create and edit flows with:
+- template name
+- active toggle/status control
+- recurrence type (weekly only)
+- weekday multi-select
+- vehicle label
+- notes
+
+Keep the UX clean and additive.
+No redesign.
+
+7) Template stop management
+Allow users to manage default stops inside the template detail screen:
+- list existing template stops in sequence order
+- add stop
+- edit stop
+- delete stop
+
+Fields:
+- customer
+- sequence number
+- notes
+
+Requirements:
+- use existing customer list API for customer selection
+- keep stop ordering very clear
+- show inline validation errors where practical
+- respect backend duplicate-sequence validation
+- keep mobile behavior safe
+
+8) Generate route flow
+Add a Generate Route action from the template detail screen and/or list screen.
+
+Use a modal to collect:
+- route date
+- optional overrides supported by backend if available and worth exposing:
+  - vehicle
+  - notes
+  - status
+
+Behavior:
+- call generate endpoint
+- show success toast
+- navigate directly to the generated normal route detail screen
+- do not mutate the template unexpectedly
+
+9) Human-readable recurrence
+Make recurrence readable in the UI, such as:
+- Thu
+- Mon/Wed/Fri
+- Weekly on Thursday
+
+Use a shared helper where practical.
+
+10) Constraints
+- no backend changes
+- no redesign of current Routes screens
+- keep route templates as a separate planning layer
+- generated routes remain normal routes after creation
+- no automation yet; generation is user-triggered
+- keep implementation modular and production-minded
+
+11) Documentation
+Update client README with route-template support, including:
+- list/detail/create/edit
+- template stops
+- generate route flow
+
+Verification:
+- run client lint
+- run client build
+
+Deliverable:
+1. Summary
+2. Files changed
+3. What route-template UX was added
+4. What template-stop management was added
+5. How route generation works in the UI
+6. Any backend limitations encountered
+7. Verification results
+8. Any useful follow-up items

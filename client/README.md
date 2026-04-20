@@ -1016,3 +1016,60 @@ Constraints respected:
 - No redesign — same surfaces, classes, layouts.
 - All shared primitives reused (`LoadingSkeleton`,
   `EmptyState`).
+
+## Module 20AL — Route Templates and Template-Based Route Generation
+
+A separate planning layer for recurring weekly route plans. Templates live
+alongside Routes; generated routes remain regular routes after creation.
+
+Surfaces added:
+- Sidebar: **Route Templates** (next to Routes).
+- `/route-templates` — paginated list with search by name, active/inactive
+  filter, reset, and an "Open" action per row. Columns: name + notes preview,
+  recurrence summary, status, vehicle, default-stop count.
+- `/route-templates/:id` — detail screen with template overview, recurrence,
+  default stops table, notes, edit modal, and a Generate route action.
+
+API layer (`client/src/services/routeTemplateApi.js`) wraps all 10 backend
+endpoints under `/route-templates`: list/get/create/update/delete templates,
+list/create/update/delete template stops, and `generate`.
+
+Template create/edit modal:
+- Name, vehicle label, status (active/inactive), notes.
+- Recurrence type is locked to **Weekly** (the only value the backend accepts
+  today).
+- Weekday multi-select rendered as a chip grid (Sun–Sat) with at least one
+  weekday required by client-side validation.
+
+Template stop management (inside the detail screen):
+- Lists default stops in sequence order.
+- Add stop modal uses the existing customer list API
+  (`listCustomers({ status: "active" })`) for the customer dropdown.
+- Edit stop allows changing sequence number and notes; the customer is
+  immutable (matches the backend stop-update contract).
+- Remove stop is gated by `confirmDestructive`, and surfaces backend duplicate-
+  sequence errors via the standard form-error and toast pattern.
+
+Generate route flow:
+- Modal collects route date (defaults to today), an optional name override
+  (placeholder shows the template name), optional vehicle label and notes, and
+  initial status (`draft` or `planned`).
+- On success, shows a toast and navigates to the new route's detail screen
+  (`/routes/:id`). The template itself is never mutated.
+- Generate is disabled when the template has zero default stops or is
+  inactive, with a tooltip explaining why.
+
+Human-readable recurrence helpers in
+`client/src/features/route-templates/routeTemplateUtils.js`:
+- `formatRecurrenceDays([1,3,5])` → `"Mon/Wed/Fri"`
+- `formatRecurrenceSummary(template)` → `"Weekly · Mon/Wed/Fri"` or
+  `"Weekly on Thursday"` for single-day templates.
+
+Constraints respected:
+- No backend changes; all 10 endpoints consumed as-is.
+- No redesign of the existing Routes screens.
+- Recurrence type stays weekly only (matches backend Zod enum).
+- Generated routes are normal routes — fully editable through `/routes/:id`.
+- Reuses shared primitives (`PageHeader`, `SectionHeader`, `Toolbar`,
+  `FormPanel`, `Field`, `LoadingSkeleton`, `ErrorState`, `EmptyState`,
+  `TableScroll`, `Pagination`).

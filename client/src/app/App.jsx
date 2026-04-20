@@ -22,6 +22,8 @@ import NotificationsScreen from "../features/notifications/NotificationsScreen.j
 import OperationalReportScreen from "../features/reports/OperationalReportScreen.jsx";
 import RouteDetailScreen from "../features/routes/RouteDetailScreen.jsx";
 import RoutesListScreen from "../features/routes/RoutesListScreen.jsx";
+import RouteTemplateDetailScreen from "../features/route-templates/RouteTemplateDetailScreen.jsx";
+import RouteTemplatesListScreen from "../features/route-templates/RouteTemplatesListScreen.jsx";
 import ReceivablesReportScreen from "../features/reports/ReceivablesReportScreen.jsx";
 import ReportsHomeScreen from "../features/reports/ReportsHomeScreen.jsx";
 import StatementsReportScreen from "../features/reports/StatementsReportScreen.jsx";
@@ -53,6 +55,8 @@ const screens = {
   "inventory-product": InventoryDetailScreen,
   routes: RoutesListScreen,
   "route-detail": RouteDetailScreen,
+  "route-templates": RouteTemplatesListScreen,
+  "route-template-detail": RouteTemplateDetailScreen,
   ledger: LedgerOverviewScreen,
   "customer-ledger": CustomerLedgerScreen,
   notifications: NotificationsScreen,

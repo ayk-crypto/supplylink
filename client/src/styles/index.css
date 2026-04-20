@@ -807,6 +807,67 @@ a {
   justify-content: flex-end;
 }
 
+.route-template-grid {
+  grid-template-columns:
+    minmax(190px, 1.5fr) minmax(140px, 1fr) 110px minmax(120px, 0.7fr)
+    80px auto;
+}
+
+.route-template-stop-grid {
+  grid-template-columns: 52px minmax(180px, 1.3fr) minmax(160px, 1fr) auto;
+}
+
+.route-template-stop-grid .stop-sequence {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: var(--surface-subtle, rgba(0, 0, 0, 0.06));
+  color: var(--text-strong, #111);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.route-template-stop-grid .stop-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.weekday-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.weekday-chip {
+  appearance: none;
+  border: 1px solid var(--border-soft, rgba(0, 0, 0, 0.12));
+  background: var(--surface-subtle, rgba(0, 0, 0, 0.04));
+  color: var(--text-strong, #111);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.weekday-chip.selected {
+  background: var(--accent, #2563eb);
+  border-color: var(--accent, #2563eb);
+  color: #fff;
+}
+
+.weekday-chip:focus-visible {
+  outline: 2px solid var(--accent, #2563eb);
+  outline-offset: 2px;
+}
+
 .date-preset-row {
   display: flex;
   flex-wrap: wrap;
@@ -1237,6 +1298,8 @@ a {
   .resource-row,
   .route-grid,
   .route-stop-grid,
+  .route-template-grid,
+  .route-template-stop-grid,
   .customer-grid,
   .category-grid,
     .product-grid,
@@ -2835,6 +2898,8 @@ canvas {
   .resource-row,
   .route-grid,
   .route-stop-grid,
+  .route-template-grid,
+  .route-template-stop-grid,
   .customer-grid,
   .category-grid,
   .product-grid,
@@ -2881,6 +2946,8 @@ canvas {
   .resource-row,
   .route-grid,
   .route-stop-grid,
+  .route-template-grid,
+  .route-template-stop-grid,
   .customer-grid,
   .category-grid,
   .product-grid,
