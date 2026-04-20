@@ -1,3 +1,4 @@
+import { ErrorState, LoadingSkeleton } from "../../components/ui/ResourceScreens.jsx";
 import { useAppSettings } from "../system/settingsContext.js";
 import { formatMoneyWith } from "../system/settingsFormat.js";
 import { useDashboardData } from "./useDashboardData.js";
@@ -154,11 +155,24 @@ function DashboardScreen({ navigate }) {
   const formatMoney = (value) => formatMoneyWith(settings, value);
 
   if (isLoading) {
-    return <p className="surface-message loading">Loading dashboard...</p>;
+    return (
+      <div className="dashboard-page">
+        <section className="dashboard-hero">
+          <LoadingSkeleton label="Loading dashboard" rows={4} />
+        </section>
+        <section className="metric-strip">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <article className="metric-tile" key={index}>
+              <LoadingSkeleton rows={3} />
+            </article>
+          ))}
+        </section>
+      </div>
+    );
   }
 
   if (error) {
-    return <p className="surface-message error">{error}</p>;
+    return <ErrorState message={error} />;
   }
 
   const collectedRatio = (() => {
@@ -294,9 +308,9 @@ function DashboardScreen({ navigate }) {
             ) : null}
           </div>
           {notificationsError ? (
-            <p className="surface-message error">{notificationsError}</p>
+            <ErrorState message={notificationsError} />
           ) : areNotificationsLoading && !notifications ? (
-            <p className="surface-message loading">Loading notifications...</p>
+            <LoadingSkeleton label="Loading notifications" rows={3} />
           ) : (
             <NotificationsList notifications={notifications} />
           )}

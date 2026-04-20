@@ -349,9 +349,9 @@ function ProductsScreen() {
         </button>
       </Toolbar>
 
-      {categoryError ? <p className="surface-message error">{categoryError}</p> : null}
-      {error ? <p className="surface-message error">{error}</p> : null}
-      {isLoading ? <p className="surface-message loading">Loading products...</p> : null}
+      <ErrorState message={categoryError} />
+      <ErrorState message={error} onRetry={reload} />
+      {isLoading ? <LoadingState>Loading products…</LoadingState> : null}
       {!isLoading && !items.length ? (
         <EmptyState>
           {hasFilters ? "No products match the current filters." : "No products found."}

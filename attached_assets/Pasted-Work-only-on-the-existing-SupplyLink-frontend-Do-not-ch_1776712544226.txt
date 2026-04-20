@@ -1,0 +1,91 @@
+Work only on the existing SupplyLink frontend.
+
+Do not change backend APIs.
+
+Goal:
+Implement Module 20AC: Frontend UX, Responsiveness, and Loading Polish for Existing Operational Screens.
+
+Context:
+Frontend foundations and operational modules are already implemented, including:
+- app shell and auth/session
+- dashboard
+- customers / categories / products
+- quotations / orders
+- invoices and inline payments
+- settings persistence and propagation
+
+Core objective:
+Improve the quality of the existing frontend experience so it feels more professional, responsive, and production-ready across desktop and smaller devices, without redesigning the product or changing backend APIs.
+
+What to do:
+
+1. Responsive layout polish
+Review and improve responsiveness of the main operational screens already implemented:
+- dashboard
+- customers
+- categories
+- products
+- quotations
+- orders
+- invoices
+- settings
+Focus on:
+- card/table overflow handling
+- filter/action bar wrapping
+- better spacing on tablet and mobile widths
+- readable header/action layout on smaller screens
+- safe scrolling behavior for data-heavy views
+Do not redesign the app or replace the current visual language.
+
+2. Loading and empty states
+Improve perceived quality of loading and empty states where practical:
+- loading placeholders or consistent loading messaging
+- cleaner empty states for lists with no records
+- safer handling of retry/error states
+- avoid jarring layout jumps where easy to improve
+
+3. Table usability polish
+Improve existing tables/lists where practical:
+- consistent sticky or clear headers where already compatible
+- better action alignment
+- better truncation/wrapping for long values
+- preserve readability on narrower screens
+- avoid horizontal overflow issues where possible
+
+4. Dashboard polish
+Refine the dashboard layout so it feels more polished and balanced:
+- KPI cards spacing/alignment
+- better stacking behavior on smaller devices
+- cleaner recent activity / summary section layout
+- preserve existing data and API usage
+
+5. Reuse and consistency
+Where practical, introduce or improve small shared UI patterns/utilities instead of one-off fixes:
+- section headers
+- empty state blocks
+- loading blocks
+- responsive table wrappers
+Keep this light and additive.
+
+6. Constraints
+- no backend changes
+- no major redesign
+- no new product features
+- keep changes additive, professional, and production-minded
+- preserve existing flows and API contracts
+
+7. Documentation
+Update client README with a short section describing the UI polish/responsiveness improvements added in this module.
+
+Verification:
+- run client lint
+- run client build
+
+Deliverable:
+1. Summary
+2. Files changed
+3. What responsiveness improvements were made
+4. What loading/empty/table polish was added
+5. Any shared UI patterns introduced
+6. Verification results
+7. Any useful follow-up items

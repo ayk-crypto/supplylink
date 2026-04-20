@@ -47,7 +47,7 @@ function InvoiceListScreen({ navigate }) {
     },
     [showToast]
   );
-  const { data, error, isLoading } = useResourceDirectory(loadInvoices, query, {
+  const { data, error, isLoading, reload } = useResourceDirectory(loadInvoices, query, {
     onError: handleListError
   });
   const items = data?.items || [];
@@ -174,8 +174,8 @@ function InvoiceListScreen({ navigate }) {
         ) : null}
       </Toolbar>
 
-      {error ? <p className="surface-message error">{error}</p> : null}
-      {isLoading ? <p className="surface-message loading">Loading invoices...</p> : null}
+      <ErrorState message={error} onRetry={reload} />
+      {isLoading ? <LoadingState>Loading invoices…</LoadingState> : null}
       {!isLoading && !items.length ? (
         <EmptyState>
           {hasFilters ? "No invoices match the current filters." : "No invoices found."}

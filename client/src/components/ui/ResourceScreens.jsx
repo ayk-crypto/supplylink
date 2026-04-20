@@ -23,6 +23,55 @@ function EmptyState({ children }) {
   return <p className="empty-panel">{children}</p>;
 }
 
+function LoadingState({ children = "Loading…" }) {
+  return (
+    <p aria-live="polite" className="surface-message loading">
+      <span>{children}</span>
+    </p>
+  );
+}
+
+function ErrorState({ message, onRetry, retryLabel = "Try again" }) {
+  if (!message) return null;
+  return (
+    <div className="error-state surface-message error" role="alert">
+      <span>{message}</span>
+      {typeof onRetry === "function" ? (
+        <button className="link-button" onClick={onRetry} type="button">
+          {retryLabel}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function LoadingSkeleton({ rows = 3, label = "Loading content" }) {
+  const items = Array.from({ length: Math.max(1, rows) });
+  return (
+    <div aria-busy="true" aria-label={label} className="loading-skeleton">
+      {items.map((_, index) => (
+        <span className="skeleton-row" key={index} />
+      ))}
+    </div>
+  );
+}
+
+function TableScroll({ children }) {
+  return <div className="table-scroll">{children}</div>;
+}
+
+function SectionHeader({ title, action, hint }) {
+  return (
+    <div className="panel-heading section-heading">
+      <div>
+        <h3>{title}</h3>
+        {hint ? <span>{hint}</span> : null}
+      </div>
+      {action ? <div className="section-heading-action">{action}</div> : null}
+    </div>
+  );
+}
+
 function Field({ children, error, hint, label }) {
   return (
     <label className="form-field">
@@ -116,4 +165,16 @@ function Pagination({ pagination, onPageChange }) {
   );
 }
 
-export { EmptyState, Field, FormPanel, PageHeader, Pagination, Toolbar };
+export {
+  EmptyState,
+  ErrorState,
+  Field,
+  FormPanel,
+  LoadingSkeleton,
+  LoadingState,
+  PageHeader,
+  Pagination,
+  SectionHeader,
+  TableScroll,
+  Toolbar
+};

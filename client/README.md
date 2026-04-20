@@ -466,3 +466,55 @@ Hardening notes:
 - Every consumer flows through the same merge / fallback path, so a
   partial backend response or a missing field never breaks an older
   environment.
+
+## Module 20AC Frontend UX, Responsiveness, and Loading Polish
+
+Module 20AC adds a small set of shared UI primitives, polishes the
+loading and error experience on the operational screens, and tightens
+responsive behavior — additive only, with no redesign and no backend
+changes.
+
+New shared components in `client/src/components/ui/ResourceScreens.jsx`:
+
+- `LoadingState` — consistent in-line loading message with the existing
+  spinner styling, exposed as `aria-live="polite"`.
+- `LoadingSkeleton` — animated shimmer placeholder rows used while
+  hydrating data-heavy panels, including the dashboard hero, KPI tiles,
+  and the recent notifications panel.
+- `ErrorState` — consistent danger banner with an optional `onRetry`
+  button. Hides itself when `message` is empty so it can be rendered
+  unconditionally.
+- `SectionHeader` — wraps the existing `panel-heading` pattern with a
+  flex layout that keeps the action area aligned and wraps cleanly on
+  smaller screens.
+- `TableScroll` — horizontal-scroll wrapper for wide resource tables to
+  prevent page overflow on narrow viewports.
+
+Loading and error UX:
+
+- The dashboard now renders a layout-stable skeleton while loading
+  instead of a single text line, removing the jarring jump when data
+  arrives. The recent notifications panel uses the same skeleton.
+- The Settings screen, all master-data lists (Customers, Categories,
+  Products), Inventory list, Invoices list, and the Orders/Quotations
+  list now render their errors through `ErrorState` with a retry button
+  wired to the `useResourceDirectory` `reload()` action.
+- All the loading messages above were swapped to `LoadingState` for
+  consistent styling and accessibility (`aria-live`, single source of
+  truth for the spinner).
+
+Responsiveness polish:
+
+- The pagination bar collapses to a stacked layout under 640 px with
+  the Previous/Next buttons sharing the row width evenly.
+- New `.section-heading` utility keeps panel actions wrapping on small
+  screens without overflowing.
+- Skeleton blocks honor the existing surface tokens so dark and light
+  backgrounds render correctly.
+
+Constraints respected:
+
+- No backend changes, no redesign, no new product features.
+- Existing CSS classes and visual language preserved; new utilities are
+  additive.
+- All flows and API contracts unchanged.

@@ -71,7 +71,7 @@ function TransactionListScreen({ kind, navigate }) {
     },
     [config, showToast]
   );
-  const { data, error, isLoading } = useResourceDirectory(loadDirectory, query, {
+  const { data, error, isLoading, reload } = useResourceDirectory(loadDirectory, query, {
     onError: handleListError
   });
   const items = data?.items || [];
@@ -198,8 +198,8 @@ function TransactionListScreen({ kind, navigate }) {
         ) : null}
       </Toolbar>
 
-      {error ? <p className="surface-message error">{error}</p> : null}
-      {isLoading ? <p className="surface-message loading">Loading {kind}...</p> : null}
+      <ErrorState message={error} onRetry={reload} />
+      {isLoading ? <LoadingState>Loading {kind}…</LoadingState> : null}
       {!isLoading && !items.length ? (
         <EmptyState>{hasFilters ? config.filteredEmpty : config.empty}</EmptyState>
       ) : null}

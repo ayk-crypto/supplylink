@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Field, PageHeader } from "../../components/ui/ResourceScreens.jsx";
+import {
+  ErrorState,
+  Field,
+  LoadingState,
+  PageHeader
+} from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage } from "../master-data/resourceUtils.js";
 import { useAppSettings } from "./settingsContext.js";
@@ -163,16 +168,11 @@ function SettingsScreen() {
       />
 
       {loadError ? (
-        <p className="surface-message error">
-          {loadError}{" "}
-          <button className="link-button" onClick={handleReload} type="button">
-            Try again
-          </button>
-        </p>
+        <ErrorState message={loadError} onRetry={handleReload} />
       ) : null}
 
       {isLoading && !isHydrated ? (
-        <p className="surface-message loading">Loading settings...</p>
+        <LoadingState>Loading settings…</LoadingState>
       ) : null}
 
       <form id="settings-form" onSubmit={handleSave}>

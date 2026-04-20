@@ -3438,3 +3438,103 @@ canvas {
   width: 16px;
   height: 16px;
 }
+
+/* --- Module 20AC: shared polish utilities --------------------- */
+
+.error-state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.error-state .link-button {
+  color: inherit;
+  text-decoration: underline;
+  font-weight: 650;
+}
+
+.loading-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.loading-skeleton .skeleton-row {
+  display: block;
+  height: 14px;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    rgba(15, 25, 20, 0.06) 0%,
+    rgba(15, 25, 20, 0.12) 40%,
+    rgba(15, 25, 20, 0.06) 80%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.loading-skeleton .skeleton-row:nth-child(1) {
+  width: 88%;
+}
+.loading-skeleton .skeleton-row:nth-child(2) {
+  width: 72%;
+}
+.loading-skeleton .skeleton-row:nth-child(3) {
+  width: 95%;
+}
+.loading-skeleton .skeleton-row:nth-child(n + 4) {
+  width: 80%;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-md, 12px);
+}
+
+.table-scroll > .resource-table {
+  min-width: 100%;
+}
+
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.section-heading-action {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .pagination-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .pagination-bar div {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+  .pagination-bar div .secondary-button {
+    flex: 1;
+  }
+}
