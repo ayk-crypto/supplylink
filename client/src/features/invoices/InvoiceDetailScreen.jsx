@@ -1,11 +1,118 @@
 import { useCallback, useEffect, useState } from "react";
-import { createPayment, getInvoice, listPayments } from "../../services/invoiceApi.js";
+import {
+  createPayment,
+  getInvoice,
+  getInvoicePrintDocument,
+  listPayments
+} from "../../services/invoiceApi.js";
 import { Field, PageHeader } from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
 import { formatCustomer } from "../transactions/transactionUtils.js";
 
 const paymentMethods = ["cash", "card", "bank_transfer", "check", "other"];
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function buildInvoicePrintHtml(document) {
+  const sections = document.sections || {};
+  const vendor = sections.vendor || {};
+  const customer = sections.customer || {};
+  const header = sections.header || {};
+  const totals = sections.totals || {};
+  const items = sections.items || [];
+
+  return `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>${escapeHtml(document.title || "Invoice")}</title>
+    <style>
+      body { margin: 0; padding: 32px; color: #1f2621; font-family: Inter, Arial, sans-serif; }
+      header { display: flex; justify-content: space-between; gap: 24px; border-bottom: 1px solid #dbe4dd; padding-bottom: 20px; }
+      h1 { margin: 0 0 8px; font-size: 28px; }
+      h2 { margin: 0 0 8px; font-size: 16px; }
+      p { margin: 3px 0; color: #647067; }
+      section { margin-top: 24px; }
+      .blocks { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+      th, td { padding: 10px; border-bottom: 1px solid #dbe4dd; text-align: left; }
+      th { color: #647067; font-size: 12px; text-transform: uppercase; }
+      .totals { margin-left: auto; width: min(320px, 100%); }
+      .totals div { display: flex; justify-content: space-between; padding: 6px 0; }
+      .grand { font-weight: 700; border-top: 1px solid #dbe4dd; margin-top: 6px; padding-top: 10px; }
+      @media print { body { padding: 20px; } button { display: none; } }
+    </style>
+  </head>
+  <body>
+    <button onclick="window.print()">Print</button>
+    <header>
+      <div>
+        <h1>${escapeHtml(document.title || "Invoice")}</h1>
+        <p>Status: ${escapeHtml(header.status)}</p>
+        <p>Issue date: ${escapeHtml(header.issueDate || "Not set")}</p>
+        <p>Due date: ${escapeHtml(header.dueDate || "Not set")}</p>
+      </div>
+      <div>
+        <h2>${escapeHtml(vendor.displayName || vendor.legalName || "Vendor")}</h2>
+        <p>${escapeHtml(vendor.contactEmail || "")}</p>
+        <p>${escapeHtml(vendor.contactPhone || "")}</p>
+      </div>
+    </header>
+    <section class="blocks">
+      <div>
+        <h2>Bill to</h2>
+        <p>${escapeHtml(customer.companyName || customer.fullName || "Customer")}</p>
+        <p>${escapeHtml(customer.email || "")}</p>
+        <p>${escapeHtml(customer.phone || "")}</p>
+      </div>
+      <div>
+        <h2>Summary</h2>
+        <p>Invoice number: ${escapeHtml(header.invoiceNumber)}</p>
+        <p>Order: ${escapeHtml(header.order?.orderNumber || "Not linked")}</p>
+      </div>
+    </section>
+    <section>
+      <h2>Items</h2>
+      <table>
+        <thead>
+          <tr><th>Item</th><th>Qty</th><th>Unit price</th><th>Total</th></tr>
+        </thead>
+        <tbody>
+          ${items
+            .map(
+              (item) => `<tr>
+                <td>${escapeHtml(item.productName || item.description || item.sku)}</td>
+                <td>${escapeHtml(item.quantity)}</td>
+                <td>${escapeHtml(toMoney(item.unitPrice))}</td>
+                <td>${escapeHtml(toMoney(item.lineTotal))}</td>
+              </tr>`
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </section>
+    <section class="totals">
+      <div><span>Subtotal</span><strong>${escapeHtml(toMoney(totals.subtotal))}</strong></div>
+      <div><span>Tax</span><strong>${escapeHtml(toMoney(totals.taxTotal))}</strong></div>
+      <div><span>Discount</span><strong>${escapeHtml(toMoney(totals.discountTotal))}</strong></div>
+      <div class="grand"><span>Total</span><strong>${escapeHtml(toMoney(totals.grandTotal))}</strong></div>
+      <div><span>Balance due</span><strong>${escapeHtml(toMoney(totals.balanceDue))}</strong></div>
+    </section>
+    <section>
+      <h2>Notes</h2>
+      <p>${escapeHtml(sections.footer?.notes || "No notes.")}</p>
+    </section>
+  </body>
+</html>`;
+}
 
 function DetailField({ label, value }) {
   return (
@@ -171,6 +278,7 @@ function InvoiceDetailScreen({ id, navigate }) {
   const [payments, setPayments] = useState([]);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   const loadInvoice = useCallback(
     async ({ signal } = {}) => {
@@ -237,17 +345,63 @@ function InvoiceDetailScreen({ id, navigate }) {
 
   const paidAmount = Number(invoice.grandTotal || 0) - Number(invoice.balanceDue || 0);
 
+  async function openPrintView() {
+    const printWindow = window.open("", "_blank");
+
+    if (!printWindow) {
+      showToast({
+        message: "Allow popups for this site to open the printable invoice view.",
+        title: "Print view blocked",
+        tone: "error"
+      });
+      return;
+    }
+
+    printWindow.document.write("<p>Loading printable invoice...</p>");
+    setIsPrinting(true);
+
+    try {
+      const response = await getInvoicePrintDocument(invoice.id);
+      const html = buildInvoicePrintHtml(response.data);
+
+      printWindow.document.open();
+      printWindow.document.write(html);
+      printWindow.document.close();
+
+      showToast({
+        message: "Printable invoice view opened. Use the browser print dialog to save as PDF.",
+        title: "Print view ready"
+      });
+    } catch (requestError) {
+      const message = getApiErrorMessage(requestError, "Printable invoice could not be loaded.");
+
+      printWindow.close();
+      showToast({
+        message,
+        title: "Print failed",
+        tone: "error"
+      });
+    } finally {
+      setIsPrinting(false);
+    }
+  }
+
   return (
     <div className="resource-page">
       <PageHeader
         action={
-          <button
-            className="secondary-button"
-            onClick={() => navigate("/invoices")}
-            type="button"
-          >
-            Back to invoices
-          </button>
+          <div className="button-row">
+            <button className="secondary-button" onClick={openPrintView} type="button">
+              {isPrinting ? "Preparing..." : "Print / Download"}
+            </button>
+            <button
+              className="secondary-button"
+              onClick={() => navigate("/invoices")}
+              type="button"
+            >
+              Back to invoices
+            </button>
+          </div>
         }
         description={`Invoice for ${formatCustomer(invoice.customer)}.`}
         eyebrow="Invoice"

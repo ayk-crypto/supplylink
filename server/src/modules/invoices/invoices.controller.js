@@ -3,6 +3,7 @@ import {
   createInvoice,
   getInvoiceDetail,
   getInvoiceDirectory,
+  transitionInvoice,
   updateInvoice
 } from "./invoices.service.js";
 import { buildInvoicePrintDocument } from "../documents/documents.service.js";
@@ -78,4 +79,31 @@ async function update(request, response) {
   });
 }
 
-export { create, getById, list, print, update };
+async function transition(action, request, response) {
+  const result = await transitionInvoice(
+    request.access.vendorId,
+    request.params.invoiceId,
+    action,
+    request.auth
+  );
+
+  sendSuccess(response, {
+    message: "Invoice status updated",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId,
+      action
+    }
+  });
+}
+
+async function issue(request, response) {
+  return transition("issue", request, response);
+}
+
+async function voidInvoice(request, response) {
+  return transition("void", request, response);
+}
+
+export { create, getById, issue, list, print, update, voidInvoice };

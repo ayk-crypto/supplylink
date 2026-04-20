@@ -1,5 +1,12 @@
 import { sendSuccess } from "../../core/http/apiResponse.js";
-import { createOrder, getOrderDetail, getOrderDirectory, updateOrder } from "./orders.service.js";
+import {
+  createOrder,
+  getOrderDetail,
+  getOrderDirectory,
+  transitionOrder,
+  updateOrder
+} from "./orders.service.js";
+import { convertOrderToInvoice } from "../invoices/invoices.service.js";
 
 async function list(request, response) {
   const result = await getOrderDirectory(request.access.vendorId, request.query);
@@ -54,4 +61,68 @@ async function update(request, response) {
   });
 }
 
-export { create, getById, list, update };
+async function transition(action, request, response) {
+  const result = await transitionOrder(request.access.vendorId, request.params.orderId, action);
+
+  sendSuccess(response, {
+    message: "Order status updated",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId,
+      action
+    }
+  });
+}
+
+async function createInvoiceFromOrder(request, response) {
+  const result = await convertOrderToInvoice(
+    request.access.vendorId,
+    request.params.orderId,
+    request.auth
+  );
+
+  sendSuccess(response, {
+    statusCode: 201,
+    message: "Order converted to invoice",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId,
+      sourceOrderId: request.params.orderId
+    }
+  });
+}
+
+async function confirm(request, response) {
+  return transition("confirm", request, response);
+}
+
+async function pack(request, response) {
+  return transition("pack", request, response);
+}
+
+async function dispatch(request, response) {
+  return transition("dispatch", request, response);
+}
+
+async function deliver(request, response) {
+  return transition("deliver", request, response);
+}
+
+async function cancel(request, response) {
+  return transition("cancel", request, response);
+}
+
+export {
+  cancel,
+  confirm,
+  create,
+  createInvoiceFromOrder,
+  deliver,
+  dispatch,
+  getById,
+  list,
+  pack,
+  update
+};

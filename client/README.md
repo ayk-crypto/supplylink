@@ -89,7 +89,17 @@ adding a routing dependency:
 - `/orders/new`
 - `/orders/:id`
 - `/invoices`
+- `/invoices/new`
+- `/invoices/from-order/:id`
 - `/invoices/:id`
+- `/ledger`
+- `/ledger/customers/:id`
+- `/reports`
+- `/reports/receivables`
+- `/reports/invoices`
+- `/reports/payments`
+- `/reports/orders`
+- `/reports/statements`
 
 Direct entry, refresh, and browser back/forward are handled with a small History
 API router in `client/src/app`. Unknown workspace paths render a safe not-found
@@ -131,3 +141,63 @@ Payment capture uses `/api/v1/payments`, reloads invoice detail and payment
 history after success, and blocks invalid client-side submissions such as zero
 payments or amounts above the invoice balance due. Backend workflow rules still
 decide whether an invoice is payable.
+
+## Module 20F Invoice Creation And Print Entry Points
+
+Invoices now support creation from the frontend:
+
+- `/invoices/new` creates a manual invoice with customer, product lines,
+  quantity, unit price, notes, status, issue date, and due date.
+- `/invoices/from-order/:id` starts an invoice from an existing order, prefills
+  the order customer and line items, and allows line-item edits before submit.
+- The invoice list includes a Create invoice action, and order detail screens
+  include a Create invoice action.
+
+Successful creation redirects to `/invoices/:id`. Client-side validation blocks
+missing customers, missing orders, empty line-item sets, invalid quantities, and
+invalid prices before the API call.
+
+Invoice detail includes a Print / Download action powered by
+`GET /api/v1/invoices/:invoiceId/print`. The backend currently returns a
+structured JSON print payload rather than PDF bytes, so the frontend opens a
+lightweight browser print view. Use the browser print dialog to print or save as
+PDF until a first-class PDF renderer is added.
+
+## Module 20G Customer Ledger And Receivables
+
+Customer ledger screens provide receivables visibility:
+
+- `/ledger` shows an active customer receivables overview with search,
+  pagination, visible invoice total, visible paid total, visible outstanding
+  total, and a statement link for each customer.
+- `/ledger/customers/:id` shows a statement-style customer ledger with customer
+  summary, ending balance, filtered debit/credit totals, date filters, entry
+  type filter, source type filter, and running balance.
+
+The statement detail uses `GET /api/v1/ledger/customer/:customerId`, which
+returns the backend-calculated running balance and ending balance. The overview
+uses the customer directory plus existing invoice data for the currently visible
+customer page because the backend does not yet expose a dedicated
+receivables-by-customer aggregate endpoint.
+
+## Module 20H Reports And Exports
+
+Reports now have route-driven frontend screens:
+
+- `/reports` opens a reports home screen with operational summary metrics and
+  links to each report.
+- `/reports/receivables` groups invoice report rows by customer to show invoice
+  total, paid total, and outstanding total.
+- `/reports/invoices` uses `GET /api/v1/reports/invoices` and exports through
+  `GET /api/v1/reports/exports/invoices.csv`.
+- `/reports/payments` uses `GET /api/v1/reports/payments` and exports through
+  `GET /api/v1/reports/exports/payments.csv`.
+- `/reports/orders` uses `GET /api/v1/reports/orders` and exports through
+  `GET /api/v1/reports/exports/orders.csv`.
+- `/reports/statements` previews customer statement reports and exports through
+  `GET /api/v1/reports/exports/customer-statement/:customerId.csv`.
+
+The customer ledger detail screen also includes a CSV export action for the
+selected customer statement. Report filters intentionally match the backend
+schemas: date range, customer, status where supported, payment method where
+supported, and search where supported.

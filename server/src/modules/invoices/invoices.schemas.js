@@ -91,14 +91,11 @@ const invoiceCreateBodySchema = z
 
 const invoiceUpdateBodySchema = z
   .object({
-    customerId: uuidParam.optional(),
-    invoiceNumber: z.string().trim().min(1).max(100).optional(),
     issueDate: z.string().trim().date().nullable().optional(),
     dueDate: z.string().trim().date().nullable().optional(),
-    status: invoiceStatusEnum.optional(),
-    notes: z.string().trim().max(5000).nullable().optional(),
-    items: z.array(invoiceItemSchema).min(1).max(200).optional()
+    notes: z.string().trim().max(5000).nullable().optional()
   })
+  .strict()
   .refine((value) => Object.keys(value).length > 0, {
     message: "At least one editable field must be provided"
   });

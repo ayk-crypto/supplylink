@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS notifications (
   event_code VARCHAR(100) NOT NULL,
   title VARCHAR(200) NOT NULL,
   message TEXT NOT NULL,
+  related_entity_type VARCHAR(50),
+  related_entity_id UUID,
   status VARCHAR(20) NOT NULL DEFAULT 'unread' CHECK (status IN ('unread', 'read')),
   metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
   read_at TIMESTAMPTZ,
@@ -21,3 +23,6 @@ ON notifications (vendor_id, created_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_notifications_event_code
 ON notifications (event_code);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_related_entity
+ON notifications (vendor_id, related_entity_type, related_entity_id);

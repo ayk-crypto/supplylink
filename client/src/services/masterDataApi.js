@@ -5,6 +5,10 @@ async function listCustomers(params = {}, options = {}) {
   return request(`/customers${toQueryString(params)}`, options);
 }
 
+async function getCustomer(customerId, options = {}) {
+  return request(`/customers/${customerId}`, options);
+}
+
 async function createCustomer(payload) {
   return request("/customers", {
     method: "POST",
@@ -59,6 +63,7 @@ export {
   createCategory,
   createCustomer,
   createProduct,
+  getCustomer,
   listCategories,
   listCustomers,
   listProducts,

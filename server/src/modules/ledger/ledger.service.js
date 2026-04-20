@@ -293,6 +293,8 @@ async function createPayment(vendorId, payload, actor) {
       eventCode: "payment.received",
       title: "Payment received",
       message: `Payment ${mappedPayment.referenceNumber || mappedPayment.id} for ${mappedPayment.customer.companyName || mappedPayment.customer.fullName} was recorded.`,
+      relatedEntityType: "payment",
+      relatedEntityId: mappedPayment.id,
       metadata: {
         paymentId: mappedPayment.id,
         customerId: mappedPayment.customerId,

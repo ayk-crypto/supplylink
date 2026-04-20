@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { attachmentQuerySchema } from "./files/files.schemas.js";
-import { invoiceCreateBodySchema } from "./invoices/invoices.schemas.js";
+import { invoiceCreateBodySchema, invoiceUpdateBodySchema } from "./invoices/invoices.schemas.js";
 import { notificationQuerySchema } from "./notifications/notifications.schemas.js";
-import { orderCreateBodySchema } from "./orders/orders.schemas.js";
-import { quotationCreateBodySchema } from "./quotations/quotations.schemas.js";
+import { orderCreateBodySchema, orderUpdateBodySchema } from "./orders/orders.schemas.js";
+import {
+  quotationCreateBodySchema,
+  quotationUpdateBodySchema
+} from "./quotations/quotations.schemas.js";
 import { routeCreateBodySchema } from "./routes/routes.schemas.js";
 
 const CUSTOMER_ID = "11111111-1111-4111-8111-111111111111";
@@ -45,6 +48,42 @@ test("invoice creation rejects paid invoices", () => {
   });
 
   assert.equal(result.success, false);
+});
+
+test("generic quotation patch rejects status and item lifecycle changes", () => {
+  const statusResult = quotationUpdateBodySchema.safeParse({
+    status: "accepted"
+  });
+  const itemResult = quotationUpdateBodySchema.safeParse({
+    items: [lineItem]
+  });
+
+  assert.equal(statusResult.success, false);
+  assert.equal(itemResult.success, false);
+});
+
+test("generic order patch rejects status and item lifecycle changes", () => {
+  const statusResult = orderUpdateBodySchema.safeParse({
+    status: "delivered"
+  });
+  const itemResult = orderUpdateBodySchema.safeParse({
+    items: [lineItem]
+  });
+
+  assert.equal(statusResult.success, false);
+  assert.equal(itemResult.success, false);
+});
+
+test("generic invoice patch rejects direct paid and partially paid status changes", () => {
+  const paidResult = invoiceUpdateBodySchema.safeParse({
+    status: "paid"
+  });
+  const partiallyPaidResult = invoiceUpdateBodySchema.safeParse({
+    status: "partially_paid"
+  });
+
+  assert.equal(paidResult.success, false);
+  assert.equal(partiallyPaidResult.success, false);
 });
 
 test("route creation rejects completed routes", () => {

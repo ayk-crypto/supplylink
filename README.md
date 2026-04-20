@@ -822,6 +822,28 @@ invoice detail, line items, totals, paid/outstanding summaries, payment history,
 and a guarded payment capture form backed by the existing `/api/v1/payments`
 endpoint.
 
+Module 20F completes the first invoice lifecycle pass in the frontend. The app
+now includes `/invoices/new` for manual invoice creation and
+`/invoices/from-order/:id` for order-based invoice creation using the existing
+`POST /api/v1/invoices` contract. Invoice detail also includes a Print /
+Download entry point backed by `GET /api/v1/invoices/:invoiceId/print`; because
+the backend currently returns structured JSON instead of PDF bytes, the client
+opens a browser print view that can be printed or saved as PDF.
+
+Module 20G adds frontend customer ledger and receivables visibility. The app now
+includes `/ledger` for a paged customer receivables overview and
+`/ledger/customers/:id` for a statement-style customer ledger with debit,
+credit, document reference, and backend-provided running balance. The overview
+uses existing customer and invoice endpoints for the visible page; the detail
+screen uses `GET /api/v1/ledger/customer/:customerId`.
+
+Module 20H adds frontend reports and exports. The app now includes `/reports`,
+`/reports/receivables`, `/reports/invoices`, `/reports/payments`,
+`/reports/orders`, and `/reports/statements`. Report screens use the existing
+backend report endpoints and CSV exports for orders, invoices, payments, and
+customer statements. The receivables report groups invoice report rows by
+customer because there is no dedicated receivables aggregate endpoint yet.
+
 Run the app locally:
 
 ```bash

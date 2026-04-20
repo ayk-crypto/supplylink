@@ -77,14 +77,11 @@ const quotationCreateBodySchema = z.object({
 
 const quotationUpdateBodySchema = z
   .object({
-    customerId: uuidParam.optional(),
-    quoteNumber: z.string().trim().min(1).max(100).optional(),
     issueDate: z.string().trim().date().nullable().optional(),
     expiryDate: z.string().trim().date().nullable().optional(),
-    status: quotationStatusEnum.optional(),
-    notes: z.string().trim().max(5000).nullable().optional(),
-    items: z.array(quotationItemSchema).min(1).max(200).optional()
+    notes: z.string().trim().max(5000).nullable().optional()
   })
+  .strict()
   .refine((value) => Object.keys(value).length > 0, {
     message: "At least one editable field must be provided"
   });

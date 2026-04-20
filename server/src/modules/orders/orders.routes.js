@@ -5,7 +5,18 @@ import authorizeRoles from "../../middlewares/authorizeRoles.js";
 import requireVendorAccess from "../../middlewares/requireVendorAccess.js";
 import requireVendorWritable from "../../middlewares/requireVendorWritable.js";
 import validateRequest from "../../middlewares/validateRequest.js";
-import { create, getById, list, update } from "./orders.controller.js";
+import {
+  cancel,
+  confirm,
+  create,
+  createInvoiceFromOrder,
+  deliver,
+  dispatch,
+  getById,
+  list,
+  pack,
+  update
+} from "./orders.controller.js";
 import {
   orderCreateBodySchema,
   orderIdParamsSchema,
@@ -33,6 +44,24 @@ ordersRoutes.post(
   requireVendorWritable(),
   asyncHandler(create)
 );
+
+function orderAction(handler) {
+  return [
+    authenticate,
+    authorizeRoles("super_admin", "vendor_admin"),
+    validateRequest({ params: orderIdParamsSchema, query: orderQuerySchema }),
+    requireVendorAccess(),
+    requireVendorWritable(),
+    asyncHandler(handler)
+  ];
+}
+
+ordersRoutes.post("/:orderId/confirm", ...orderAction(confirm));
+ordersRoutes.post("/:orderId/pack", ...orderAction(pack));
+ordersRoutes.post("/:orderId/dispatch", ...orderAction(dispatch));
+ordersRoutes.post("/:orderId/deliver", ...orderAction(deliver));
+ordersRoutes.post("/:orderId/cancel", ...orderAction(cancel));
+ordersRoutes.post("/:orderId/create-invoice", ...orderAction(createInvoiceFromOrder));
 
 ordersRoutes.get(
   "/:orderId",

@@ -135,23 +135,22 @@ if (!testDatabaseUrl) {
       state.quotation = quotation.payload.data;
       assert.equal(Number(state.quotation.grandTotal), 20);
 
-      const order = await api.post("/orders", {
+      const acceptedQuotation = await api.post(`/quotations/${state.quotation.id}/accept`, {
+        token: state.vendorA.token
+      });
+      state.quotation = acceptedQuotation.payload.data;
+      assert.equal(state.quotation.status, "accepted");
+
+      const order = await api.post(`/quotations/${state.quotation.id}/convert-to-order`, {
         token: state.vendorA.token,
-        body: {
-          quotationId: state.quotation.id,
-          status: "confirmed"
-        },
         expectedStatus: 201
       });
       state.order = order.payload.data;
       assert.equal(state.order.quotationId, state.quotation.id);
+      assert.equal(state.order.status, "confirmed");
 
-      const invoice = await api.post("/invoices", {
+      const invoice = await api.post(`/orders/${state.order.id}/create-invoice`, {
         token: state.vendorA.token,
-        body: {
-          orderId: state.order.id,
-          status: "issued"
-        },
         expectedStatus: 201
       });
       state.invoice = invoice.payload.data;
@@ -215,6 +214,238 @@ if (!testDatabaseUrl) {
       assert.equal(Number(ledger.payload.data.endingBalance), 0);
       assert.ok(ledger.payload.data.items.some((entry) => entry.sourceType === "invoice"));
       assert.ok(ledger.payload.data.items.some((entry) => entry.sourceType === "payment"));
+    });
+
+    await t.test("transaction lifecycle actions enforce valid transitions", async () => {
+      const draftQuotation = await api.post("/quotations", {
+        token: state.vendorA.token,
+        body: {
+          customerId: state.customer.id,
+          notes: "Lifecycle quote",
+          items: [
+            {
+              productId: state.product.id,
+              quantity: 1,
+              unitPrice: 10
+            }
+          ]
+        },
+        expectedStatus: 201
+      });
+      const quotationId = draftQuotation.payload.data.id;
+
+      await api.patch(`/quotations/${quotationId}`, {
+        token: state.vendorA.token,
+        body: { status: "accepted" },
+        expectedStatus: 400
+      });
+      await api.post(`/quotations/${quotationId}/accept`, {
+        token: state.vendorA.token,
+        expectedStatus: 409
+      });
+      const sentQuotation = await api.post(`/quotations/${quotationId}/send`, {
+        token: state.vendorA.token
+      });
+      assert.equal(sentQuotation.payload.data.status, "sent");
+      await api.patch(`/quotations/${quotationId}`, {
+        token: state.vendorA.token,
+        body: { issueDate: "2026-04-20" },
+        expectedStatus: 409
+      });
+      const editableSentQuotation = await api.patch(`/quotations/${quotationId}`, {
+        token: state.vendorA.token,
+        body: { expiryDate: "2026-05-20", notes: "Still editable while sent" }
+      });
+      assert.equal(editableSentQuotation.payload.data.notes, "Still editable while sent");
+      const acceptedQuotation = await api.post(`/quotations/${quotationId}/accept`, {
+        token: state.vendorA.token
+      });
+      assert.equal(acceptedQuotation.payload.data.status, "accepted");
+
+      for (const action of ["reject", "expire"]) {
+        const transitionQuotation = await api.post("/quotations", {
+          token: state.vendorA.token,
+          body: {
+            customerId: state.customer.id,
+            notes: `Lifecycle quote to ${action}`,
+            items: [
+              {
+                productId: state.product.id,
+                quantity: 1,
+                unitPrice: 10
+              }
+            ]
+          },
+          expectedStatus: 201
+        });
+        const transitionQuotationId = transitionQuotation.payload.data.id;
+        await api.post(`/quotations/${transitionQuotationId}/send`, {
+          token: state.vendorA.token
+        });
+        const result = await api.post(`/quotations/${transitionQuotationId}/${action}`, {
+          token: state.vendorA.token
+        });
+        assert.equal(result.payload.data.status, action === "reject" ? "rejected" : "expired");
+      }
+
+      const draftOrder = await api.post("/orders", {
+        token: state.vendorA.token,
+        body: {
+          customerId: state.customer.id,
+          items: [
+            {
+              productId: state.product.id,
+              quantity: 1,
+              unitPrice: 10
+            }
+          ]
+        },
+        expectedStatus: 201
+      });
+      const orderId = draftOrder.payload.data.id;
+
+      await api.patch(`/orders/${orderId}`, {
+        token: state.vendorA.token,
+        body: { status: "delivered" },
+        expectedStatus: 400
+      });
+      await api.post(`/orders/${orderId}/deliver`, {
+        token: state.vendorA.token,
+        expectedStatus: 409
+      });
+      assert.equal((await api.post(`/orders/${orderId}/confirm`, { token: state.vendorA.token })).payload.data.status, "confirmed");
+      await api.patch(`/orders/${orderId}`, {
+        token: state.vendorA.token,
+        body: { orderDate: "2026-04-20" },
+        expectedStatus: 409
+      });
+      const editableConfirmedOrder = await api.patch(`/orders/${orderId}`, {
+        token: state.vendorA.token,
+        body: { deliveryDate: "2026-04-25", notes: "Confirmed order delivery note" }
+      });
+      assert.equal(editableConfirmedOrder.payload.data.notes, "Confirmed order delivery note");
+      assert.equal((await api.post(`/orders/${orderId}/pack`, { token: state.vendorA.token })).payload.data.status, "packed");
+      assert.equal((await api.post(`/orders/${orderId}/dispatch`, { token: state.vendorA.token })).payload.data.status, "dispatched");
+      assert.equal((await api.post(`/orders/${orderId}/deliver`, { token: state.vendorA.token })).payload.data.status, "delivered");
+
+      const cancellableOrder = await api.post("/orders", {
+        token: state.vendorA.token,
+        body: {
+          customerId: state.customer.id,
+          items: [
+            {
+              productId: state.product.id,
+              quantity: 1,
+              unitPrice: 10
+            }
+          ]
+        },
+        expectedStatus: 201
+      });
+      const cancelledOrder = await api.post(`/orders/${cancellableOrder.payload.data.id}/cancel`, {
+        token: state.vendorA.token
+      });
+      assert.equal(cancelledOrder.payload.data.status, "cancelled");
+
+      const draftInvoice = await api.post("/invoices", {
+        token: state.vendorA.token,
+        body: {
+          customerId: state.customer.id,
+          items: [
+            {
+              productId: state.product.id,
+              quantity: 1,
+              unitPrice: 10
+            }
+          ]
+        },
+        expectedStatus: 201
+      });
+      const invoiceId = draftInvoice.payload.data.id;
+
+      await api.patch(`/invoices/${invoiceId}`, {
+        token: state.vendorA.token,
+        body: { status: "paid" },
+        expectedStatus: 400
+      });
+      const issuedInvoice = await api.post(`/invoices/${invoiceId}/issue`, {
+        token: state.vendorA.token
+      });
+      assert.equal(issuedInvoice.payload.data.status, "issued");
+      assert.equal(Number(issuedInvoice.payload.data.balanceDue), 10);
+      await api.patch(`/invoices/${invoiceId}`, {
+        token: state.vendorA.token,
+        body: { issueDate: "2026-04-20" },
+        expectedStatus: 409
+      });
+      const editableIssuedInvoice = await api.patch(`/invoices/${invoiceId}`, {
+        token: state.vendorA.token,
+        body: { dueDate: "2026-05-20", notes: "Issued invoice payment note" }
+      });
+      assert.equal(editableIssuedInvoice.payload.data.notes, "Issued invoice payment note");
+      const voidInvoice = await api.post(`/invoices/${invoiceId}/void`, {
+        token: state.vendorA.token
+      });
+      assert.equal(voidInvoice.payload.data.status, "void");
+      assert.equal(Number(voidInvoice.payload.data.balanceDue), 0);
+    });
+
+    await t.test("conversion actions reject invalid, duplicate, and cross-tenant conversions", async () => {
+      await api.post(`/quotations/${state.quotation.id}/convert-to-order`, {
+        token: state.vendorA.token,
+        expectedStatus: 409
+      });
+      await api.post(`/orders/${state.order.id}/create-invoice`, {
+        token: state.vendorA.token,
+        expectedStatus: 409
+      });
+      await api.post(`/quotations/${state.quotation.id}/convert-to-order`, {
+        token: state.vendorB.token,
+        expectedStatus: 404
+      });
+      await api.post(`/orders/${state.order.id}/create-invoice`, {
+        token: state.vendorB.token,
+        expectedStatus: 404
+      });
+
+      const draftQuotation = await api.post("/quotations", {
+        token: state.vendorA.token,
+        body: {
+          customerId: state.customer.id,
+          notes: "Not accepted yet",
+          items: [
+            {
+              productId: state.product.id,
+              quantity: 1,
+              unitPrice: 10
+            }
+          ]
+        },
+        expectedStatus: 201
+      });
+      await api.post(`/quotations/${draftQuotation.payload.data.id}/convert-to-order`, {
+        token: state.vendorA.token,
+        expectedStatus: 409
+      });
+
+      const draftOrder = await api.post("/orders", {
+        token: state.vendorA.token,
+        body: {
+          customerId: state.customer.id,
+          items: [
+            {
+              productId: state.product.id,
+              quantity: 1,
+              unitPrice: 10
+            }
+          ]
+        },
+        expectedStatus: 201
+      });
+      await api.post(`/orders/${draftOrder.payload.data.id}/create-invoice`, {
+        token: state.vendorA.token,
+        expectedStatus: 409
+      });
     });
 
     await t.test("tenant isolation blocks vendor B from vendor A resources", async () => {
@@ -281,13 +512,51 @@ if (!testDatabaseUrl) {
       assert.ok(notifications.payload.data.items.length >= 1);
 
       const notificationId = notifications.payload.data.items[0].id;
-      await api.patch(`/notifications/${notificationId}/read`, {
+      await api.post(`/notifications/${notificationId}/read`, {
         token: state.vendorA.token
       });
       const notificationDetail = await api.get(`/notifications/${notificationId}`, {
         token: state.vendorA.token
       });
       assert.equal(notificationDetail.payload.data.isRead, true);
+      assert.ok(notificationDetail.payload.data.relatedEntityType);
+      assert.ok(notificationDetail.payload.data.relatedEntityId);
+
+      const eventDirectory = await waitFor(async () => {
+        const result = await api.get("/notifications?page=1&pageSize=50", {
+          token: state.vendorA.token
+        });
+        const eventCodes = new Set(result.payload.data.items.map((item) => item.eventCode));
+        [
+          "quotation.sent",
+          "quotation.accepted",
+          "quotation.rejected",
+          "quotation.expired",
+          "order.confirmed",
+          "order.packed",
+          "order.dispatched",
+          "order.delivered",
+          "order.cancelled",
+          "invoice.issued",
+          "invoice.voided",
+          "payment.received",
+          "quotation.converted_to_order",
+          "order.converted_to_invoice"
+        ].forEach((eventCode) => assert.ok(eventCodes.has(eventCode), `Missing ${eventCode}`));
+
+        return result;
+      });
+
+      const vendorNotificationId = eventDirectory.payload.data.items[0].id;
+      await api.get(`/notifications/${vendorNotificationId}`, {
+        token: state.vendorB.token,
+        expectedStatus: 404
+      });
+
+      const readAll = await api.post("/notifications/read-all", {
+        token: state.vendorA.token
+      });
+      assert.equal(readAll.payload.data.unreadCount, 0);
 
       const summary = await api.get("/reports/summary", {
         token: state.vendorA.token

@@ -7,6 +7,8 @@ const NOTIFICATION_SELECT = `notification.id,
                              notification.event_code,
                              notification.title,
                              notification.message,
+                             notification.related_entity_type,
+                             notification.related_entity_id,
                              notification.status,
                              notification.metadata,
                              notification.read_at,
@@ -200,6 +202,8 @@ async function createNotificationsForUsers({
   eventCode,
   title,
   message,
+  relatedEntityType = null,
+  relatedEntityId = null,
   metadata = {}
 }) {
   const uniqueUserIds = [...new Set(userIds)].filter(Boolean);
@@ -210,10 +214,20 @@ async function createNotificationsForUsers({
 
   const values = [];
   const placeholders = uniqueUserIds.map((userId, index) => {
-    const offset = index * 7;
-    values.push(vendorId, userId, type, eventCode, title, message, metadata);
+    const offset = index * 9;
+    values.push(
+      vendorId,
+      userId,
+      type,
+      eventCode,
+      title,
+      message,
+      relatedEntityType,
+      relatedEntityId,
+      metadata
+    );
 
-    return `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7})`;
+    return `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9})`;
   });
 
   const result = await query(
@@ -224,6 +238,8 @@ async function createNotificationsForUsers({
        event_code,
        title,
        message,
+       related_entity_type,
+       related_entity_id,
        metadata
      )
      VALUES ${placeholders.join(", ")}

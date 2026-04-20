@@ -616,6 +616,13 @@ a {
   flex: 0 0 auto;
 }
 
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .resource-toolbar {
   display: grid;
   grid-template-columns: minmax(240px, 1fr) repeat(2, minmax(150px, auto)) auto;
@@ -664,6 +671,20 @@ a {
 .secondary-button:hover {
   border-color: var(--surface-strong);
   background: var(--surface-soft);
+}
+
+.link-button {
+  min-height: auto;
+  border: 0;
+  padding: 0;
+  color: var(--accent-strong);
+  background: transparent;
+  text-align: left;
+  font-weight: 700;
+}
+
+.link-button:hover {
+  text-decoration: underline;
 }
 
 .secondary-button.compact {
@@ -753,6 +774,43 @@ a {
   grid-template-columns:
     minmax(170px, 1fr) minmax(190px, 1fr) 120px minmax(110px, 0.65fr)
     minmax(120px, 0.7fr) auto;
+}
+
+.ledger-customer-grid {
+  grid-template-columns:
+    minmax(220px, 1.3fr) minmax(120px, 0.7fr) minmax(120px, 0.7fr)
+    minmax(130px, 0.75fr) auto;
+}
+
+.statement-grid {
+  grid-template-columns:
+    minmax(105px, 0.55fr) minmax(220px, 1.3fr) minmax(110px, 0.6fr)
+    minmax(105px, 0.55fr) minmax(105px, 0.55fr) minmax(120px, 0.65fr);
+}
+
+.report-invoice-grid {
+  grid-template-columns:
+    minmax(130px, 0.75fr) minmax(180px, 1fr) minmax(115px, 0.55fr)
+    minmax(145px, 0.8fr) minmax(105px, 0.55fr) minmax(105px, 0.55fr)
+    minmax(120px, 0.65fr);
+}
+
+.report-payment-grid {
+  grid-template-columns:
+    minmax(110px, 0.6fr) minmax(180px, 1fr) minmax(120px, 0.65fr)
+    minmax(105px, 0.55fr) minmax(120px, 0.65fr) minmax(180px, 1fr);
+}
+
+.report-order-grid {
+  grid-template-columns:
+    minmax(130px, 0.75fr) minmax(190px, 1fr) minmax(120px, 0.6fr)
+    minmax(145px, 0.8fr) minmax(110px, 0.6fr);
+}
+
+.report-receivable-grid {
+  grid-template-columns:
+    minmax(220px, 1.2fr) minmax(80px, 0.35fr) minmax(120px, 0.65fr)
+    minmax(120px, 0.65fr) minmax(120px, 0.65fr) auto;
 }
 
 .detail-line-grid {
@@ -1050,6 +1108,50 @@ a {
   gap: 14px;
 }
 
+.source-note {
+  margin: 14px 0 0;
+}
+
+.ledger-summary-strip {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.reports-summary-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.report-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.report-card,
+.report-filter-panel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.report-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.report-card h3 {
+  margin: 0;
+  font-size: 1.08rem;
+}
+
+.report-card p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -1069,10 +1171,16 @@ a {
   .resource-row,
   .customer-grid,
   .category-grid,
-  .product-grid,
-  .transaction-grid,
-  .invoice-grid,
-  .detail-line-grid {
+    .product-grid,
+    .transaction-grid,
+    .invoice-grid,
+    .ledger-customer-grid,
+    .statement-grid,
+    .report-invoice-grid,
+    .report-payment-grid,
+    .report-order-grid,
+    .report-receivable-grid,
+    .detail-line-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1095,7 +1203,8 @@ a {
   .app-layout,
   .dashboard-hero,
   .metric-strip,
-  .dashboard-columns {
+  .dashboard-columns,
+  .report-card-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1182,8 +1291,18 @@ a {
   }
 
   .page-header-action,
-  .page-header-action .primary-button {
+  .page-header-action .primary-button,
+  .page-header-action .secondary-button,
+  .button-row {
     width: 100%;
+  }
+
+  .button-row {
+    justify-content: stretch;
+  }
+
+  .button-row button {
+    flex: 1 1 180px;
   }
 
   .form-actions {
@@ -1192,7 +1311,8 @@ a {
   }
 
   .line-editor-heading,
-  .totals-panel {
+  .totals-panel,
+  .report-card {
     flex-direction: column;
     align-items: stretch;
   }

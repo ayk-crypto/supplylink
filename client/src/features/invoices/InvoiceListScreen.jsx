@@ -98,6 +98,15 @@ function InvoiceListScreen({ navigate }) {
   return (
     <div className="resource-page">
       <PageHeader
+        action={
+          <button
+            className="primary-button"
+            onClick={() => navigate("/invoices/new")}
+            type="button"
+          >
+            Create invoice
+          </button>
+        }
         description="Review issued, partially paid, paid, draft, and void invoices."
         eyebrow="Invoices"
         title="Invoices"

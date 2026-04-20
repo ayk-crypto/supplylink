@@ -3,9 +3,11 @@ import {
   createQuotation,
   getQuotationDetail,
   getQuotationDirectory,
+  transitionQuotation,
   updateQuotation
 } from "./quotations.service.js";
 import { buildQuotationPrintDocument } from "../documents/documents.service.js";
+import { convertQuotationToOrder } from "../orders/orders.service.js";
 
 async function list(request, response) {
   const result = await getQuotationDirectory(request.access.vendorId, request.query);
@@ -81,4 +83,57 @@ async function update(request, response) {
   });
 }
 
-export { create, getById, list, print, update };
+async function transition(action, request, response) {
+  const result = await transitionQuotation(
+    request.access.vendorId,
+    request.params.quotationId,
+    action
+  );
+
+  sendSuccess(response, {
+    message: "Quotation status updated",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId,
+      action
+    }
+  });
+}
+
+async function convertToOrder(request, response) {
+  const result = await convertQuotationToOrder(
+    request.access.vendorId,
+    request.params.quotationId,
+    request.auth
+  );
+
+  sendSuccess(response, {
+    statusCode: 201,
+    message: "Quotation converted to order",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId,
+      sourceQuotationId: request.params.quotationId
+    }
+  });
+}
+
+async function send(request, response) {
+  return transition("send", request, response);
+}
+
+async function accept(request, response) {
+  return transition("accept", request, response);
+}
+
+async function reject(request, response) {
+  return transition("reject", request, response);
+}
+
+async function expire(request, response) {
+  return transition("expire", request, response);
+}
+
+export { accept, convertToOrder, create, expire, getById, list, print, reject, send, update };

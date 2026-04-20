@@ -5,7 +5,7 @@ import authorizeRoles from "../../middlewares/authorizeRoles.js";
 import requireVendorAccess from "../../middlewares/requireVendorAccess.js";
 import requireVendorWritable from "../../middlewares/requireVendorWritable.js";
 import validateRequest from "../../middlewares/validateRequest.js";
-import { create, getById, list, print, update } from "./invoices.controller.js";
+import { create, getById, issue, list, print, update, voidInvoice } from "./invoices.controller.js";
 import {
   invoiceCreateBodySchema,
   invoiceIdParamsSchema,
@@ -33,6 +33,20 @@ invoicesRoutes.post(
   requireVendorWritable(),
   asyncHandler(create)
 );
+
+function invoiceAction(handler) {
+  return [
+    authenticate,
+    authorizeRoles("super_admin", "vendor_admin"),
+    validateRequest({ params: invoiceIdParamsSchema, query: invoiceQuerySchema }),
+    requireVendorAccess(),
+    requireVendorWritable(),
+    asyncHandler(handler)
+  ];
+}
+
+invoicesRoutes.post("/:invoiceId/issue", ...invoiceAction(issue));
+invoicesRoutes.post("/:invoiceId/void", ...invoiceAction(voidInvoice));
 
 invoicesRoutes.get(
   "/:invoiceId/print",

@@ -94,13 +94,24 @@ function TransactionDetailScreen({ id, kind, navigate }) {
     <div className="resource-page">
       <PageHeader
         action={
-          <button
-            className="secondary-button"
-            onClick={() => navigate(config.listPath)}
-            type="button"
-          >
-            Back to list
-          </button>
+          <div className="button-row">
+            {kind === "orders" ? (
+              <button
+                className="primary-button"
+                onClick={() => navigate(`/invoices/from-order/${detail.id}`)}
+                type="button"
+              >
+                Create invoice
+              </button>
+            ) : null}
+            <button
+              className="secondary-button"
+              onClick={() => navigate(config.listPath)}
+              type="button"
+            >
+              Back to list
+            </button>
+          </div>
         }
         description={`${config.title} for ${formatCustomer(detail.customer)}.`}
         eyebrow={config.title}

@@ -20,6 +20,8 @@ function mapNotification(row) {
     eventCode: row.event_code,
     title: row.title,
     message: row.message,
+    relatedEntityType: row.related_entity_type,
+    relatedEntityId: row.related_entity_id,
     status: row.status,
     isRead: row.status === "read",
     metadata: row.metadata || {},
@@ -132,6 +134,8 @@ async function notifyVendorUsers({
   eventCode,
   title,
   message,
+  relatedEntityType = null,
+  relatedEntityId = null,
   metadata = {}
 }) {
   const userIds = await listActiveVendorUsersByRoleCodes(vendorId, roleCodes);
@@ -143,6 +147,8 @@ async function notifyVendorUsers({
     eventCode,
     title,
     message,
+    relatedEntityType,
+    relatedEntityId,
     metadata
   });
 }
@@ -152,6 +158,8 @@ async function notifySuperAdmins({
   eventCode,
   title,
   message,
+  relatedEntityType = null,
+  relatedEntityId = null,
   metadata = {}
 }) {
   const userIds = await listActiveSuperAdminUserIds();
@@ -163,6 +171,8 @@ async function notifySuperAdmins({
     eventCode,
     title,
     message,
+    relatedEntityType,
+    relatedEntityId,
     metadata
   });
 }

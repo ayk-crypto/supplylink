@@ -5,7 +5,18 @@ import authorizeRoles from "../../middlewares/authorizeRoles.js";
 import requireVendorAccess from "../../middlewares/requireVendorAccess.js";
 import requireVendorWritable from "../../middlewares/requireVendorWritable.js";
 import validateRequest from "../../middlewares/validateRequest.js";
-import { create, getById, list, print, update } from "./quotations.controller.js";
+import {
+  accept,
+  convertToOrder,
+  create,
+  expire,
+  getById,
+  list,
+  print,
+  reject,
+  send,
+  update
+} from "./quotations.controller.js";
 import {
   quotationCreateBodySchema,
   quotationIdParamsSchema,
@@ -33,6 +44,23 @@ quotationsRoutes.post(
   requireVendorWritable(),
   asyncHandler(create)
 );
+
+function quotationAction(handler) {
+  return [
+    authenticate,
+    authorizeRoles("super_admin", "vendor_admin"),
+    validateRequest({ params: quotationIdParamsSchema, query: quotationQuerySchema }),
+    requireVendorAccess(),
+    requireVendorWritable(),
+    asyncHandler(handler)
+  ];
+}
+
+quotationsRoutes.post("/:quotationId/send", ...quotationAction(send));
+quotationsRoutes.post("/:quotationId/accept", ...quotationAction(accept));
+quotationsRoutes.post("/:quotationId/reject", ...quotationAction(reject));
+quotationsRoutes.post("/:quotationId/expire", ...quotationAction(expire));
+quotationsRoutes.post("/:quotationId/convert-to-order", ...quotationAction(convertToOrder));
 
 quotationsRoutes.get(
   "/:quotationId/print",

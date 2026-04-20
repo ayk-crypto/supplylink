@@ -13,15 +13,52 @@ import {
 } from "./orders.repository.js";
 import { notifyVendorUsers, runNotificationTask } from "../notifications/notifications.service.js";
 
-const TERMINAL_STATUSES = ["delivered", "cancelled"];
-const LINE_ITEM_EDITABLE_STATUSES = ["draft", "confirmed"];
+const EDITABLE_FIELDS_BY_STATUS = {
+  confirmed: ["requestedDeliveryDate", "deliveryDate", "notes"],
+  dispatched: ["deliveryDate", "notes"],
+  draft: ["orderDate", "requestedDeliveryDate", "deliveryDate", "notes"],
+  packed: ["requestedDeliveryDate", "deliveryDate", "notes"]
+};
+const CONVERTIBLE_QUOTATION_STATUSES = ["accepted"];
+const ORDER_TRANSITIONS = {
+  cancel: { from: ["draft", "confirmed", "packed"], to: "cancelled" },
+  confirm: { from: ["draft"], to: "confirmed" },
+  deliver: { from: ["dispatched"], to: "delivered" },
+  dispatch: { from: ["packed"], to: "dispatched" },
+  pack: { from: ["confirmed"], to: "packed" }
+};
+const ORDER_EVENT_CONTENT = {
+  cancelled: {
+    eventCode: "order.cancelled",
+    title: "Order cancelled",
+    message: (detail) => `Order ${detail.orderNumber} was cancelled.`
+  },
+  confirmed: {
+    eventCode: "order.confirmed",
+    title: "Order confirmed",
+    message: (detail) =>
+      `Order ${detail.orderNumber} was confirmed for ${detail.customer.companyName || detail.customer.fullName}.`
+  },
+  delivered: {
+    eventCode: "order.delivered",
+    title: "Order delivered",
+    message: (detail) => `Order ${detail.orderNumber} was marked as delivered.`
+  },
+  dispatched: {
+    eventCode: "order.dispatched",
+    title: "Order dispatched",
+    message: (detail) => `Order ${detail.orderNumber} was dispatched.`
+  },
+  packed: {
+    eventCode: "order.packed",
+    title: "Order packed",
+    message: (detail) => `Order ${detail.orderNumber} was packed.`
+  }
+};
 const HEADER_FIELDS = {
-  customerId: "customer_id",
-  orderNumber: "order_number",
   orderDate: "order_date",
   requestedDeliveryDate: "delivery_date",
   deliveryDate: "delivery_date",
-  status: "status",
   notes: "notes"
 };
 
@@ -181,6 +218,48 @@ function mapOrderItem(row) {
   };
 }
 
+function notifyOrderEvent(vendorId, detail, content) {
+  runNotificationTask(
+    notifyVendorUsers({
+      vendorId,
+      eventCode: content.eventCode,
+      title: content.title,
+      message: content.message(detail),
+      relatedEntityType: "order",
+      relatedEntityId: detail.id,
+      metadata: {
+        orderId: detail.id,
+        orderNumber: detail.orderNumber,
+        status: detail.status,
+        customerId: detail.customerId,
+        quotationId: detail.quotationId,
+        grandTotal: detail.grandTotal
+      }
+    })
+  );
+}
+
+function notifyQuotationConvertedToOrder(vendorId, detail) {
+  runNotificationTask(
+    notifyVendorUsers({
+      vendorId,
+      eventCode: "quotation.converted_to_order",
+      title: "Quotation converted to order",
+      message: `Quotation ${detail.quotation?.quoteNumber || detail.quotationId} was converted to order ${detail.orderNumber}.`,
+      relatedEntityType: "quotation",
+      relatedEntityId: detail.quotationId,
+      metadata: {
+        quotationId: detail.quotationId,
+        quoteNumber: detail.quotation?.quoteNumber,
+        orderId: detail.id,
+        orderNumber: detail.orderNumber,
+        customerId: detail.customerId,
+        grandTotal: detail.grandTotal
+      }
+    })
+  );
+}
+
 function assertOrderFound(row, orderId) {
   if (!row) {
     throw new AppError("Order not found for this vendor", {
@@ -197,7 +276,9 @@ function assertOrderFound(row, orderId) {
 }
 
 function assertOrderEditable(row, payload) {
-  if (TERMINAL_STATUSES.includes(row.status)) {
+  const editableFields = EDITABLE_FIELDS_BY_STATUS[row.status] || [];
+
+  if (editableFields.length === 0) {
     throw new AppError("This order is not editable", {
       statusCode: 409,
       code: "ORDER_NOT_EDITABLE",
@@ -210,18 +291,44 @@ function assertOrderEditable(row, payload) {
     });
   }
 
-  if (payload.items && !LINE_ITEM_EDITABLE_STATUSES.includes(row.status)) {
-    throw new AppError("Order line items are no longer editable", {
+  const disallowedFields = Object.keys(payload).filter((field) => !editableFields.includes(field));
+
+  if (disallowedFields.length > 0) {
+    throw new AppError("One or more order fields are not editable in the current status", {
       statusCode: 409,
-      code: "ORDER_ITEMS_NOT_EDITABLE",
+      code: "ORDER_FIELDS_NOT_EDITABLE",
+      details: disallowedFields.map((field) => ({
+        path: field,
+        message: `Field ${field} cannot be updated while order status is ${row.status}`
+      }))
+    });
+  }
+}
+
+function assertOrderTransition(row, action) {
+  const transition = ORDER_TRANSITIONS[action];
+
+  if (!transition) {
+    throw new AppError("Unsupported order action", {
+      statusCode: 400,
+      code: "UNSUPPORTED_ORDER_ACTION"
+    });
+  }
+
+  if (!transition.from.includes(row.status)) {
+    throw new AppError("Invalid order status transition", {
+      statusCode: 409,
+      code: "INVALID_ORDER_TRANSITION",
       details: [
         {
-          path: "items",
-          message: "Order line items can only be replaced while an order is draft or confirmed"
+          path: "status",
+          message: `Order cannot transition from ${row.status} to ${transition.to}`
         }
       ]
     });
   }
+
+  return transition;
 }
 
 async function assertCustomerLinkedToVendor(vendorId, customerId) {
@@ -297,6 +404,9 @@ async function resolveOrderCreationSource(vendorId, payload) {
     });
   }
 
+  assertQuotationConvertible(quotation);
+  await assertNoExistingOrderForQuotation(vendorId, payload.quotationId);
+
   if (payload.customerId && payload.customerId !== quotation.customer_id) {
     throw new AppError("Quotation customer does not match the requested customer", {
       statusCode: 422,
@@ -311,7 +421,7 @@ async function resolveOrderCreationSource(vendorId, payload) {
   }
 
   const relationship = await assertCustomerLinkedToVendor(vendorId, quotation.customer_id);
-  const quotationItems = payload.items || (await listQuotationItemsForOrder(vendorId, payload.quotationId));
+  const quotationItems = await listQuotationItemsForOrder(vendorId, payload.quotationId);
 
   if (quotationItems.length === 0) {
     throw new AppError("Quotation has no line items to convert", {
@@ -326,6 +436,43 @@ async function resolveOrderCreationSource(vendorId, payload) {
     items: quotationItems,
     quotation
   };
+}
+
+function assertQuotationConvertible(quotation) {
+  if (!CONVERTIBLE_QUOTATION_STATUSES.includes(quotation.status)) {
+    throw new AppError("Quotation is not eligible for order conversion", {
+      statusCode: 409,
+      code: "QUOTATION_NOT_CONVERTIBLE",
+      details: [
+        {
+          path: "status",
+          message: "Only accepted quotations can be converted to orders"
+        }
+      ]
+    });
+  }
+}
+
+async function assertNoExistingOrderForQuotation(vendorId, quotationId) {
+  const existing = await listOrdersForVendor({
+    vendorId,
+    quotationId,
+    limit: 1,
+    offset: 0
+  });
+
+  if (existing.total > 0) {
+    throw new AppError("An order already exists for this quotation", {
+      statusCode: 409,
+      code: "ORDER_ALREADY_EXISTS_FOR_QUOTATION",
+      details: [
+        {
+          path: "quotationId",
+          message: "Use the existing order instead of converting this quotation again"
+        }
+      ]
+    });
+  }
 }
 
 async function getOrderDirectory(vendorId, query) {
@@ -401,23 +548,43 @@ async function createOrder(vendorId, payload, actor) {
   const detail = await getOrderDetail(vendorId, order.id);
 
   if (detail.status === "confirmed") {
-    runNotificationTask(
-      notifyVendorUsers({
-        vendorId,
-        eventCode: "order.confirmed",
-        title: "Order confirmed",
-        message: `Order ${detail.orderNumber} was confirmed for ${detail.customer.companyName || detail.customer.fullName}.`,
-        metadata: {
-          orderId: detail.id,
-          orderNumber: detail.orderNumber,
-          customerId: detail.customerId,
-          grandTotal: detail.grandTotal
-        }
-      })
-    );
+    notifyOrderEvent(vendorId, detail, ORDER_EVENT_CONTENT.confirmed);
+  }
+
+  if (detail.quotationId) {
+    notifyQuotationConvertedToOrder(vendorId, detail);
   }
 
   return detail;
+}
+
+async function convertQuotationToOrder(vendorId, quotationId, actor) {
+  const quotation = await findQuotationForVendor(vendorId, quotationId);
+
+  if (!quotation) {
+    throw new AppError("Quotation not found for this vendor", {
+      statusCode: 404,
+      code: "QUOTATION_NOT_FOUND",
+      details: [
+        {
+          path: "quotationId",
+          message: `No quotation was found for ${quotationId}`
+        }
+      ]
+    });
+  }
+
+  assertQuotationConvertible(quotation);
+  await assertNoExistingOrderForQuotation(vendorId, quotationId);
+
+  return createOrder(
+    vendorId,
+    {
+      quotationId,
+      status: "confirmed"
+    },
+    actor
+  );
 }
 
 async function updateOrder(vendorId, orderId, payload) {
@@ -426,55 +593,55 @@ async function updateOrder(vendorId, orderId, payload) {
   assertOrderFound(existing, orderId);
   assertOrderEditable(existing, payload);
 
-  let relationshipId = existing.vendor_customer_relationship_id;
-  let items = null;
-  let totals = {};
-
-  if (payload.customerId) {
-    const relationship = await assertCustomerLinkedToVendor(vendorId, payload.customerId);
-    relationshipId = relationship.id;
-  }
-
-  if (payload.items) {
-    items = await buildOrderItems(vendorId, payload.items);
-    totals = calculateTotals(items);
-  }
-
   const headerUpdates = {
-    ...toColumnPayload(payload, HEADER_FIELDS),
-    vendor_customer_relationship_id: payload.customerId ? relationshipId : undefined,
-    ...totals
+    ...toColumnPayload(payload, HEADER_FIELDS)
   };
 
   const updated = await updateOrderWithOptionalItems({
     vendorId,
     orderId,
-    orderUpdates: headerUpdates,
-    items
+    orderUpdates: headerUpdates
   });
 
   assertOrderFound(updated, orderId);
 
   const detail = await getOrderDetail(vendorId, orderId);
 
-  if (payload.status === "confirmed" && existing.status !== "confirmed") {
-    runNotificationTask(
-      notifyVendorUsers({
-        vendorId,
-        eventCode: "order.confirmed",
-        title: "Order confirmed",
-        message: `Order ${detail.orderNumber} was confirmed for ${detail.customer.companyName || detail.customer.fullName}.`,
-        metadata: {
-          orderId: detail.id,
-          orderNumber: detail.orderNumber,
-          customerId: detail.customerId,
-          grandTotal: detail.grandTotal
-        }
-      })
-    );
+  return detail;
+}
+
+async function transitionOrder(vendorId, orderId, action) {
+  const existing = await findOrderForVendor(vendorId, orderId);
+
+  assertOrderFound(existing, orderId);
+
+  const transition = assertOrderTransition(existing, action);
+  const updated = await updateOrderWithOptionalItems({
+    vendorId,
+    orderId,
+    orderUpdates: {
+      status: transition.to
+    }
+  });
+
+  assertOrderFound(updated, orderId);
+
+  const detail = await getOrderDetail(vendorId, orderId);
+
+  const content = ORDER_EVENT_CONTENT[transition.to];
+
+  if (content) {
+    notifyOrderEvent(vendorId, detail, content);
   }
 
   return detail;
 }
 
-export { createOrder, getOrderDetail, getOrderDirectory, updateOrder };
+export {
+  convertQuotationToOrder,
+  createOrder,
+  getOrderDetail,
+  getOrderDirectory,
+  transitionOrder,
+  updateOrder
+};

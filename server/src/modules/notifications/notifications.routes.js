@@ -29,6 +29,12 @@ notificationsRoutes.patch(
   asyncHandler(markAllRead)
 );
 
+notificationsRoutes.post(
+  "/read-all",
+  authenticate,
+  asyncHandler(markAllRead)
+);
+
 notificationsRoutes.get(
   "/:notificationId",
   authenticate,
@@ -37,6 +43,13 @@ notificationsRoutes.get(
 );
 
 notificationsRoutes.patch(
+  "/:notificationId/read",
+  authenticate,
+  validateRequest({ params: notificationIdParamsSchema }),
+  asyncHandler(markRead)
+);
+
+notificationsRoutes.post(
   "/:notificationId/read",
   authenticate,
   validateRequest({ params: notificationIdParamsSchema }),

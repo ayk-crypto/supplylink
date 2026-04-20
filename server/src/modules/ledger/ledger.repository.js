@@ -172,6 +172,51 @@ async function ensureInvoiceLedgerEntry(vendorId, invoiceId, actorUserId = null,
   return result.rows[0] || null;
 }
 
+async function voidInvoiceLedgerEntry(vendorId, invoiceId, actorUserId = null, client = { query }) {
+  const invoice = await findInvoiceForVendor(vendorId, invoiceId, client);
+
+  if (!invoice) {
+    return null;
+  }
+
+  const entryDate = invoice.issue_date || new Date().toISOString().slice(0, 10);
+  const result = await client.query(
+    `INSERT INTO ledger_entries (
+       vendor_id,
+       customer_id,
+       invoice_id,
+       order_id,
+       entry_type,
+       source_type,
+       amount,
+       entry_date,
+       notes,
+       created_by
+     )
+     VALUES ($1, $2, $3, $4, 'debit', 'invoice', 0, $5, $6, $7)
+     ON CONFLICT (vendor_id, invoice_id)
+     WHERE source_type = 'invoice' AND invoice_id IS NOT NULL
+     DO UPDATE
+     SET customer_id = EXCLUDED.customer_id,
+         order_id = EXCLUDED.order_id,
+         amount = 0,
+         entry_date = EXCLUDED.entry_date,
+         notes = EXCLUDED.notes
+     RETURNING id`,
+    [
+      invoice.vendor_id,
+      invoice.customer_id,
+      invoice.id,
+      invoice.order_id,
+      entryDate,
+      `Invoice ${invoice.invoice_number} voided`,
+      actorUserId
+    ]
+  );
+
+  return result.rows[0] || null;
+}
+
 async function listPaymentsForVendor({
   vendorId,
   customerId = null,
@@ -476,5 +521,6 @@ export {
   listCustomerLedgerEntries,
   listLedgerEntriesForVendor,
   listPaymentsForVendor,
-  updatePaymentSafeFields
+  updatePaymentSafeFields,
+  voidInvoiceLedgerEntry
 };

@@ -11,17 +11,35 @@ import {
   listProductsByIdsForVendor,
   updateInvoiceWithOptionalItems
 } from "./invoices.repository.js";
-import { ensureInvoiceLedgerEntry } from "../ledger/ledger.repository.js";
+import { ensureInvoiceLedgerEntry, voidInvoiceLedgerEntry } from "../ledger/ledger.repository.js";
 import { notifyVendorUsers, runNotificationTask } from "../notifications/notifications.service.js";
 
-const TERMINAL_STATUSES = ["paid", "void"];
-const ITEM_EDITABLE_STATUSES = ["draft"];
+const EDITABLE_FIELDS_BY_STATUS = {
+  draft: ["issueDate", "dueDate", "notes"],
+  issued: ["dueDate", "notes"],
+  partially_paid: ["dueDate", "notes"]
+};
+const INVOICEABLE_ORDER_STATUSES = ["confirmed", "packed", "dispatched", "delivered"];
+const INVOICE_TRANSITIONS = {
+  issue: { from: ["draft"], to: "issued" },
+  void: { from: ["issued"], to: "void" }
+};
+const INVOICE_EVENT_CONTENT = {
+  issued: {
+    eventCode: "invoice.issued",
+    title: "Invoice issued",
+    message: (detail) =>
+      `Invoice ${detail.invoiceNumber} was issued for ${detail.customer.companyName || detail.customer.fullName}.`
+  },
+  void: {
+    eventCode: "invoice.voided",
+    title: "Invoice voided",
+    message: (detail) => `Invoice ${detail.invoiceNumber} was voided.`
+  }
+};
 const HEADER_FIELDS = {
-  customerId: "customer_id",
-  invoiceNumber: "invoice_number",
   issueDate: "issue_date",
   dueDate: "due_date",
-  status: "status",
   notes: "notes"
 };
 
@@ -189,6 +207,50 @@ function mapInvoiceItem(row) {
   };
 }
 
+function notifyInvoiceEvent(vendorId, detail, content) {
+  runNotificationTask(
+    notifyVendorUsers({
+      vendorId,
+      eventCode: content.eventCode,
+      title: content.title,
+      message: content.message(detail),
+      relatedEntityType: "invoice",
+      relatedEntityId: detail.id,
+      metadata: {
+        invoiceId: detail.id,
+        invoiceNumber: detail.invoiceNumber,
+        status: detail.status,
+        customerId: detail.customerId,
+        orderId: detail.orderId,
+        grandTotal: detail.grandTotal,
+        balanceDue: detail.balanceDue
+      }
+    })
+  );
+}
+
+function notifyOrderConvertedToInvoice(vendorId, detail) {
+  runNotificationTask(
+    notifyVendorUsers({
+      vendorId,
+      eventCode: "order.converted_to_invoice",
+      title: "Order converted to invoice",
+      message: `Order ${detail.order?.orderNumber || detail.orderId} was converted to invoice ${detail.invoiceNumber}.`,
+      relatedEntityType: "order",
+      relatedEntityId: detail.orderId,
+      metadata: {
+        orderId: detail.orderId,
+        orderNumber: detail.order?.orderNumber,
+        invoiceId: detail.id,
+        invoiceNumber: detail.invoiceNumber,
+        customerId: detail.customerId,
+        grandTotal: detail.grandTotal,
+        balanceDue: detail.balanceDue
+      }
+    })
+  );
+}
+
 function assertInvoiceFound(row, invoiceId) {
   if (!row) {
     throw new AppError("Invoice not found for this vendor", {
@@ -205,7 +267,9 @@ function assertInvoiceFound(row, invoiceId) {
 }
 
 function assertInvoiceEditable(row, payload) {
-  if (TERMINAL_STATUSES.includes(row.status)) {
+  const editableFields = EDITABLE_FIELDS_BY_STATUS[row.status] || [];
+
+  if (editableFields.length === 0) {
     throw new AppError("This invoice is not editable", {
       statusCode: 409,
       code: "INVOICE_NOT_EDITABLE",
@@ -218,18 +282,44 @@ function assertInvoiceEditable(row, payload) {
     });
   }
 
-  if (payload.items && !ITEM_EDITABLE_STATUSES.includes(row.status)) {
-    throw new AppError("Invoice line items are no longer editable", {
+  const disallowedFields = Object.keys(payload).filter((field) => !editableFields.includes(field));
+
+  if (disallowedFields.length > 0) {
+    throw new AppError("One or more invoice fields are not editable in the current status", {
       statusCode: 409,
-      code: "INVOICE_ITEMS_NOT_EDITABLE",
+      code: "INVOICE_FIELDS_NOT_EDITABLE",
+      details: disallowedFields.map((field) => ({
+        path: field,
+        message: `Field ${field} cannot be updated while invoice status is ${row.status}`
+      }))
+    });
+  }
+}
+
+function assertInvoiceTransition(row, action) {
+  const transition = INVOICE_TRANSITIONS[action];
+
+  if (!transition) {
+    throw new AppError("Unsupported invoice action", {
+      statusCode: 400,
+      code: "UNSUPPORTED_INVOICE_ACTION"
+    });
+  }
+
+  if (!transition.from.includes(row.status)) {
+    throw new AppError("Invalid invoice status transition", {
+      statusCode: 409,
+      code: "INVALID_INVOICE_TRANSITION",
       details: [
         {
-          path: "items",
-          message: "Invoice line items can only be replaced while an invoice is draft"
+          path: "status",
+          message: `Invoice cannot transition from ${row.status} to ${transition.to}`
         }
       ]
     });
   }
+
+  return transition;
 }
 
 async function assertCustomerLinkedToVendor(vendorId, customerId) {
@@ -305,6 +395,9 @@ async function resolveInvoiceCreationSource(vendorId, payload) {
     });
   }
 
+  assertOrderInvoiceable(order);
+  await assertNoExistingInvoiceForOrder(vendorId, payload.orderId);
+
   if (payload.customerId && payload.customerId !== order.customer_id) {
     throw new AppError("Order customer does not match the requested customer", {
       statusCode: 422,
@@ -319,7 +412,7 @@ async function resolveInvoiceCreationSource(vendorId, payload) {
   }
 
   const relationship = await assertCustomerLinkedToVendor(vendorId, order.customer_id);
-  const orderItems = payload.items || (await listOrderItemsForInvoice(vendorId, payload.orderId));
+  const orderItems = await listOrderItemsForInvoice(vendorId, payload.orderId);
 
   if (orderItems.length === 0) {
     throw new AppError("Order has no line items to invoice", {
@@ -334,6 +427,43 @@ async function resolveInvoiceCreationSource(vendorId, payload) {
     items: orderItems,
     order
   };
+}
+
+function assertOrderInvoiceable(order) {
+  if (!INVOICEABLE_ORDER_STATUSES.includes(order.status)) {
+    throw new AppError("Order is not eligible for invoice conversion", {
+      statusCode: 409,
+      code: "ORDER_NOT_INVOICEABLE",
+      details: [
+        {
+          path: "status",
+          message: "Only confirmed, packed, dispatched, or delivered orders can be invoiced"
+        }
+      ]
+    });
+  }
+}
+
+async function assertNoExistingInvoiceForOrder(vendorId, orderId) {
+  const existing = await listInvoicesForVendor({
+    vendorId,
+    orderId,
+    limit: 1,
+    offset: 0
+  });
+
+  if (existing.total > 0) {
+    throw new AppError("An invoice already exists for this order", {
+      statusCode: 409,
+      code: "INVOICE_ALREADY_EXISTS_FOR_ORDER",
+      details: [
+        {
+          path: "orderId",
+          message: "Use the existing invoice instead of invoicing this order again"
+        }
+      ]
+    });
+  }
 }
 
 async function getInvoiceDirectory(vendorId, query) {
@@ -419,24 +549,43 @@ async function createInvoice(vendorId, payload, actor) {
   const detail = await getInvoiceDetail(vendorId, invoice.id);
 
   if (detail.status === "issued") {
-    runNotificationTask(
-      notifyVendorUsers({
-        vendorId,
-        eventCode: "invoice.issued",
-        title: "Invoice issued",
-        message: `Invoice ${detail.invoiceNumber} was issued for ${detail.customer.companyName || detail.customer.fullName}.`,
-        metadata: {
-          invoiceId: detail.id,
-          invoiceNumber: detail.invoiceNumber,
-          customerId: detail.customerId,
-          grandTotal: detail.grandTotal,
-          balanceDue: detail.balanceDue
-        }
-      })
-    );
+    notifyInvoiceEvent(vendorId, detail, INVOICE_EVENT_CONTENT.issued);
+  }
+
+  if (detail.orderId) {
+    notifyOrderConvertedToInvoice(vendorId, detail);
   }
 
   return detail;
+}
+
+async function convertOrderToInvoice(vendorId, orderId, actor) {
+  const order = await findOrderForVendor(vendorId, orderId);
+
+  if (!order) {
+    throw new AppError("Order not found for this vendor", {
+      statusCode: 404,
+      code: "ORDER_NOT_FOUND",
+      details: [
+        {
+          path: "orderId",
+          message: `No order was found for ${orderId}`
+        }
+      ]
+    });
+  }
+
+  assertOrderInvoiceable(order);
+  await assertNoExistingInvoiceForOrder(vendorId, orderId);
+
+  return createInvoice(
+    vendorId,
+    {
+      orderId,
+      status: "issued"
+    },
+    actor
+  );
 }
 
 async function updateInvoice(vendorId, invoiceId, payload) {
@@ -445,63 +594,63 @@ async function updateInvoice(vendorId, invoiceId, payload) {
   assertInvoiceFound(existing, invoiceId);
   assertInvoiceEditable(existing, payload);
 
-  let relationshipId = existing.vendor_customer_relationship_id;
-  let items = null;
-  let totals = {};
-
-  if (payload.customerId) {
-    const relationship = await assertCustomerLinkedToVendor(vendorId, payload.customerId);
-    relationshipId = relationship.id;
-  }
-
-  if (payload.items) {
-    items = await buildInvoiceItems(vendorId, payload.items);
-    totals = calculateTotals(items);
-  }
-
-  const nextGrandTotal = totals.grand_total ?? Number(existing.grand_total);
-  const nextStatus = payload.status || existing.status;
   const headerUpdates = {
-    ...toColumnPayload(payload, HEADER_FIELDS),
-    vendor_customer_relationship_id: payload.customerId ? relationshipId : undefined,
-    ...totals,
-    balance_due: payload.items || payload.status ? calculateBalanceDue(nextStatus, nextGrandTotal) : undefined
+    ...toColumnPayload(payload, HEADER_FIELDS)
   };
 
   const updated = await updateInvoiceWithOptionalItems({
     vendorId,
     invoiceId,
-    invoiceUpdates: headerUpdates,
-    items
+    invoiceUpdates: headerUpdates
   });
 
   assertInvoiceFound(updated, invoiceId);
 
-  if (!["draft", "void"].includes(updated.status)) {
-    await ensureInvoiceLedgerEntry(vendorId, invoiceId);
+  return getInvoiceDetail(vendorId, invoiceId);
+}
+
+async function transitionInvoice(vendorId, invoiceId, action, actor = {}) {
+  const existing = await findInvoiceForVendor(vendorId, invoiceId);
+
+  assertInvoiceFound(existing, invoiceId);
+
+  const transition = assertInvoiceTransition(existing, action);
+  const invoiceUpdates = {
+    status: transition.to,
+    balance_due: calculateBalanceDue(transition.to, Number(existing.grand_total))
+  };
+  const updated = await updateInvoiceWithOptionalItems({
+    vendorId,
+    invoiceId,
+    invoiceUpdates
+  });
+
+  assertInvoiceFound(updated, invoiceId);
+
+  if (transition.to === "issued") {
+    await ensureInvoiceLedgerEntry(vendorId, invoiceId, actor.userId);
+  }
+
+  if (transition.to === "void") {
+    await voidInvoiceLedgerEntry(vendorId, invoiceId, actor.userId);
   }
 
   const detail = await getInvoiceDetail(vendorId, invoiceId);
 
-  if (payload.status === "issued" && existing.status !== "issued") {
-    runNotificationTask(
-      notifyVendorUsers({
-        vendorId,
-        eventCode: "invoice.issued",
-        title: "Invoice issued",
-        message: `Invoice ${detail.invoiceNumber} was issued for ${detail.customer.companyName || detail.customer.fullName}.`,
-        metadata: {
-          invoiceId: detail.id,
-          invoiceNumber: detail.invoiceNumber,
-          customerId: detail.customerId,
-          grandTotal: detail.grandTotal,
-          balanceDue: detail.balanceDue
-        }
-      })
-    );
+  const content = INVOICE_EVENT_CONTENT[transition.to];
+
+  if (content) {
+    notifyInvoiceEvent(vendorId, detail, content);
   }
 
   return detail;
 }
 
-export { createInvoice, getInvoiceDetail, getInvoiceDirectory, updateInvoice };
+export {
+  convertOrderToInvoice,
+  createInvoice,
+  getInvoiceDetail,
+  getInvoiceDirectory,
+  transitionInvoice,
+  updateInvoice
+};

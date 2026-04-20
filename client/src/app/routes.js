@@ -33,6 +33,16 @@ const appRoutes = [
     id: "invoices",
     label: "Invoices",
     path: "/invoices"
+  },
+  {
+    id: "ledger",
+    label: "Ledger",
+    path: "/ledger"
+  },
+  {
+    id: "reports",
+    label: "Reports",
+    path: "/reports"
   }
 ];
 
@@ -64,10 +74,52 @@ const routeDefinitions = [
     paramNames: ["id"]
   },
   {
+    id: "invoice-new",
+    path: "/invoices/new",
+    navPath: "/invoices"
+  },
+  {
+    id: "invoice-from-order",
+    path: /^\/invoices\/from-order\/([^/]+)$/,
+    navPath: "/invoices",
+    paramNames: ["orderId"]
+  },
+  {
     id: "invoice-detail",
     path: /^\/invoices\/([^/]+)$/,
     navPath: "/invoices",
     paramNames: ["id"]
+  },
+  {
+    id: "customer-ledger",
+    path: /^\/ledger\/customers\/([^/]+)$/,
+    navPath: "/ledger",
+    paramNames: ["id"]
+  },
+  {
+    id: "report-receivables",
+    path: "/reports/receivables",
+    navPath: "/reports"
+  },
+  {
+    id: "report-invoices",
+    path: "/reports/invoices",
+    navPath: "/reports"
+  },
+  {
+    id: "report-payments",
+    path: "/reports/payments",
+    navPath: "/reports"
+  },
+  {
+    id: "report-orders",
+    path: "/reports/orders",
+    navPath: "/reports"
+  },
+  {
+    id: "report-statements",
+    path: "/reports/statements",
+    navPath: "/reports"
   }
 ];
 

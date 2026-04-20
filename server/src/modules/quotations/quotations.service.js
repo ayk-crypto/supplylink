@@ -11,13 +11,41 @@ import {
 } from "./quotations.repository.js";
 import { notifyVendorUsers, runNotificationTask } from "../notifications/notifications.service.js";
 
-const EDITABLE_STATUSES = ["draft", "sent"];
+const EDITABLE_FIELDS_BY_STATUS = {
+  draft: ["issueDate", "expiryDate", "notes"],
+  sent: ["expiryDate", "notes"]
+};
+const QUOTATION_TRANSITIONS = {
+  accept: { from: ["sent"], to: "accepted" },
+  expire: { from: ["sent"], to: "expired" },
+  reject: { from: ["sent"], to: "rejected" },
+  send: { from: ["draft"], to: "sent" }
+};
+const QUOTATION_EVENT_CONTENT = {
+  accepted: {
+    eventCode: "quotation.accepted",
+    title: "Quotation accepted",
+    message: (detail) => `Quotation ${detail.quoteNumber} was accepted.`
+  },
+  expired: {
+    eventCode: "quotation.expired",
+    title: "Quotation expired",
+    message: (detail) => `Quotation ${detail.quoteNumber} was marked as expired.`
+  },
+  rejected: {
+    eventCode: "quotation.rejected",
+    title: "Quotation rejected",
+    message: (detail) => `Quotation ${detail.quoteNumber} was rejected.`
+  },
+  sent: {
+    eventCode: "quotation.sent",
+    title: "Quotation sent",
+    message: (detail) => `Quotation ${detail.quoteNumber} was marked as sent.`
+  }
+};
 const HEADER_FIELDS = {
-  customerId: "customer_id",
-  quoteNumber: "quote_number",
   issueDate: "issue_date",
   expiryDate: "expiry_date",
-  status: "status",
   notes: "notes"
 };
 
@@ -168,6 +196,25 @@ function mapQuotationItem(row) {
   };
 }
 
+function notifyQuotationEvent(vendorId, detail, content) {
+  runNotificationTask(
+    notifyVendorUsers({
+      vendorId,
+      eventCode: content.eventCode,
+      title: content.title,
+      message: content.message(detail),
+      relatedEntityType: "quotation",
+      relatedEntityId: detail.id,
+      metadata: {
+        quotationId: detail.id,
+        quoteNumber: detail.quoteNumber,
+        status: detail.status,
+        customerId: detail.customerId
+      }
+    })
+  );
+}
+
 function assertQuotationFound(row, quotationId) {
   if (!row) {
     throw new AppError("Quotation not found for this vendor", {
@@ -183,19 +230,60 @@ function assertQuotationFound(row, quotationId) {
   }
 }
 
-function assertQuotationEditable(row) {
-  if (!EDITABLE_STATUSES.includes(row.status)) {
+function assertQuotationEditable(row, payload) {
+  const editableFields = EDITABLE_FIELDS_BY_STATUS[row.status] || [];
+
+  if (editableFields.length === 0) {
     throw new AppError("This quotation is not editable", {
       statusCode: 409,
       code: "QUOTATION_NOT_EDITABLE",
       details: [
         {
           path: "status",
-          message: "Only draft or sent quotations can be updated"
+          message: "Accepted, rejected, and expired quotations cannot be updated"
         }
       ]
     });
   }
+
+  const disallowedFields = Object.keys(payload).filter((field) => !editableFields.includes(field));
+
+  if (disallowedFields.length > 0) {
+    throw new AppError("One or more quotation fields are not editable in the current status", {
+      statusCode: 409,
+      code: "QUOTATION_FIELDS_NOT_EDITABLE",
+      details: disallowedFields.map((field) => ({
+        path: field,
+        message: `Field ${field} cannot be updated while quotation status is ${row.status}`
+      }))
+    });
+  }
+}
+
+function assertQuotationTransition(row, action) {
+  const transition = QUOTATION_TRANSITIONS[action];
+
+  if (!transition) {
+    throw new AppError("Unsupported quotation action", {
+      statusCode: 400,
+      code: "UNSUPPORTED_QUOTATION_ACTION"
+    });
+  }
+
+  if (!transition.from.includes(row.status)) {
+    throw new AppError("Invalid quotation status transition", {
+      statusCode: 409,
+      code: "INVALID_QUOTATION_TRANSITION",
+      details: [
+        {
+          path: "status",
+          message: `Quotation cannot transition from ${row.status} to ${transition.to}`
+        }
+      ]
+    });
+  }
+
+  return transition;
 }
 
 async function assertCustomerLinkedToVendor(vendorId, customerId) {
@@ -306,20 +394,12 @@ async function createQuotation(vendorId, payload, actor) {
 
   const detail = await getQuotationDetail(vendorId, quotation.id);
 
-  runNotificationTask(
-    notifyVendorUsers({
-      vendorId,
-      eventCode: "quotation.created",
-      title: "Quotation created",
-      message: `Quotation ${detail.quoteNumber} was created for ${detail.customer.companyName || detail.customer.fullName}.`,
-      metadata: {
-        quotationId: detail.id,
-        quoteNumber: detail.quoteNumber,
-        status: detail.status,
-        customerId: detail.customerId
-      }
-    })
-  );
+  notifyQuotationEvent(vendorId, detail, {
+    eventCode: "quotation.created",
+    title: "Quotation created",
+    message: (quotationDetail) =>
+      `Quotation ${quotationDetail.quoteNumber} was created for ${quotationDetail.customer.companyName || quotationDetail.customer.fullName}.`
+  });
 
   return detail;
 }
@@ -328,56 +408,56 @@ async function updateQuotation(vendorId, quotationId, payload) {
   const existing = await findQuotationForVendor(vendorId, quotationId);
 
   assertQuotationFound(existing, quotationId);
-  assertQuotationEditable(existing);
-
-  let relationshipId = existing.vendor_customer_relationship_id;
-  let items = null;
-  let totals = {};
-
-  if (payload.customerId) {
-    const relationship = await assertCustomerLinkedToVendor(vendorId, payload.customerId);
-    relationshipId = relationship.id;
-  }
-
-  if (payload.items) {
-    items = await buildQuotationItems(vendorId, payload.items);
-    totals = calculateTotals(items);
-  }
+  assertQuotationEditable(existing, payload);
 
   const headerUpdates = {
-    ...toColumnPayload(payload, HEADER_FIELDS),
-    vendor_customer_relationship_id: payload.customerId ? relationshipId : undefined,
-    ...totals
+    ...toColumnPayload(payload, HEADER_FIELDS)
   };
 
   const updated = await updateQuotationWithOptionalItems({
     vendorId,
     quotationId,
-    quotationUpdates: headerUpdates,
-    items
+    quotationUpdates: headerUpdates
   });
 
   assertQuotationFound(updated, quotationId);
 
   const detail = await getQuotationDetail(vendorId, quotationId);
 
-  if (payload.status === "sent" && existing.status !== "sent") {
-    runNotificationTask(
-      notifyVendorUsers({
-        vendorId,
-        eventCode: "quotation.sent",
-        title: "Quotation sent",
-        message: `Quotation ${detail.quoteNumber} was marked as sent.`,
-        metadata: {
-          quotationId: detail.id,
-          quoteNumber: detail.quoteNumber,
-          customerId: detail.customerId
-        }
-      })
-    );
+  return detail;
+}
+
+async function transitionQuotation(vendorId, quotationId, action) {
+  const existing = await findQuotationForVendor(vendorId, quotationId);
+
+  assertQuotationFound(existing, quotationId);
+
+  const transition = assertQuotationTransition(existing, action);
+  const updated = await updateQuotationWithOptionalItems({
+    vendorId,
+    quotationId,
+    quotationUpdates: {
+      status: transition.to
+    }
+  });
+
+  assertQuotationFound(updated, quotationId);
+
+  const detail = await getQuotationDetail(vendorId, quotationId);
+
+  const content = QUOTATION_EVENT_CONTENT[transition.to];
+
+  if (content) {
+    notifyQuotationEvent(vendorId, detail, content);
   }
 
   return detail;
 }
 
-export { createQuotation, getQuotationDetail, getQuotationDirectory, updateQuotation };
+export {
+  createQuotation,
+  getQuotationDetail,
+  getQuotationDirectory,
+  transitionQuotation,
+  updateQuotation
+};
