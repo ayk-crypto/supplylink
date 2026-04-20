@@ -5,6 +5,8 @@ import {
   updateCategory
 } from "../../services/masterDataApi.js";
 import { useToast } from "../feedback/toastContext.js";
+import { useAppSettings } from "../system/settingsContext.js";
+import { getDefaultPageSize } from "../system/settingsFormat.js";
 import {
   EmptyState,
   Field,
@@ -160,6 +162,8 @@ function CategoryForm({ category, mode, onCancel, onSave }) {
 
 function CategoriesScreen() {
   const { showToast } = useToast();
+  const { settings } = useAppSettings();
+  const pageSize = getDefaultPageSize(settings, 10);
   const [page, setPage] = useState(1);
   const [searchDraft, setSearchDraft] = useState("");
   const [search, setSearch] = useState("");
@@ -168,10 +172,10 @@ function CategoriesScreen() {
   const query = useMemo(
     () => ({
       page,
-      pageSize: 10,
+      pageSize,
       search
     }),
-    [page, search]
+    [page, pageSize, search]
   );
   const loadCategories = useCallback((params, options) => listCategories(params, options), []);
   const handleListError = useCallback(

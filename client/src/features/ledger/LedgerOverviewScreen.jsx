@@ -10,6 +10,8 @@ import {
 import { useToast } from "../feedback/toastContext.js";
 import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
 import { getApiErrorMessage } from "../master-data/resourceUtils.js";
+import { useAppSettings } from "../system/settingsContext.js";
+import { getDefaultPageSize } from "../system/settingsFormat.js";
 import { getCustomerLabel, toMoney, toNumber } from "./ledgerUtils.js";
 
 function summarizeInvoices(invoices) {
@@ -34,6 +36,8 @@ function summarizeInvoices(invoices) {
 
 function LedgerOverviewScreen({ navigate }) {
   const { showToast } = useToast();
+  const { settings } = useAppSettings();
+  const pageSize = getDefaultPageSize(settings, 10);
   const [page, setPage] = useState(1);
   const [searchDraft, setSearchDraft] = useState("");
   const [search, setSearch] = useState("");
@@ -43,11 +47,11 @@ function LedgerOverviewScreen({ navigate }) {
   const query = useMemo(
     () => ({
       page,
-      pageSize: 10,
+      pageSize,
       search,
       status: "active"
     }),
-    [page, search]
+    [page, pageSize, search]
   );
   const loadCustomers = useCallback((params, options) => listCustomers(params, options), []);
   const handleListError = useCallback(

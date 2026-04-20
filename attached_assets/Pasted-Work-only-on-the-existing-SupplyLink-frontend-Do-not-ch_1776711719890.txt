@@ -1,0 +1,85 @@
+Work only on the existing SupplyLink frontend.
+
+Do not change backend APIs.
+
+Goal:
+Implement Module 20AB: Frontend Settings Propagation Completion.
+
+Context:
+Module 20AA already introduced backend-backed settings persistence using:
+- GET /api/v1/settings
+- PATCH /api/v1/settings
+
+A settings provider and helpers already exist.
+Current propagation is partial:
+- currency formatting is used on dashboard
+- default page size is used on some list screens
+- notifications badge visibility is wired
+- destructive confirmation helper exists but is not yet broadly adopted
+- date formatting helper exists but is not yet consistently applied app-wide
+
+Core objective:
+Complete practical frontend propagation of existing settings across the app in a safe, additive way without redesigning screens or changing backend APIs.
+
+What to do:
+
+1. Complete default page size propagation
+Apply the existing page size helper/settings hook to remaining practical list screens where pagination already exists or is easy to align, including where applicable:
+- Customers
+- Categories
+- Products
+- Ledger-related list views
+- Notifications list/history screens
+- Audit/activity list screens
+- Report list/table screens
+Do not force changes where a screen does not currently support paging cleanly.
+Avoid resetting user-selected local pagination state on every render.
+
+2. Complete destructive confirmation propagation
+Replace existing direct window.confirm usage where practical with the shared destructive confirmation helper so the user preference is respected consistently across flows such as:
+- delete
+- cancel
+- void
+- reset
+- remove
+Keep behavior safe and production-minded.
+If confirmation is disabled by preference, actions should still preserve existing validation and error handling.
+
+3. Expand date format propagation
+Use the existing centralized date formatting helper wherever practical and already centralized, including likely shared helpers/utilities and major list/detail displays.
+Prioritize:
+- inventory date/time formatting helpers
+- notifications dates/timestamps
+- audit/activity timestamps
+- major list/detail date fields already routed through helper functions
+Do not perform broad risky refactors of every raw date rendering if it is not centralized.
+
+4. Consistency and safety hardening
+Review the settings provider/helper usage and ensure:
+- settings hydration does not repeatedly trigger migration PATCH calls
+- late settings loading does not create noisy UI jumps where avoidable
+- missing or partial backend settings still fall back safely
+- no existing page breaks in older environments
+
+5. Documentation
+Update client README to note the broader settings propagation coverage added in this step.
+
+Constraints:
+- no backend changes
+- no redesign
+- keep changes additive and production-minded
+- preserve existing UX unless directly related to settings propagation
+- avoid large refactors unrelated to settings propagation
+
+Verification:
+- run client lint
+- run client build
+
+Deliverable:
+1. Summary
+2. Files changed
+3. What additional settings propagation was completed
+4. Which destructive flows now respect the setting
+5. Which date/list screens now respect settings
+6. Verification results
+7. Any useful follow-up items

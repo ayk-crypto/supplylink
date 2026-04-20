@@ -6,6 +6,8 @@ import {
   updateProduct
 } from "../../services/masterDataApi.js";
 import { useToast } from "../feedback/toastContext.js";
+import { useAppSettings } from "../system/settingsContext.js";
+import { getDefaultPageSize } from "../system/settingsFormat.js";
 import {
   EmptyState,
   Field,
@@ -195,6 +197,8 @@ function ProductForm({ categories, mode, onCancel, onSave, product }) {
 
 function ProductsScreen() {
   const { showToast } = useToast();
+  const { settings } = useAppSettings();
+  const pageSize = getDefaultPageSize(settings, 10);
   const [page, setPage] = useState(1);
   const [searchDraft, setSearchDraft] = useState("");
   const [search, setSearch] = useState("");
@@ -208,11 +212,11 @@ function ProductsScreen() {
     () => ({
       categoryId,
       page,
-      pageSize: 10,
+      pageSize,
       search,
       status
     }),
-    [categoryId, page, search, status]
+    [categoryId, page, pageSize, search, status]
   );
   const loadProducts = useCallback((params, options) => listProducts(params, options), []);
   const handleListError = useCallback(

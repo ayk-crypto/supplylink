@@ -9,19 +9,22 @@ import { listAuditEvents } from "../../services/auditApi.js";
 import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage } from "../master-data/resourceUtils.js";
 import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
+import { useAppSettings } from "../system/settingsContext.js";
+import { formatDateTimeWith, getDefaultPageSize } from "../system/settingsFormat.js";
 import {
   ENTITY_TYPE_OPTIONS,
   actorDisplayLabel,
   entityDisplayLabel,
   entityHrefFor,
   eventLabelOf,
-  formatAuditDateTime,
   formatMetadataSummary,
   shortId
 } from "./auditUtils.js";
 
 function AuditScreen({ navigate }) {
   const { showToast } = useToast();
+  const { settings } = useAppSettings();
+  const pageSize = getDefaultPageSize(settings, 20);
   const [page, setPage] = useState(1);
   const [entityType, setEntityType] = useState("");
   const [eventTypeDraft, setEventTypeDraft] = useState("");
@@ -30,7 +33,7 @@ function AuditScreen({ navigate }) {
   const [dateTo, setDateTo] = useState("");
 
   const query = useMemo(() => {
-    const params = { page, pageSize: 20 };
+    const params = { page, pageSize };
     if (entityType) {
       params.entityType = entityType;
     }
@@ -44,7 +47,7 @@ function AuditScreen({ navigate }) {
       params.dateTo = dateTo;
     }
     return params;
-  }, [page, entityType, eventType, dateFrom, dateTo]);
+  }, [page, pageSize, entityType, eventType, dateFrom, dateTo]);
 
   const loadEvents = useCallback(
     (params, options) => listAuditEvents(params, options),
@@ -167,7 +170,7 @@ function AuditScreen({ navigate }) {
                     ) : null}
                   </div>
                   <time dateTime={event.createdAt || undefined}>
-                    {formatAuditDateTime(event.createdAt)}
+                    {formatDateTimeWith(settings, event.createdAt)}
                   </time>
                 </header>
                 <p className="audit-summary">

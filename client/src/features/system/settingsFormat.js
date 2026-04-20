@@ -70,6 +70,48 @@ function formatDateWith(settings, value) {
   }
 }
 
+function formatDateTimeWith(settings, value) {
+  if (!value) return "—";
+
+  try {
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return String(value);
+    }
+
+    const format = getPreferences(settings).dateFormat;
+
+    if (format === "iso") {
+      const iso = date.toISOString();
+      return `${iso.slice(0, 10)} ${iso.slice(11, 16)}`;
+    }
+
+    const baseOptions = dateFormatOptions(format) || {
+      day: "numeric",
+      month: "short",
+      year: "numeric"
+    };
+
+    return new Intl.DateTimeFormat(undefined, {
+      ...baseOptions,
+      hour: "2-digit",
+      minute: "2-digit"
+    }).format(date);
+  } catch {
+    return String(value);
+  }
+}
+
+function confirmDestructive(settings, message) {
+  if (!shouldConfirmDestructive(settings)) {
+    return true;
+  }
+  if (typeof window === "undefined" || typeof window.confirm !== "function") {
+    return true;
+  }
+  return window.confirm(message);
+}
+
 function getDefaultPageSize(settings, fallback = 10) {
   const preferences = getPreferences(settings);
   const value = Number(preferences.defaultPageSize);
@@ -91,6 +133,8 @@ function shouldConfirmDestructive(settings) {
 
 export {
   CURRENCY_SYMBOLS,
+  confirmDestructive,
+  formatDateTimeWith,
   formatDateWith,
   formatMoneyWith,
   getCurrency,

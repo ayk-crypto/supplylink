@@ -5,6 +5,8 @@ import {
   updateCustomer
 } from "../../services/masterDataApi.js";
 import { useToast } from "../feedback/toastContext.js";
+import { useAppSettings } from "../system/settingsContext.js";
+import { getDefaultPageSize } from "../system/settingsFormat.js";
 import {
   EmptyState,
   Field,
@@ -209,6 +211,8 @@ function CustomerForm({ mode, onCancel, onSave, record }) {
 
 function CustomersScreen() {
   const { showToast } = useToast();
+  const { settings } = useAppSettings();
+  const pageSize = getDefaultPageSize(settings, 10);
   const [page, setPage] = useState(1);
   const [searchDraft, setSearchDraft] = useState("");
   const [search, setSearch] = useState("");
@@ -218,11 +222,11 @@ function CustomersScreen() {
   const query = useMemo(
     () => ({
       page,
-      pageSize: 10,
+      pageSize,
       search,
       status
     }),
-    [page, search, status]
+    [page, pageSize, search, status]
   );
   const loadCustomers = useCallback((params, options) => listCustomers(params, options), []);
   const handleListError = useCallback(

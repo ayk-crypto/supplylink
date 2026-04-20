@@ -17,6 +17,8 @@ import {
 } from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
+import { useAppSettings } from "../system/settingsContext.js";
+import { getDefaultPageSize } from "../system/settingsFormat.js";
 import {
   cleanReportParams,
   formatCustomer,
@@ -224,6 +226,8 @@ function OperationalReportScreen({ kind, navigate }) {
     searchDraft: "",
     status: ""
   });
+  const { settings } = useAppSettings();
+  const pageSize = getDefaultPageSize(settings, 20);
   const [page, setPage] = useState(1);
   const [isExporting, setIsExporting] = useState(false);
   const query = useMemo(
@@ -233,12 +237,12 @@ function OperationalReportScreen({ kind, navigate }) {
         dateFrom: filters.dateFrom,
         dateTo: filters.dateTo,
         page,
-        pageSize: 20,
+        pageSize,
         paymentMethod: kind === "payments" ? filters.paymentMethod.trim() : "",
         search: filters.search,
         status: kind === "invoices" || kind === "orders" ? filters.status : ""
       }),
-    [filters, kind, page]
+    [filters, kind, page, pageSize]
   );
   const loadReport = useCallback((params, options) => config.list(params, options), [config]);
   const handleListError = useCallback(

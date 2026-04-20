@@ -412,3 +412,57 @@ Graceful fallback:
 - Older backends that omit any of the four sections or any individual
   field continue to work because every formatter and consumer reads
   through the merged shape.
+
+## Module 20AB Frontend Settings Propagation Completion
+
+Module 20AB extends the propagation introduced in 20AA across the rest of
+the app without changing the backend or redesigning any screen.
+
+New helpers in `client/src/features/system/settingsFormat.js`:
+
+- `formatDateTimeWith(settings, value)` — date + time formatter that
+  honors the user's preferred date format (medium / long / iso) and
+  always includes hour and minute.
+- `confirmDestructive(settings, message)` — wraps `window.confirm`. When
+  the `confirmDestructiveActions` preference is off, returns `true`
+  immediately so existing validation and error handling keep working.
+
+Default page size now propagates to:
+
+- `CustomersScreen`, `CategoriesScreen`, `ProductsScreen`
+- `LedgerOverviewScreen`
+- `NotificationsScreen`
+- `AuditScreen`, `EntityAuditScreen`
+- `OperationalReportScreen`
+- `InventoryDetailScreen` (movement history list)
+
+Each screen reads `pageSize` once via `getDefaultPageSize(settings, …)`,
+threads it through the existing `useMemo` query, and keeps user-selected
+page state intact across hydration.
+
+Destructive confirmation now uses the shared helper in:
+
+- `SettingsScreen` (reset to defaults)
+- `InvoiceDetailScreen` (void invoice)
+- `TransactionDetailScreen` (cancel order)
+
+Date format now uses `formatDateTimeWith` in:
+
+- `InventoryDetailScreen` movement timestamps
+- `AuditScreen` and `EntityAuditScreen` event timestamps
+
+Other date helpers in `inventoryUtils.js`, `auditUtils.js`, and
+`notificationUtils.js` are kept as locale-default fallbacks for any
+screens that still call them directly.
+
+Hardening notes:
+
+- The provider's legacy localStorage migration is gated by an internal
+  ref so it runs at most once per session and does not retry on every
+  hydration.
+- Late-arriving settings change `pageSize` from the default 10/20 to the
+  user's preference at most once per screen mount, without resetting the
+  user's current page selection.
+- Every consumer flows through the same merge / fallback path, so a
+  partial backend response or a missing field never breaks an older
+  environment.

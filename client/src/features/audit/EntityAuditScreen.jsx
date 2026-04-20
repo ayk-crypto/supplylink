@@ -8,21 +8,24 @@ import { getEntityAuditHistory } from "../../services/auditApi.js";
 import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage } from "../master-data/resourceUtils.js";
 import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
+import { useAppSettings } from "../system/settingsContext.js";
+import { formatDateTimeWith, getDefaultPageSize } from "../system/settingsFormat.js";
 import {
   actorDisplayLabel,
   entityDisplayLabel,
   entityHrefFor,
   eventLabelOf,
-  formatAuditDateTime,
   formatMetadataSummary,
   shortId
 } from "./auditUtils.js";
 
 function EntityAuditScreen({ entityType, entityId, navigate }) {
   const { showToast } = useToast();
+  const { settings } = useAppSettings();
+  const pageSize = getDefaultPageSize(settings, 20);
   const [page, setPage] = useState(1);
 
-  const query = useMemo(() => ({ page, pageSize: 20 }), [page]);
+  const query = useMemo(() => ({ page, pageSize }), [page, pageSize]);
   const loadEvents = useCallback(
     (params, options) => getEntityAuditHistory(entityType, entityId, params, options),
     [entityType, entityId]
@@ -96,7 +99,7 @@ function EntityAuditScreen({ entityType, entityId, navigate }) {
                     ) : null}
                   </div>
                   <time dateTime={event.createdAt || undefined}>
-                    {formatAuditDateTime(event.createdAt)}
+                    {formatDateTimeWith(settings, event.createdAt)}
                   </time>
                 </header>
                 <p className="audit-summary">

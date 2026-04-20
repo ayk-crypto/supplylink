@@ -9,6 +9,8 @@ import {
 import { PageHeader } from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
+import { useAppSettings } from "../system/settingsContext.js";
+import { confirmDestructive } from "../system/settingsFormat.js";
 import { formatCustomer } from "./transactionUtils.js";
 
 const QUOTATION_ACTIONS = [
@@ -59,6 +61,7 @@ function DetailField({ label, value }) {
 }
 
 function TransactionDetailScreen({ id, kind, navigate }) {
+  const { settings } = useAppSettings();
   const config = configs[kind];
   const { showToast } = useToast();
   const [detail, setDetail] = useState(null);
@@ -71,7 +74,10 @@ function TransactionDetailScreen({ id, kind, navigate }) {
     if (!detail || pendingAction) {
       return;
     }
-    if (spec.action === "cancel" && !window.confirm("Cancel this order? This cannot be undone.")) {
+    if (
+      spec.action === "cancel" &&
+      !confirmDestructive(settings, "Cancel this order? This cannot be undone.")
+    ) {
       return;
     }
     setPendingAction(spec.action);

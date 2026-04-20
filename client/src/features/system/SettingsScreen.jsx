@@ -6,8 +6,8 @@ import { useAppSettings } from "./settingsContext.js";
 import { DEFAULT_SETTINGS, mergeSettings } from "./settingsDefaults.js";
 import {
   CURRENCY_SYMBOLS,
-  formatMoneyWith,
-  shouldConfirmDestructive
+  confirmDestructive,
+  formatMoneyWith
 } from "./settingsFormat.js";
 
 const CURRENCY_OPTIONS = [
@@ -90,10 +90,7 @@ function SettingsScreen() {
   }
 
   async function handleReset() {
-    if (
-      shouldConfirmDestructive(providerSettings) &&
-      !window.confirm("Reset all settings to the SupplyLink defaults?")
-    ) {
+    if (!confirmDestructive(providerSettings, "Reset all settings to the SupplyLink defaults?")) {
       return;
     }
 

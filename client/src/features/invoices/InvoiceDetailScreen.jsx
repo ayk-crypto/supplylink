@@ -14,6 +14,8 @@ const INVOICE_ACTIONS = [
 import { Field, PageHeader } from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
+import { useAppSettings } from "../system/settingsContext.js";
+import { confirmDestructive } from "../system/settingsFormat.js";
 import { formatCustomer } from "../transactions/transactionUtils.js";
 
 const paymentMethods = ["cash", "card", "bank_transfer", "check", "other"];
@@ -279,6 +281,7 @@ function PaymentForm({ invoice, onPaid }) {
 }
 
 function InvoiceDetailScreen({ id, navigate }) {
+  const { settings } = useAppSettings();
   const { showToast } = useToast();
   const [invoice, setInvoice] = useState(null);
   const [payments, setPayments] = useState([]);
@@ -291,7 +294,10 @@ function InvoiceDetailScreen({ id, navigate }) {
     if (!invoice || pendingAction) {
       return;
     }
-    if (spec.action === "void" && !window.confirm("Void this invoice? This cannot be undone.")) {
+    if (
+      spec.action === "void" &&
+      !confirmDestructive(settings, "Void this invoice? This cannot be undone.")
+    ) {
       return;
     }
     setPendingAction(spec.action);

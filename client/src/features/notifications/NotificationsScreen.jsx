@@ -9,6 +9,8 @@ import {
 import { useToast } from "../feedback/toastContext.js";
 import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
 import { getApiErrorMessage } from "../master-data/resourceUtils.js";
+import { useAppSettings } from "../system/settingsContext.js";
+import { getDefaultPageSize } from "../system/settingsFormat.js";
 import { useNotificationsCenter } from "./notificationsContext.js";
 import {
   buildNotificationRoute,
@@ -26,6 +28,8 @@ const FILTER_OPTIONS = [
 function NotificationsScreen({ navigate }) {
   const { showToast } = useToast();
   const { markAllRead, markManyRead, markRead, recentVersion, unreadCount } = useNotificationsCenter();
+  const { settings } = useAppSettings();
+  const pageSize = getDefaultPageSize(settings, 20);
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState("");
   const [actionPendingId, setActionPendingId] = useState(null);
@@ -36,11 +40,11 @@ function NotificationsScreen({ navigate }) {
   const query = useMemo(
     () => ({
       page,
-      pageSize: 20,
+      pageSize,
       unreadOnly: filter === "unread" ? true : undefined,
       _v: recentVersion
     }),
-    [filter, page, recentVersion]
+    [filter, page, pageSize, recentVersion]
   );
 
   const loadNotifications = useCallback(

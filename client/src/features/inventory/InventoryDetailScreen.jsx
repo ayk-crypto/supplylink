@@ -11,9 +11,10 @@ import {
 import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
 import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
+import { useAppSettings } from "../system/settingsContext.js";
+import { formatDateTimeWith, getDefaultPageSize } from "../system/settingsFormat.js";
 import StockAdjustForm from "./StockAdjustForm.jsx";
 import {
-  formatDateTime,
   formatQuantity,
   movementToneFor,
   signedQuantity,
@@ -23,6 +24,8 @@ import {
 
 function InventoryDetailScreen({ id, navigate }) {
   const { showToast } = useToast();
+  const { settings } = useAppSettings();
+  const pageSize = getDefaultPageSize(settings, 10);
   const [product, setProduct] = useState(null);
   const [productError, setProductError] = useState("");
   const [productLoading, setProductLoading] = useState(true);
@@ -77,11 +80,11 @@ function InventoryDetailScreen({ id, navigate }) {
   const movementQuery = useMemo(
     () => ({
       page,
-      pageSize: 10,
+      pageSize,
       productId: id,
       type: movementType || undefined
     }),
-    [id, movementType, page]
+    [id, movementType, page, pageSize]
   );
   const loadMovements = useCallback(
     (params, options) => listStockMovements(params, options),
@@ -236,7 +239,7 @@ function InventoryDetailScreen({ id, navigate }) {
                       {signed > 0 ? "+" : ""}
                       {formatQuantity(Math.abs(signed))}
                     </strong>
-                    <time>{formatDateTime(movement.createdAt)}</time>
+                    <time>{formatDateTimeWith(settings, movement.createdAt)}</time>
                   </header>
                   <dl className="movement-card-meta">
                     <div>
