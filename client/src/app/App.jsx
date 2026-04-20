@@ -22,6 +22,7 @@ import OperationalReportScreen from "../features/reports/OperationalReportScreen
 import ReceivablesReportScreen from "../features/reports/ReceivablesReportScreen.jsx";
 import ReportsHomeScreen from "../features/reports/ReportsHomeScreen.jsx";
 import StatementsReportScreen from "../features/reports/StatementsReportScreen.jsx";
+import SettingsScreen from "../features/system/SettingsScreen.jsx";
 import TransactionCreateScreen from "../features/transactions/TransactionCreateScreen.jsx";
 import TransactionDetailScreen from "../features/transactions/TransactionDetailScreen.jsx";
 import TransactionListScreen from "../features/transactions/TransactionListScreens.jsx";
@@ -55,6 +56,7 @@ const screens = {
   "report-orders": (props) => <OperationalReportScreen kind="orders" {...props} />,
   "report-statements": StatementsReportScreen,
   audit: AuditScreen,
+  settings: SettingsScreen,
   "audit-entity": (props) => (
     <EntityAuditScreen
       entityId={props.entityId}

@@ -53,6 +53,11 @@ const appRoutes = [
     id: "audit",
     label: "Audit",
     path: "/audit"
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    path: "/settings"
   }
 ];
 
