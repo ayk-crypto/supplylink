@@ -773,3 +773,65 @@ Behavior notes:
 - Status-transition buttons are disabled when the current
   status does not allow that transition; the disabled state
   carries a `title` explaining why.
+
+## Module 20AH Reports UX and Decision Layer
+
+Module 20AH lifts the reporting screens from "raw tables with
+filters" toward a more decision-friendly experience without
+changing any backend contracts. All summaries reuse the data
+that the existing report endpoints already return.
+
+New shared pieces:
+- `client/src/features/reports/dateRangePresets.js` — pure date
+  helpers. Exports `DATE_PRESETS` (Today / This week / Last 30
+  days / This month / This quarter / All time), `getPresetRange`
+  returning `{dateFrom, dateTo}` as local-day `yyyy-mm-dd`
+  strings, and `matchPreset` to highlight the chip that exactly
+  matches the current filters.
+- `client/src/features/reports/DateRangePresetChips.jsx` — small
+  presentational chip group with `role="group"` and an
+  `aria-pressed` active chip. Slots into the existing `Field`
+  primitive so it lines up with the rest of the form grid.
+
+Per-screen improvements:
+- **Reports home** — clearer hierarchy with `SectionHeader`s
+  ("At a glance" + "Open a report"), a `LoadingSkeleton` instead
+  of a one-line text loader, and an `ErrorState` with retry so
+  the page no longer goes blank when the summary endpoint
+  fails.
+- **Operational reports (Invoices / Orders / Payments)** — the
+  filter form gains a "Quick range" Field with the preset chip
+  group; selecting a preset updates `dateFrom` / `dateTo` and
+  resets to page 1. A new summary metric strip appears above the
+  results showing per-page totals: invoices (count, total, paid,
+  outstanding), orders (count, total), payments (count, total
+  amount). The hint under the count tile says "page totals · X
+  of Y matching kind" whenever the page is a subset of the
+  filtered total, so users always know whether the totals are
+  the page or the whole filter.
+- **Receivables report** — gains the same "Quick range" chip
+  group; the existing customer-grouped summary tiles and CSV
+  export are kept exactly as before.
+- **Statements report** — gains the chip group inside the
+  existing Load Statement form; selection only updates form
+  state so the user still controls when the (heavier) statement
+  fetch fires.
+
+Styling:
+- `.date-preset-row` — wrappable flex row of chips.
+- `.date-preset-chip` — rounded pill with subtle background,
+  hover, and focus-visible outline.
+- `.date-preset-chip.is-active` — accent fill with white text
+  to make the current selection unambiguous.
+- All variables fall back to safe defaults so the chips render
+  cleanly even before theme tokens load.
+
+Constraints respected:
+- No backend changes. No new endpoints. No new data models.
+- All summary numbers come from the existing list responses;
+  the new tiles are computed client-side and clearly labelled
+  as "visible page" totals.
+- All shared primitives (`PageHeader`, `SectionHeader`, `Field`,
+  `Pagination`, `TableScroll`, `LoadingSkeleton`, `ErrorState`,
+  `EmptyState`, metric-tile, ToastProvider, useResourceDirectory)
+  are reused unchanged.

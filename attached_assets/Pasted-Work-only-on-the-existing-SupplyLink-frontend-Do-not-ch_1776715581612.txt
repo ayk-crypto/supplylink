@@ -1,0 +1,73 @@
+Work only on the existing SupplyLink frontend.
+
+Do not change backend APIs.
+
+Goal:
+Implement Module 20AH: Reports UX and Decision Layer Enhancement.
+
+Context:
+SupplyLink now supports full operational workflows including sales, attachments, and delivery routes. Reports exist but are basic and lack strong UX and decision-support clarity.
+
+Core objective:
+Upgrade the reporting experience so it feels useful, readable, and actionable for business users, without redesigning the system or changing backend APIs.
+
+What to do:
+
+1) Improve reports layout and readability
+Focus on:
+- clear section separation
+- better table readability
+- consistent spacing
+- improved hierarchy (headings, summaries, tables)
+
+2) Add summary insights
+Where data is already available:
+- add summary cards above reports (totals, counts, key metrics)
+- examples:
+  - total receivables
+  - total invoices
+  - total payments
+  - order counts
+Do not create new backend queries — reuse existing data.
+
+3) Date range usability
+Improve date filtering UX:
+- clearer date range inputs
+- quick presets (Today, This Week, This Month) if easy to add
+- ensure consistent behavior across all report screens
+
+4) Table usability improvements
+- ensure TableScroll is applied where needed
+- improve column clarity
+- better handling of long values
+- consistent alignment
+
+5) Export discoverability
+- make CSV/export actions more visible and consistent
+- ensure users can easily find and use export options
+
+6) Loading / empty / error polish
+- use LoadingState / ErrorState / LoadingSkeleton consistently
+- reduce layout jumps where possible
+
+7) Consistency
+- reuse SectionHeader, shared UI primitives
+- align reports with overall app look and feel
+
+Constraints:
+- no backend changes
+- no redesign
+- no new data models
+- keep changes additive and production-minded
+
+Verification:
+- run client lint
+- run client build
+
+Deliverable:
+1. Summary
+2. Files changed
+3. What report UX improvements were made
+4. What summary insights were added
+5. Verification results
+6. Any follow-up items

@@ -806,6 +806,40 @@ a {
   justify-content: flex-end;
 }
 
+.date-preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.date-preset-chip {
+  appearance: none;
+  border: 1px solid var(--border-soft, rgba(0, 0, 0, 0.12));
+  background: var(--surface-subtle, rgba(0, 0, 0, 0.04));
+  color: var(--text-strong, #111);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.date-preset-chip:hover {
+  background: var(--surface-strong, rgba(0, 0, 0, 0.08));
+}
+
+.date-preset-chip.is-active {
+  background: var(--accent-strong, #1f3a8a);
+  border-color: var(--accent-strong, #1f3a8a);
+  color: #fff;
+}
+
+.date-preset-chip:focus-visible {
+  outline: 2px solid var(--accent-strong, #1f3a8a);
+  outline-offset: 2px;
+}
+
 .ledger-customer-grid {
   grid-template-columns:
     minmax(220px, 1.3fr) minmax(120px, 0.7fr) minmax(120px, 0.7fr)

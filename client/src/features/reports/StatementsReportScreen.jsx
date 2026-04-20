@@ -12,6 +12,7 @@ import {
   TableScroll
 } from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
+import DateRangePresetChips from "./DateRangePresetChips.jsx";
 import {
   formatCustomer,
   formatReportError,
@@ -164,6 +165,19 @@ function StatementsReportScreen({ navigate }) {
                 </option>
               ))}
             </select>
+          </Field>
+          <Field label="Quick range">
+            <DateRangePresetChips
+              dateFrom={form.dateFrom}
+              dateTo={form.dateTo}
+              onApply={(range) =>
+                setForm((current) => ({
+                  ...current,
+                  dateFrom: range.dateFrom,
+                  dateTo: range.dateTo
+                }))
+              }
+            />
           </Field>
           <Field label="Date from">
             <input

@@ -1,6 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getReportSummary } from "../../services/reportApi.js";
-import { LoadingState, PageHeader } from "../../components/ui/ResourceScreens.jsx";
+import {
+  ErrorState,
+  LoadingSkeleton,
+  PageHeader,
+  SectionHeader
+} from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import { formatReportError, toMoney } from "./reportUtils.js";
 
@@ -35,7 +40,10 @@ const reportCards = [
 function ReportsHomeScreen({ navigate }) {
   const { showToast } = useToast();
   const [summary, setSummary] = useState(null);
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
+  const reloadSummary = useCallback(() => setReloadKey((value) => value + 1), []);
 
   useEffect(() => {
     let active = true;
@@ -43,6 +51,7 @@ function ReportsHomeScreen({ navigate }) {
 
     async function loadSummary() {
       setIsLoading(true);
+      setError("");
 
       try {
         const response = await getReportSummary({}, { signal: controller.signal });
@@ -55,11 +64,9 @@ function ReportsHomeScreen({ navigate }) {
           return;
         }
 
-        showToast({
-          message: formatReportError(requestError, "Report summary could not be loaded."),
-          title: "Reports unavailable",
-          tone: "error"
-        });
+        const message = formatReportError(requestError, "Report summary could not be loaded.");
+        setError(message);
+        showToast({ message, title: "Reports unavailable", tone: "error" });
       } finally {
         if (active) {
           setIsLoading(false);
@@ -73,7 +80,7 @@ function ReportsHomeScreen({ navigate }) {
       active = false;
       controller.abort();
     };
-  }, [showToast]);
+  }, [showToast, reloadKey]);
 
   return (
     <div className="resource-page">
@@ -83,7 +90,13 @@ function ReportsHomeScreen({ navigate }) {
         title="Reports and exports"
       />
 
-      {isLoading ? <LoadingState>Loading report summary…</LoadingState> : null}
+      <SectionHeader
+        title="At a glance"
+        hint="Live totals across the reporting endpoints"
+      />
+
+      <ErrorState message={error} onRetry={reloadSummary} />
+      {isLoading ? <LoadingSkeleton label="Loading report summary" rows={2} /> : null}
 
       {summary ? (
         <section className="metric-strip reports-summary-strip">
@@ -109,6 +122,8 @@ function ReportsHomeScreen({ navigate }) {
           </article>
         </section>
       ) : null}
+
+      <SectionHeader title="Open a report" hint={`${reportCards.length} reports available`} />
 
       <section className="report-card-grid">
         {reportCards.map((card) => (

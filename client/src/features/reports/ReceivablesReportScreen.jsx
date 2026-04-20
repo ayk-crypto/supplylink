@@ -11,6 +11,7 @@ import {
 } from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
+import DateRangePresetChips from "./DateRangePresetChips.jsx";
 import {
   cleanReportParams,
   formatCustomer,
@@ -176,6 +177,16 @@ function ReceivablesReportScreen({ navigate }) {
               placeholder="Search invoice or customer"
               type="search"
               value={filters.searchDraft}
+            />
+          </Field>
+          <Field label="Quick range">
+            <DateRangePresetChips
+              dateFrom={filters.dateFrom}
+              dateTo={filters.dateTo}
+              onApply={(range) => {
+                setFilters((current) => ({ ...current, ...range }));
+                setPage(1);
+              }}
             />
           </Field>
           <Field label="Date from">

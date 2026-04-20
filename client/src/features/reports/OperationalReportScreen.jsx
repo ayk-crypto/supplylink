@@ -22,6 +22,7 @@ import { useToast } from "../feedback/toastContext.js";
 import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
 import { useAppSettings } from "../system/settingsContext.js";
 import { getDefaultPageSize } from "../system/settingsFormat.js";
+import DateRangePresetChips from "./DateRangePresetChips.jsx";
 import {
   cleanReportParams,
   formatCustomer,
@@ -29,7 +30,8 @@ import {
   getPaidFromInvoice,
   invoiceStatuses,
   orderStatuses,
-  toMoney
+  toMoney,
+  toNumber
 } from "./reportUtils.js";
 
 const reportConfigs = {
@@ -56,7 +58,7 @@ const reportConfigs = {
   }
 };
 
-function ReportFilters({ customers, filters, kind, onChange, onSubmit }) {
+function ReportFilters({ customers, filters, kind, onApplyDateRange, onChange, onSubmit }) {
   const showStatus = kind === "invoices" || kind === "orders";
   const showPaymentMethod = kind === "payments";
   const statuses = kind === "orders" ? orderStatuses : invoiceStatuses;
@@ -64,6 +66,13 @@ function ReportFilters({ customers, filters, kind, onChange, onSubmit }) {
   return (
     <form className="report-filter-panel" onSubmit={onSubmit}>
       <div className="form-grid">
+        <Field label="Quick range">
+          <DateRangePresetChips
+            dateFrom={filters.dateFrom}
+            dateTo={filters.dateTo}
+            onApply={onApplyDateRange}
+          />
+        </Field>
         <Field label="Search">
           <input
             onChange={(event) => onChange("searchDraft", event.target.value)}
@@ -267,7 +276,7 @@ function OperationalReportScreen({ kind, navigate }) {
   const { data, error, isLoading, reload } = useResourceDirectory(loadReport, query, {
     onError: handleListError
   });
-  const items = data?.items || [];
+  const items = useMemo(() => data?.items || [], [data]);
 
   useEffect(() => {
     let active = true;
@@ -325,6 +334,50 @@ function OperationalReportScreen({ kind, navigate }) {
     setPage(1);
   }
 
+  function applyDateRange(range) {
+    setFilters((current) => ({ ...current, dateFrom: range.dateFrom, dateTo: range.dateTo }));
+    setPage(1);
+  }
+
+  const summary = useMemo(() => {
+    if (kind === "invoices") {
+      return items.reduce(
+        (acc, invoice) => ({
+          count: acc.count + 1,
+          grandTotal: acc.grandTotal + toNumber(invoice.grandTotal),
+          paid: acc.paid + getPaidFromInvoice(invoice),
+          outstanding: acc.outstanding + toNumber(invoice.balanceDue)
+        }),
+        { count: 0, grandTotal: 0, paid: 0, outstanding: 0 }
+      );
+    }
+    if (kind === "orders") {
+      return items.reduce(
+        (acc, order) => ({
+          count: acc.count + 1,
+          grandTotal: acc.grandTotal + toNumber(order.grandTotal)
+        }),
+        { count: 0, grandTotal: 0 }
+      );
+    }
+    if (kind === "payments") {
+      return items.reduce(
+        (acc, payment) => ({
+          count: acc.count + 1,
+          amount: acc.amount + toNumber(payment.amount)
+        }),
+        { count: 0, amount: 0 }
+      );
+    }
+    return null;
+  }, [items, kind]);
+
+  const totalCount = data?.pagination?.total;
+  const summaryHint =
+    typeof totalCount === "number" && totalCount > items.length
+      ? `Visible page totals · ${items.length} of ${totalCount} matching ${kind}`
+      : `Totals across the visible ${kind}`;
+
   async function exportCsv() {
     setIsExporting(true);
 
@@ -367,9 +420,67 @@ function OperationalReportScreen({ kind, navigate }) {
         customers={customers}
         filters={filters}
         kind={kind}
+        onApplyDateRange={applyDateRange}
         onChange={updateFilter}
         onSubmit={applyFilters}
       />
+
+      {summary && items.length ? (
+        <section className="metric-strip reports-summary-strip" aria-label="Report summary">
+          {kind === "invoices" ? (
+            <>
+              <article className="metric-tile">
+                <span>Invoices</span>
+                <strong>{summary.count}</strong>
+                <small>{summaryHint}</small>
+              </article>
+              <article className="metric-tile">
+                <span>Invoice total</span>
+                <strong>{toMoney(summary.grandTotal)}</strong>
+                <small>Sum of grand totals</small>
+              </article>
+              <article className="metric-tile">
+                <span>Paid</span>
+                <strong>{toMoney(summary.paid)}</strong>
+                <small>Derived from balances</small>
+              </article>
+              <article className="metric-tile">
+                <span>Outstanding</span>
+                <strong>{toMoney(summary.outstanding)}</strong>
+                <small>Open balance</small>
+              </article>
+            </>
+          ) : null}
+          {kind === "orders" ? (
+            <>
+              <article className="metric-tile">
+                <span>Orders</span>
+                <strong>{summary.count}</strong>
+                <small>{summaryHint}</small>
+              </article>
+              <article className="metric-tile">
+                <span>Order total</span>
+                <strong>{toMoney(summary.grandTotal)}</strong>
+                <small>Sum of grand totals</small>
+              </article>
+            </>
+          ) : null}
+          {kind === "payments" ? (
+            <>
+              <article className="metric-tile">
+                <span>Payments</span>
+                <strong>{summary.count}</strong>
+                <small>{summaryHint}</small>
+              </article>
+              <article className="metric-tile">
+                <span>Payment total</span>
+                <strong>{toMoney(summary.amount)}</strong>
+                <small>Sum of amounts received</small>
+              </article>
+            </>
+          ) : null}
+        </section>
+      ) : null}
 
       <ErrorState message={error} onRetry={reload} />
       {isLoading ? <LoadingState>Loading {kind} report…</LoadingState> : null}
