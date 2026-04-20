@@ -7,6 +7,7 @@ const ROUTE_SELECT = `route.id,
                       route.status,
                       route.driver_user_id,
                       route.vehicle_label,
+                      route.source_route_template_id,
                       route.notes,
                       route.metadata,
                       route.created_at,
@@ -21,6 +22,7 @@ const ROUTE_RETURNING = `id,
                          status,
                          driver_user_id,
                          vehicle_label,
+                         source_route_template_id,
                          notes,
                          metadata,
                          created_at,
@@ -159,10 +161,11 @@ async function createRouteForVendor(vendorId, payload) {
        status,
        driver_user_id,
        vehicle_label,
+       source_route_template_id,
        notes,
        metadata
      )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING ${ROUTE_RETURNING}`,
     [
       vendorId,
@@ -171,6 +174,7 @@ async function createRouteForVendor(vendorId, payload) {
       payload.status || "draft",
       payload.driver_user_id || null,
       payload.vehicle_label || null,
+      payload.source_route_template_id || null,
       payload.notes || null,
       payload.metadata || {}
     ]

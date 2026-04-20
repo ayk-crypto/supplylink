@@ -9,6 +9,10 @@ import {
   quotationUpdateBodySchema
 } from "./quotations/quotations.schemas.js";
 import { routeCreateBodySchema } from "./routes/routes.schemas.js";
+import {
+  routeTemplateCreateBodySchema,
+  routeTemplateGenerateBodySchema
+} from "./route-templates/routeTemplates.schemas.js";
 import { settingsUpdateBodySchema } from "./settings/settings.schemas.js";
 
 const CUSTOMER_ID = "11111111-1111-4111-8111-111111111111";
@@ -116,6 +120,40 @@ test("attachment query requires entityType when entityId is provided", () => {
 
   assert.equal(missingType.success, false);
   assert.equal(completeFilter.success, true);
+});
+
+test("route template creation validates weekly recurrence days", () => {
+  const valid = routeTemplateCreateBodySchema.safeParse({
+    name: "Weekly north route",
+    recurrenceDays: [1, 3, 5]
+  });
+  const duplicate = routeTemplateCreateBodySchema.safeParse({
+    name: "Duplicate weekdays",
+    recurrenceDays: [1, 1]
+  });
+  const outOfRange = routeTemplateCreateBodySchema.safeParse({
+    name: "Impossible weekday",
+    recurrenceDays: [7]
+  });
+
+  assert.equal(valid.success, true);
+  assert.deepEqual(valid.data.recurrenceDays, [1, 3, 5]);
+  assert.equal(duplicate.success, false);
+  assert.equal(outOfRange.success, false);
+});
+
+test("route template generation accepts only route creation statuses", () => {
+  const valid = routeTemplateGenerateBodySchema.safeParse({
+    routeDate: "2026-05-04",
+    status: "planned"
+  });
+  const invalid = routeTemplateGenerateBodySchema.safeParse({
+    routeDate: "2026-05-04",
+    status: "completed"
+  });
+
+  assert.equal(valid.success, true);
+  assert.equal(invalid.success, false);
 });
 
 test("settings update accepts valid partial sections", () => {

@@ -55,6 +55,7 @@ function mapRoute(row) {
     routeDate: row.route_date,
     status: row.status,
     driverUserId: row.driver_user_id,
+    sourceRouteTemplateId: row.source_route_template_id,
     driver: row.driver_user_id
       ? {
           id: row.driver_user_id,

@@ -466,6 +466,243 @@ if (!testDatabaseUrl) {
       }
     });
 
+    await t.test("route templates support CRUD, stops, vendor isolation, and generation", async () => {
+      const template = await api.post("/route-templates", {
+        token: state.vendorA.token,
+        body: {
+          name: "North Weekly Route",
+          notes: "Reusable north-side plan",
+          vehicleLabel: "Van 7",
+          recurrenceType: "weekly",
+          recurrenceDays: [1, 3],
+          isActive: true
+        },
+        expectedStatus: 201
+      });
+      state.routeTemplate = template.payload.data;
+      assert.equal(state.routeTemplate.name, "North Weekly Route");
+      assert.deepEqual(state.routeTemplate.recurrenceDays, [1, 3]);
+      assert.equal(state.routeTemplate.stopCount, 0);
+
+      const listed = await api.get("/route-templates?search=North&isActive=true", {
+        token: state.vendorA.token
+      });
+      assert.ok(listed.payload.data.items.some((item) => item.id === state.routeTemplate.id));
+
+      const detail = await api.get(`/route-templates/${state.routeTemplate.id}`, {
+        token: state.vendorA.token
+      });
+      assert.equal(detail.payload.data.id, state.routeTemplate.id);
+      assert.deepEqual(detail.payload.data.stops, []);
+
+      const updated = await api.patch(`/route-templates/${state.routeTemplate.id}`, {
+        token: state.vendorA.token,
+        body: {
+          notes: "Updated recurring plan",
+          vehicleLabel: "Truck 2",
+          recurrenceDays: [2, 4]
+        }
+      });
+      assert.equal(updated.payload.data.notes, "Updated recurring plan");
+      assert.equal(updated.payload.data.vehicleLabel, "Truck 2");
+      assert.deepEqual(updated.payload.data.recurrenceDays, [2, 4]);
+
+      await api.post("/route-templates", {
+        token: state.vendorA.token,
+        body: {
+          name: "Invalid duplicate weekdays",
+          recurrenceDays: [1, 1]
+        },
+        expectedStatus: 400
+      });
+
+      await api.get(`/route-templates/${state.routeTemplate.id}`, {
+        token: state.vendorB.token,
+        expectedStatus: 404
+      });
+
+      const firstStop = await api.post(`/route-templates/${state.routeTemplate.id}/stops`, {
+        token: state.vendorA.token,
+        body: {
+          customerId: state.customer.id,
+          sequenceNumber: 1,
+          notes: "First reusable stop"
+        },
+        expectedStatus: 201
+      });
+      state.routeTemplateStop = firstStop.payload.data;
+      assert.equal(state.routeTemplateStop.sequenceNumber, 1);
+      assert.equal(state.routeTemplateStop.customerId, state.customer.id);
+
+      await api.post(`/route-templates/${state.routeTemplate.id}/stops`, {
+        token: state.vendorA.token,
+        body: {
+          customerId: state.customer.id,
+          sequenceNumber: 1
+        },
+        expectedStatus: 409
+      });
+
+      const secondStop = await api.post(`/route-templates/${state.routeTemplate.id}/stops`, {
+        token: state.vendorA.token,
+        body: {
+          customerId: state.customer.id,
+          sequenceNumber: 2,
+          notes: "Second reusable stop"
+        },
+        expectedStatus: 201
+      });
+
+      const updatedStop = await api.patch(
+        `/route-templates/${state.routeTemplate.id}/stops/${secondStop.payload.data.id}`,
+        {
+          token: state.vendorA.token,
+          body: {
+            sequenceNumber: 3,
+            notes: "Second reusable stop moved"
+          }
+        }
+      );
+      assert.equal(updatedStop.payload.data.sequenceNumber, 3);
+      assert.equal(updatedStop.payload.data.notes, "Second reusable stop moved");
+
+      const stops = await api.get(`/route-templates/${state.routeTemplate.id}/stops`, {
+        token: state.vendorA.token
+      });
+      assert.deepEqual(
+        stops.payload.data.items.map((stop) => stop.sequenceNumber),
+        [1, 3]
+      );
+
+      const vendorBTemplate = await api.post("/route-templates", {
+        token: state.vendorB.token,
+        body: {
+          name: "Bravo Weekly Route",
+          recurrenceDays: [5]
+        },
+        expectedStatus: 201
+      });
+      await api.post(`/route-templates/${vendorBTemplate.payload.data.id}/stops`, {
+        token: state.vendorB.token,
+        body: {
+          customerId: state.customer.id,
+          sequenceNumber: 1
+        },
+        expectedStatus: 422
+      });
+
+      const generated = await api.post(`/route-templates/${state.routeTemplate.id}/generate`, {
+        token: state.vendorA.token,
+        body: {
+          routeDate: "2026-05-04",
+          status: "draft",
+          vehicleLabel: "Truck override",
+          notes: "Generated from weekly plan"
+        },
+        expectedStatus: 201
+      });
+      state.generatedRoute = generated.payload.data;
+      assert.equal(state.generatedRoute.routeDate, "2026-05-04");
+      assert.equal(state.generatedRoute.status, "draft");
+      assert.equal(state.generatedRoute.vehicleLabel, "Truck override");
+      assert.equal(state.generatedRoute.sourceRouteTemplateId, state.routeTemplate.id);
+      assert.deepEqual(
+        state.generatedRoute.stops.map((stop) => stop.sequenceNumber),
+        [1, 3]
+      );
+      assert.equal(state.generatedRoute.stops[0].notes, "First reusable stop");
+
+      const generatedDetail = await api.get(`/routes/${state.generatedRoute.id}`, {
+        token: state.vendorA.token
+      });
+      assert.equal(generatedDetail.payload.data.sourceRouteTemplateId, state.routeTemplate.id);
+      assert.deepEqual(
+        generatedDetail.payload.data.stops.map((stop) => stop.sequenceNumber),
+        [1, 3]
+      );
+
+      const editedGeneratedRoute = await api.patch(`/routes/${state.generatedRoute.id}`, {
+        token: state.vendorA.token,
+        body: {
+          status: "planned",
+          notes: "Generated route remains editable"
+        }
+      });
+      assert.equal(editedGeneratedRoute.payload.data.status, "planned");
+      assert.equal(editedGeneratedRoute.payload.data.notes, "Generated route remains editable");
+
+      await api.patch(`/route-templates/${state.routeTemplate.id}`, {
+        token: state.vendorA.token,
+        body: {
+          name: "North Weekly Route Edited Later"
+        }
+      });
+      const generatedAfterTemplateEdit = await api.get(`/routes/${state.generatedRoute.id}`, {
+        token: state.vendorA.token
+      });
+      assert.notEqual(generatedAfterTemplateEdit.payload.data.name, "North Weekly Route Edited Later");
+
+      const manualRoute = await api.post("/routes", {
+        token: state.vendorA.token,
+        body: {
+          name: "Manual Compatibility Route",
+          routeDate: "2026-05-05",
+          status: "planned"
+        },
+        expectedStatus: 201
+      });
+      assert.equal(manualRoute.payload.data.sourceRouteTemplateId, null);
+      const manualStop = await api.post(`/routes/${manualRoute.payload.data.id}/stops`, {
+        token: state.vendorA.token,
+        body: {
+          customerId: state.customer.id,
+          sequenceNumber: 1
+        },
+        expectedStatus: 201
+      });
+      assert.equal(manualStop.payload.data.sequenceNumber, 1);
+
+      const disposableTemplate = await api.post("/route-templates", {
+        token: state.vendorA.token,
+        body: {
+          name: "Disposable Template",
+          recurrenceDays: [6]
+        },
+        expectedStatus: 201
+      });
+      const disposableStop = await api.post(
+        `/route-templates/${disposableTemplate.payload.data.id}/stops`,
+        {
+          token: state.vendorA.token,
+          body: {
+            customerId: state.customer.id,
+            sequenceNumber: 1
+          },
+          expectedStatus: 201
+        }
+      );
+      await api.delete(
+        `/route-templates/${disposableTemplate.payload.data.id}/stops/${disposableStop.payload.data.id}`,
+        {
+          token: state.vendorA.token
+        }
+      );
+      const disposableStops = await api.get(
+        `/route-templates/${disposableTemplate.payload.data.id}/stops`,
+        {
+          token: state.vendorA.token
+        }
+      );
+      assert.equal(disposableStops.payload.data.items.length, 0);
+      await api.delete(`/route-templates/${disposableTemplate.payload.data.id}`, {
+        token: state.vendorA.token
+      });
+      await api.get(`/route-templates/${disposableTemplate.payload.data.id}`, {
+        token: state.vendorA.token,
+        expectedStatus: 404
+      });
+    });
+
     await t.test("transaction lifecycle actions enforce valid transitions", async () => {
       const draftQuotation = await api.post("/quotations", {
         token: state.vendorA.token,

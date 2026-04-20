@@ -25,6 +25,8 @@ const DATA_TABLES = [
   "invoice_items",
   "invoices",
   "order_items",
+  "route_template_stops",
+  "route_templates",
   "orders",
   "quotation_items",
   "quotations",
