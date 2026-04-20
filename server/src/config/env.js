@@ -41,7 +41,7 @@ const env = {
   API_PREFIX: process.env.API_PREFIX || "/api",
   API_VERSION: process.env.API_VERSION || "v1",
   CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173",
-  DATABASE_URL: process.env.DATABASE_URL || "",
+  DATABASE_URL: process.env.NEON_DATABASE_URL || process.env.DATABASE_URL || "",
   LOG_LEVEL: process.env.LOG_LEVEL || "info",
   ENABLE_DB_SSL: toBoolean(process.env.ENABLE_DB_SSL, false),
   JWT_SECRET:
