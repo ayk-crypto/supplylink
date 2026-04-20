@@ -2383,3 +2383,257 @@ body {
   border-radius: 999px;
   transition: width 360ms ease;
 }
+
+/* === Typography polish (Inter via Google Fonts) ================ */
+
+:root {
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+  font-variant-numeric: tabular-nums;
+  font-synthesis-weight: none;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  letter-spacing: -0.005em;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-feature-settings: inherit;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-sans);
+  color: inherit;
+  font-weight: 700;
+  letter-spacing: -0.018em;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: 1.6rem;
+  letter-spacing: -0.022em;
+}
+
+h2 {
+  font-size: 1.45rem;
+  letter-spacing: -0.02em;
+}
+
+h3 {
+  font-size: 1.1rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+
+h4 {
+  font-size: 0.98rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+p {
+  line-height: 1.6;
+}
+
+small,
+.small {
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+strong,
+b {
+  font-weight: 600;
+}
+
+/* Hero / page header titles override base h2 with a stronger display weight */
+.dashboard-hero h2,
+.page-header h2,
+.auth-panel h2,
+.auth-visual-copy h1 {
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  line-height: 1.12;
+}
+
+.dashboard-hero h2 {
+  font-size: 2rem;
+}
+
+.page-header h2 {
+  font-size: 1.55rem;
+}
+
+.auth-panel h2 {
+  font-size: 1.95rem;
+}
+
+.auth-visual-copy h1 {
+  font-size: 3rem;
+  letter-spacing: -0.028em;
+  line-height: 1.05;
+}
+
+/* Eyebrows / uppercase labels */
+.eyebrow,
+.resource-table-head,
+.metric-tile span,
+.receivables-card span,
+.sidebar-vendor span {
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  font-size: 0.7rem;
+}
+
+/* Body & UI text weights */
+.brand-lockup strong,
+.session-chip strong {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.brand-lockup small,
+.session-chip span {
+  font-weight: 500;
+}
+
+/* Sidebar nav */
+.side-nav button {
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+
+.side-nav button.active {
+  font-weight: 600;
+}
+
+/* Buttons */
+.primary-button,
+.secondary-button,
+.session-chip button,
+.nav-toggle,
+.link-button {
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+/* Forms */
+.form-field,
+.auth-form label,
+.line-item-row label {
+  font-weight: 500;
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea,
+.auth-form input,
+.resource-toolbar input,
+.resource-toolbar select,
+.line-item-row input,
+.line-item-row select {
+  font-weight: 400;
+  letter-spacing: -0.003em;
+}
+
+/* Tables */
+.resource-table-head {
+  font-size: 0.7rem;
+  letter-spacing: 0.09em;
+}
+
+.resource-row strong {
+  font-weight: 600;
+  letter-spacing: -0.008em;
+}
+
+.resource-row span,
+.resource-row small {
+  font-weight: 400;
+  letter-spacing: -0.002em;
+}
+
+/* Numbers and totals — tabular feel */
+.metric-tile strong,
+.receivables-card strong,
+.totals-panel strong,
+.detail-field strong,
+.line-total strong {
+  font-feature-settings: "tnum", "ss01";
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+}
+
+/* Status chips and pills */
+.status-pill,
+.notification-chip,
+.panel-heading span {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+/* Notification text */
+.notification-board-title,
+.notification-item-title {
+  letter-spacing: -0.01em;
+}
+
+.notification-item.is-unread .notification-item-title,
+.notification-board-item.is-unread .notification-board-title {
+  font-weight: 600;
+}
+
+/* Mobile readability */
+@media (max-width: 860px) {
+  body {
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .dashboard-hero h2 {
+    font-size: 1.7rem;
+  }
+
+  .page-header h2 {
+    font-size: 1.35rem;
+  }
+
+  .auth-visual-copy h1 {
+    font-size: 2.2rem;
+  }
+}
+
+@media (max-width: 520px) {
+  body {
+    font-size: 14.5px;
+  }
+
+  .dashboard-hero h2 {
+    font-size: 1.5rem;
+  }
+}
