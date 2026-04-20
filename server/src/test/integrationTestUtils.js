@@ -33,6 +33,7 @@ const DATA_TABLES = [
   "stock_movements",
   "products",
   "categories",
+  "vendor_settings",
   "vendor_customer_relationships",
   "subscriptions",
   "audit_logs",

@@ -19,6 +19,7 @@ import filesRoutes from "../../../modules/files/files.routes.js";
 import lookupsRoutes from "../../../modules/lookups/lookups.routes.js";
 import uiRoutes from "../../../modules/ui/ui.routes.js";
 import auditRoutes from "../../../modules/audit/audit.routes.js";
+import settingsRoutes from "../../../modules/settings/settings.routes.js";
 
 const router = Router();
 
@@ -42,5 +43,6 @@ router.use("/files", filesRoutes);
 router.use("/lookups", lookupsRoutes);
 router.use("/ui", uiRoutes);
 router.use("/audit", auditRoutes);
+router.use("/settings", settingsRoutes);
 
 export default router;

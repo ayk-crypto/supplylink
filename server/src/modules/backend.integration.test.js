@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import bcrypt from "bcryptjs";
 import {
   buildApiClient,
   getTestDatabaseUrl,
@@ -50,6 +51,43 @@ if (!testDatabaseUrl) {
       };
     }
 
+    async function createVendorStaff(vendor, label) {
+      const email = `${label}.staff.${suffix}@integration.supplylink.local`;
+      const passwordHash = await bcrypt.hash(password, 4);
+      const userResult = await app.pool.query(
+        `INSERT INTO users (full_name, email, password_hash, status)
+         VALUES ($1, $2, $3, 'active')
+         RETURNING id`,
+        [`${label.toUpperCase()} Vendor Staff`, email, passwordHash]
+      );
+      const roleResult = await app.pool.query("SELECT id FROM roles WHERE code = 'vendor_staff'");
+
+      await app.pool.query(
+        `INSERT INTO user_roles (user_id, role_id, vendor_id)
+         VALUES ($1, $2, $3)`,
+        [userResult.rows[0].id, roleResult.rows[0].id, vendor.id]
+      );
+      await app.pool.query(
+        `INSERT INTO vendor_memberships (user_id, vendor_id, status, joined_at)
+         VALUES ($1, $2, 'active', NOW())`,
+        [userResult.rows[0].id, vendor.id]
+      );
+
+      const login = await api.post("/auth/login", {
+        body: {
+          email,
+          password,
+          vendorId: vendor.id
+        }
+      });
+
+      return {
+        email,
+        token: login.payload.data.accessToken,
+        user: login.payload.data.user
+      };
+    }
+
     await t.test("auth register, login, and me return usable vendor context", async () => {
       state.vendorA = await registerVendorAdmin("alpha");
       state.vendorB = await registerVendorAdmin("bravo");
@@ -71,6 +109,123 @@ if (!testDatabaseUrl) {
 
       assert.equal(me.payload.data.email, state.vendorA.email);
       assert.equal(me.payload.data.currentVendorId, state.vendorA.vendor.id);
+
+      state.vendorAStaff = await createVendorStaff(state.vendorA.vendor, "alpha");
+    });
+
+    await t.test("tenant settings default, update, validation, isolation, roles, and audit", async () => {
+      const defaults = await api.get("/settings", {
+        token: state.vendorA.token
+      });
+
+      assert.equal(defaults.payload.data.vendorId, state.vendorA.vendor.id);
+      assert.equal(defaults.payload.data.settings.company.displayName, state.vendorA.vendor.displayName);
+      assert.equal(defaults.payload.data.settings.company.legalName, state.vendorA.vendor.legalName);
+      assert.equal(defaults.payload.data.settings.currency.code, "USD");
+      assert.equal(defaults.payload.data.settings.invoice.nextNumber, 1);
+      assert.equal(defaults.payload.data.isDefault, true);
+
+      const staffDefaults = await api.get("/settings", {
+        token: state.vendorAStaff.token
+      });
+      assert.equal(staffDefaults.payload.data.vendorId, state.vendorA.vendor.id);
+
+      await api.patch("/settings", {
+        token: state.vendorAStaff.token,
+        body: {
+          invoice: {
+            prefix: "STAFF"
+          }
+        },
+        expectedStatus: 403
+      });
+
+      await api.get(`/settings?vendorId=${state.vendorA.vendor.id}`, {
+        token: state.vendorB.token,
+        expectedStatus: 403
+      });
+
+      await api.patch("/settings", {
+        token: state.vendorA.token,
+        body: {
+          company: {
+            email: "not-an-email"
+          }
+        },
+        expectedStatus: 400
+      });
+      await api.patch("/settings", {
+        token: state.vendorA.token,
+        body: {
+          invoice: {
+            nextNumber: 0,
+            padding: 99
+          }
+        },
+        expectedStatus: 400
+      });
+
+      const updated = await api.patch("/settings", {
+        token: state.vendorA.token,
+        body: {
+          company: {
+            displayName: "Alpha Trading",
+            email: "settings-alpha@example.com",
+            taxId: "TAX-ALPHA"
+          },
+          invoice: {
+            prefix: "ALP",
+            suffix: "FY26",
+            nextNumber: 42,
+            padding: 6,
+            defaultDueDays: 45,
+            defaultNotes: "Thank you for your business."
+          },
+          currency: {
+            code: "eur",
+            decimals: 2,
+            thousandsSeparator: "."
+          },
+          preferences: {
+            dateFormat: "DD/MM/YYYY",
+            defaultPageSize: 50,
+            notificationsBadgeEnabled: false,
+            confirmDestructiveActions: true
+          }
+        }
+      });
+
+      assert.equal(updated.payload.data.settings.company.displayName, "Alpha Trading");
+      assert.equal(updated.payload.data.settings.invoice.prefix, "ALP");
+      assert.equal(updated.payload.data.settings.invoice.nextNumber, 42);
+      assert.equal(updated.payload.data.settings.currency.code, "EUR");
+      assert.equal(updated.payload.data.settings.preferences.notificationsBadgeEnabled, false);
+      assert.equal(updated.payload.data.isDefault, false);
+
+      const reloaded = await api.get("/settings", {
+        token: state.vendorA.token
+      });
+      assert.equal(reloaded.payload.data.settings.company.displayName, "Alpha Trading");
+      assert.equal(reloaded.payload.data.settings.currency.code, "EUR");
+
+      const vendorBDefaults = await api.get("/settings", {
+        token: state.vendorB.token
+      });
+      assert.equal(vendorBDefaults.payload.data.settings.company.displayName, state.vendorB.vendor.displayName);
+      assert.notEqual(vendorBDefaults.payload.data.settings.company.displayName, "Alpha Trading");
+
+      const audit = await api.get("/audit?eventType=settings.updated", {
+        token: state.vendorA.token
+      });
+      assert.ok(
+        audit.payload.data.items.some(
+          (event) =>
+            event.entityType === "settings" &&
+            event.entityId === state.vendorA.vendor.id &&
+            event.metadata.changedSections.includes("company") &&
+            event.metadata.changedSections.includes("invoice")
+        )
+      );
     });
 
     await t.test("transaction chain creates customer, product, quotation, order, invoice, and payments", async () => {

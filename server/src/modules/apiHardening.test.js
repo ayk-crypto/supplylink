@@ -9,6 +9,7 @@ import {
   quotationUpdateBodySchema
 } from "./quotations/quotations.schemas.js";
 import { routeCreateBodySchema } from "./routes/routes.schemas.js";
+import { settingsUpdateBodySchema } from "./settings/settings.schemas.js";
 
 const CUSTOMER_ID = "11111111-1111-4111-8111-111111111111";
 const PRODUCT_ID = "22222222-2222-4222-8222-222222222222";
@@ -115,4 +116,53 @@ test("attachment query requires entityType when entityId is provided", () => {
 
   assert.equal(missingType.success, false);
   assert.equal(completeFilter.success, true);
+});
+
+test("settings update accepts valid partial sections", () => {
+  const result = settingsUpdateBodySchema.safeParse({
+    invoice: {
+      prefix: "INV",
+      nextNumber: 10,
+      padding: 6
+    },
+    preferences: {
+      notificationsBadgeEnabled: true
+    }
+  });
+
+  assert.equal(result.success, true);
+});
+
+test("settings update rejects invalid bounds and formats", () => {
+  const invalidEmail = settingsUpdateBodySchema.safeParse({
+    company: {
+      email: "not-an-email"
+    }
+  });
+  const invalidInvoiceNumber = settingsUpdateBodySchema.safeParse({
+    invoice: {
+      nextNumber: 0
+    }
+  });
+  const invalidPadding = settingsUpdateBodySchema.safeParse({
+    invoice: {
+      padding: 99
+    }
+  });
+  const invalidDecimals = settingsUpdateBodySchema.safeParse({
+    currency: {
+      decimals: 9
+    }
+  });
+  const invalidPageSize = settingsUpdateBodySchema.safeParse({
+    preferences: {
+      defaultPageSize: 500
+    }
+  });
+
+  assert.equal(invalidEmail.success, false);
+  assert.equal(invalidInvoiceNumber.success, false);
+  assert.equal(invalidPadding.success, false);
+  assert.equal(invalidDecimals.success, false);
+  assert.equal(invalidPageSize.success, false);
 });
