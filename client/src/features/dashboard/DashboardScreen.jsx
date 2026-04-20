@@ -1,4 +1,4 @@
-import { useDashboardData } from "./useDashboardData.js";
+import { INVOICE_STATUS_KEYS, ORDER_STATUS_KEYS, useDashboardData } from "./useDashboardData.js";
 
 function formatMoney(value, currency = "USD") {
   return new Intl.NumberFormat(undefined, {
@@ -6,6 +6,45 @@ function formatMoney(value, currency = "USD") {
     maximumFractionDigits: 2,
     style: "currency"
   }).format(Number(value || 0));
+}
+
+function formatNumber(value) {
+  return new Intl.NumberFormat().format(Number(value || 0));
+}
+
+const ORDER_STATUS_LABELS = {
+  draft: "Draft",
+  confirmed: "Confirmed",
+  packed: "Packed",
+  dispatched: "Dispatched",
+  delivered: "Delivered",
+  cancelled: "Cancelled"
+};
+
+const INVOICE_STATUS_LABELS = {
+  draft: "Draft",
+  issued: "Issued",
+  partially_paid: "Partially paid",
+  paid: "Paid",
+  void: "Void"
+};
+
+const RELATED_ENTITY_PATHS = {
+  order: (id) => `/orders/${id}`,
+  invoice: (id) => `/invoices/${id}`,
+  quotation: (id) => `/quotations/${id}`,
+  customer: (id) => `/ledger/customers/${id}`,
+  product: (id) => `/inventory/products/${id}`,
+  inventory_product: (id) => `/inventory/products/${id}`,
+  payment: () => "/invoices"
+};
+
+function relatedEntityHref(notification) {
+  if (!notification?.relatedEntityType || !notification?.relatedEntityId) {
+    return null;
+  }
+  const builder = RELATED_ENTITY_PATHS[notification.relatedEntityType];
+  return builder ? builder(notification.relatedEntityId) : null;
 }
 
 function MetricIcon({ glyph }) {
@@ -39,6 +78,27 @@ function MetricIcon({ glyph }) {
         <circle cx="5" cy="19" r="1.4" />
         <circle cx="19" cy="5" r="1.4" />
       </>
+    ),
+    inventory: (
+      <>
+        <path d="M3 7l8-4 8 4-8 4-8-4Z" />
+        <path d="M3 7v8l8 4 8-4V7" />
+        <path d="M11 11v8" />
+      </>
+    ),
+    warning: (
+      <>
+        <path d="M11 3 2 19h18L11 3Z" />
+        <path d="M11 9v5" />
+        <circle cx="11" cy="17" r="0.8" />
+      </>
+    ),
+    alert: (
+      <>
+        <circle cx="11" cy="11" r="8" />
+        <path d="M11 7v5" />
+        <circle cx="11" cy="15.2" r="0.8" />
+      </>
     )
   };
 
@@ -60,9 +120,9 @@ function MetricIcon({ glyph }) {
   );
 }
 
-function MetricCard({ detail, glyph, label, value }) {
+function MetricCard({ detail, glyph, label, value, tone }) {
   return (
-    <article className="metric-tile">
+    <article className={tone ? `metric-tile metric-tone-${tone}` : "metric-tile"}>
       <div className="metric-tile-head">
         <span>{label}</span>
         <MetricIcon glyph={glyph} />
@@ -70,6 +130,32 @@ function MetricCard({ detail, glyph, label, value }) {
       <strong>{value}</strong>
       <small>{detail}</small>
     </article>
+  );
+}
+
+function StatusCountGrid({ counts, labels, statuses, emptyHint }) {
+  const allLoaded = statuses.every((status) => counts && counts[status] !== undefined);
+  if (!allLoaded) {
+    return <p className="surface-message loading">Loading…</p>;
+  }
+
+  const allZero = statuses.every((status) => Number(counts[status] || 0) === 0);
+  if (allZero && emptyHint) {
+    return <p className="empty-state">{emptyHint}</p>;
+  }
+
+  return (
+    <div className="status-count-grid">
+      {statuses.map((status) => {
+        const value = counts[status];
+        return (
+          <div className="status-count-cell" key={status}>
+            <span className={`status-pill status-${status}`}>{labels[status] || status}</span>
+            <strong>{value === null ? "—" : formatNumber(value)}</strong>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -87,7 +173,7 @@ function RecordList({ emptyLabel, items, kind }) {
             <span>{item.customer?.label || "No customer"}</span>
           </div>
           <div>
-            <span className="status-pill">{item.status}</span>
+            <span className={`status-pill status-${item.status}`}>{item.status}</span>
             <small>
               {kind === "invoice"
                 ? formatMoney(item.balanceDue)
@@ -100,31 +186,46 @@ function RecordList({ emptyLabel, items, kind }) {
   );
 }
 
-function NotificationsList({ notifications }) {
+function NotificationsList({ notifications, onNavigate }) {
   if (!notifications?.latest?.length) {
     return <p className="empty-state">No recent notifications.</p>;
   }
 
   return (
     <div className="notification-list">
-      {notifications.latest.map((notification) => (
-        <article className="notification-row" key={notification.id}>
-          <span className={notification.isRead ? "read-dot read" : "read-dot"} />
-          <div>
-            <strong>{notification.title}</strong>
-            <p>{notification.message}</p>
-          </div>
-        </article>
-      ))}
+      {notifications.latest.map((notification) => {
+        const href = relatedEntityHref(notification);
+        return (
+          <article className="notification-row" key={notification.id}>
+            <span className={notification.isRead ? "read-dot read" : "read-dot"} />
+            <div>
+              <strong>{notification.title}</strong>
+              <p>{notification.message}</p>
+              {href && onNavigate ? (
+                <button
+                  className="link-button notification-link"
+                  onClick={() => onNavigate(href)}
+                  type="button"
+                >
+                  View related →
+                </button>
+              ) : null}
+            </div>
+          </article>
+        );
+      })}
     </div>
   );
 }
 
-function DashboardScreen() {
+function DashboardScreen({ navigate }) {
   const {
     areNotificationsLoading,
     dashboard,
     error,
+    intelligence,
+    intelligenceError,
+    isIntelligenceLoading,
     isLoading,
     notifications,
     notificationsError
@@ -149,6 +250,11 @@ function DashboardScreen() {
 
     return Math.min(100, Math.round((paymentTotal / invoiceTotal) * 100));
   })();
+
+  const inventory = intelligence?.inventory;
+  const totalProducts = dashboard.metrics.totalProducts ?? inventory?.total ?? 0;
+  const lowStockCount = inventory?.lowStock;
+  const negativeStockCount = inventory?.negative;
 
   return (
     <div className="dashboard-page">
@@ -210,6 +316,108 @@ function DashboardScreen() {
         />
       </section>
 
+      <section className="dashboard-section">
+        <div className="dashboard-section-head">
+          <div>
+            <h3>Inventory health</h3>
+            <p>Stock signals across the catalogue.</p>
+          </div>
+          <button
+            className="secondary-button compact"
+            onClick={() => navigate && navigate("/inventory")}
+            type="button"
+          >
+            View inventory →
+          </button>
+        </div>
+        {intelligenceError ? (
+          <p className="surface-message error">{intelligenceError}</p>
+        ) : (
+          <div className="metric-strip">
+            <MetricCard
+              glyph="inventory"
+              label="Total products"
+              value={isIntelligenceLoading && totalProducts === 0 ? "…" : formatNumber(totalProducts)}
+              detail={
+                inventory?.isPartial
+                  ? `Stock signals from latest ${inventory.sampledCount}`
+                  : "Across the catalogue"
+              }
+            />
+            <MetricCard
+              glyph="warning"
+              label="Low stock"
+              tone={lowStockCount > 0 ? "warn" : null}
+              value={
+                isIntelligenceLoading && lowStockCount === undefined
+                  ? "…"
+                  : formatNumber(lowStockCount || 0)
+              }
+              detail="At or below 5 units"
+            />
+            <MetricCard
+              glyph="alert"
+              label="Negative stock"
+              tone={negativeStockCount > 0 ? "danger" : null}
+              value={
+                isIntelligenceLoading && negativeStockCount === undefined
+                  ? "…"
+                  : formatNumber(negativeStockCount || 0)
+              }
+              detail="Below zero on hand"
+            />
+          </div>
+        )}
+      </section>
+
+      <section className="dashboard-grid-two">
+        <div className="panel-block">
+          <div className="panel-heading">
+            <h3>Orders by status</h3>
+            <button
+              className="link-button"
+              onClick={() => navigate && navigate("/orders")}
+              type="button"
+            >
+              Open orders →
+            </button>
+          </div>
+          {intelligenceError ? (
+            <p className="surface-message error">{intelligenceError}</p>
+          ) : (
+            <StatusCountGrid
+              counts={intelligence?.orderCounts}
+              labels={ORDER_STATUS_LABELS}
+              statuses={ORDER_STATUS_KEYS}
+              emptyHint="No orders recorded yet."
+            />
+          )}
+        </div>
+
+        <div className="panel-block">
+          <div className="panel-heading">
+            <h3>Invoices by status</h3>
+            <button
+              className="link-button"
+              onClick={() => navigate && navigate("/invoices")}
+              type="button"
+            >
+              Open invoices →
+            </button>
+          </div>
+          {intelligenceError ? (
+            <p className="surface-message error">{intelligenceError}</p>
+          ) : (
+            <StatusCountGrid
+              counts={intelligence?.invoiceCounts}
+              labels={INVOICE_STATUS_LABELS}
+              statuses={INVOICE_STATUS_KEYS}
+              emptyHint="No invoices recorded yet."
+            />
+          )}
+        </div>
+      </section>
+
       <section className="dashboard-columns">
         <div className="panel-block">
           <div className="panel-heading">
@@ -231,7 +439,7 @@ function DashboardScreen() {
 
         <div className="panel-block notifications-panel">
           <div className="panel-heading">
-            <h3>Notifications</h3>
+            <h3>Activity</h3>
             <span>
               {areNotificationsLoading ? "Loading" : `${notifications?.unreadCount || 0} unread`}
             </span>
@@ -241,7 +449,7 @@ function DashboardScreen() {
           ) : areNotificationsLoading && !notifications ? (
             <p className="surface-message loading">Loading notifications...</p>
           ) : (
-            <NotificationsList notifications={notifications} />
+            <NotificationsList notifications={notifications} onNavigate={navigate} />
           )}
         </div>
       </section>

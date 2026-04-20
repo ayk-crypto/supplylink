@@ -3240,3 +3240,98 @@ canvas {
     width: 100%;
   }
 }
+
+/* === Module 20Q: Dashboard Intelligence ====================== */
+
+.dashboard-section {
+  display: grid;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.dashboard-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dashboard-section-head h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  letter-spacing: -0.012em;
+}
+
+.dashboard-section-head p {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted, #6b7383);
+}
+
+.dashboard-grid-two {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.metric-tile.metric-tone-warn {
+  border-color: rgba(214, 142, 0, 0.4);
+  background: linear-gradient(180deg, rgba(214, 142, 0, 0.06), transparent 70%);
+}
+
+.metric-tile.metric-tone-warn strong {
+  color: #8a5a00;
+}
+
+.metric-tile.metric-tone-danger {
+  border-color: rgba(180, 40, 40, 0.45);
+  background: linear-gradient(180deg, rgba(180, 40, 40, 0.06), transparent 70%);
+}
+
+.metric-tile.metric-tone-danger strong {
+  color: #a02020;
+}
+
+.status-count-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.status-count-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--border, rgba(20, 24, 32, 0.08));
+  border-radius: var(--radius-md, 12px);
+  background: var(--surface-soft, rgba(20, 24, 32, 0.02));
+  min-width: 0;
+}
+
+.status-count-cell strong {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  font-variant-numeric: tabular-nums;
+}
+
+.notification-link {
+  margin-top: 6px;
+  padding: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .dashboard-section-head {
+    align-items: flex-start;
+  }
+
+  .dashboard-section-head .secondary-button {
+    width: 100%;
+  }
+}
