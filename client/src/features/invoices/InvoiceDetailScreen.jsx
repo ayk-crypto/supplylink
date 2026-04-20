@@ -18,6 +18,7 @@ import {
   PageHeader,
   TableScroll
 } from "../../components/ui/ResourceScreens.jsx";
+import AttachmentsPanel from "../attachments/AttachmentsPanel.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
 import { useAppSettings } from "../system/settingsContext.js";
@@ -529,6 +530,8 @@ function InvoiceDetailScreen({ id, navigate }) {
       <section className="transaction-panel">
         <PaymentForm invoice={invoice} onPaid={() => loadInvoice()} />
       </section>
+
+      <AttachmentsPanel entityType="invoices" entityId={invoice.id} />
 
       <section className="transaction-panel">
         <div className="panel-heading">

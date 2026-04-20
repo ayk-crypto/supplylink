@@ -572,3 +572,60 @@ Constraints respected:
 - Empty-state ("No detail found.") messages on detail screens are
   intentionally left as `surface-message` because they are neither a
   loading nor an error state.
+
+## Module 20AE Frontend Attachments / Files Integration
+
+Module 20AE adds practical attachment / file handling to the major
+operational entity screens, wired against the existing backend
+`/files` endpoints. No backend changes, no redesign — purely
+additive UI on top of detail screens that already exist.
+
+Backend endpoints used (unchanged):
+- `GET /files/entity/:entityType/:entityId` — list
+- `POST /files` (multipart `file`, `entityType`, `entityId`) — upload
+- `GET /files/:fileId/download` — authenticated stream download
+- `DELETE /files/:fileId` — delete
+
+Entity screens with attachment support:
+- Customers — attachments section is rendered inside the customer
+  edit form (only when editing an existing customer; not available
+  during create because the customer ID does not yet exist).
+- Quotations — attachments section appended to the quotation
+  detail screen.
+- Orders — attachments section appended to the order detail screen.
+- Invoices — attachments section appended to the invoice detail
+  screen between the payment form and payment history.
+
+Backend also allows the `routes` entity type, which has no
+dedicated frontend detail screen at this time and is therefore not
+wired. Inventory / products are intentionally not wired because the
+backend allow-list does not include them.
+
+Supported attachment actions per screen:
+- List uploaded files with original filename, size, MIME type, and
+  upload timestamp.
+- Upload via a hidden file input triggered by an "Upload file"
+  button; uploading state is shown on the button and the panel
+  refreshes once the upload completes.
+- Download via authenticated fetch to `/files/:id/download`; the
+  blob is saved through a transient object URL using the filename
+  from `Content-Disposition` (with a fallback to the stored
+  original filename).
+- Delete with the standard destructive-confirm guard
+  (`confirmDestructive` honoring the user's setting).
+
+UX notes / limitations:
+- Upload progress is shown as a button state (`Uploading…`); the
+  underlying `fetch` API does not expose granular upload progress
+  events without switching to `XMLHttpRequest`, which would deviate
+  from the existing service pattern. The button is disabled while
+  the upload is in flight to prevent duplicate submissions.
+- Long file names truncate with ellipsis on the row title, with the
+  full name available in the `title` tooltip.
+- Below 640px the attachment row stacks vertically and the action
+  buttons align to the right.
+- Customer attachments are only available in the customer edit
+  modal because there is no standalone customer detail screen.
+- All loading, empty, and error states use the shared primitives
+  introduced in Module 20AC (`LoadingState`, `ErrorState`,
+  `EmptyState`, `SectionHeader`).

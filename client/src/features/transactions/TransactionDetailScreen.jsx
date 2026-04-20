@@ -12,6 +12,7 @@ import {
   PageHeader,
   TableScroll
 } from "../../components/ui/ResourceScreens.jsx";
+import AttachmentsPanel from "../attachments/AttachmentsPanel.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
 import { useAppSettings } from "../system/settingsContext.js";
@@ -307,6 +308,8 @@ function TransactionDetailScreen({ id, kind, navigate }) {
         </div>
         <p className="muted">{detail.notes || "No notes."}</p>
       </section>
+
+      <AttachmentsPanel entityType={kind} entityId={detail.id} />
     </div>
   );
 }

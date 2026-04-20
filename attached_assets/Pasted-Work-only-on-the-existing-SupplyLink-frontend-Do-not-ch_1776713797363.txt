@@ -1,0 +1,77 @@
+Work only on the existing SupplyLink frontend.
+
+Do not change backend APIs.
+
+Goal:
+Implement Module 20AE: Frontend Attachments / Files Integration.
+
+Context:
+SupplyLink backend already supports attachments/files. Frontend operational screens are already in place and recently received responsiveness and consistency polish.
+
+Core objective:
+Add practical attachment/file handling to the frontend so users can upload, view, download, and manage files in the major operational workflows, without redesigning screens or changing backend APIs.
+
+What to do:
+
+1) Inspect current frontend and backend usage patterns
+- understand existing API layer/service patterns
+- identify the existing backend attachment endpoints/contracts already available
+- integrate using current auth-aware frontend service conventions
+- do not change backend APIs
+
+2) Add attachment API layer
+Create or extend a frontend service for attachment operations using existing patterns, supporting whatever backend already exposes for:
+- list attachments for an entity
+- upload attachment
+- download/open attachment
+- delete/remove attachment if backend supports it
+
+3) Add attachment UI to major entity screens
+Where practical and safe, add attachment sections/panels to major existing detail screens, prioritizing:
+- customers
+- quotations
+- orders
+- invoices
+If inventory/product attachment support already exists in backend and is easy to wire, include it only if low risk.
+
+4) Attachment UX requirements
+- show current uploaded files in a clean list
+- support upload from the detail screen
+- support download/open
+- support delete/remove only if backend supports it and the screen already has appropriate action patterns
+- show upload progress/state where practical
+- show loading, empty, success, and error states consistently using the shared UI primitives already introduced
+- keep UI additive and professional, not a redesign
+
+5) Entity scoping and safety
+- ensure correct entity/vendor scoping from existing routes/screens
+- do not break existing detail flows
+- preserve existing permissions and backend validation behavior
+
+6) Practical polish
+- show file name, uploaded time/date if available, and a simple action row
+- handle long file names gracefully
+- keep mobile behavior safe
+- avoid cluttering already dense screens
+
+7) Documentation
+- update client README with attachment/file support coverage and any limitations
+
+Constraints:
+- no backend changes
+- no redesign
+- no new unrelated features
+- keep changes additive and production-minded
+
+Verification:
+- run client lint
+- run client build
+
+Deliverable:
+1. Summary
+2. Files changed
+3. Which entity screens now support attachments
+4. What attachment actions are supported
+5. Any backend limitations encountered and how frontend handled them
+6. Verification results
+7. Any useful follow-up items

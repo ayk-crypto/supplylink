@@ -3538,3 +3538,62 @@ canvas {
     flex: 1;
   }
 }
+
+/* Module 20AE: Attachments panel */
+.attachments-panel .attachment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.attachment-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-soft, rgba(0, 0, 0, 0.08));
+  border-radius: 8px;
+  background: var(--surface-subtle, rgba(0, 0, 0, 0.02));
+}
+.attachment-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.attachment-meta strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.attachment-meta span {
+  font-size: 0.85em;
+  opacity: 0.75;
+  word-break: break-word;
+}
+.attachment-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.form-attachments {
+  grid-column: 1 / -1;
+  margin-top: 12px;
+}
+.form-attachments .attachments-panel {
+  margin: 0;
+}
+@media (max-width: 640px) {
+  .attachment-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .attachment-actions {
+    justify-content: flex-end;
+  }
+}

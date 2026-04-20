@@ -4,6 +4,7 @@ import {
   listCustomers,
   updateCustomer
 } from "../../services/masterDataApi.js";
+import AttachmentsPanel from "../attachments/AttachmentsPanel.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import { useAppSettings } from "../system/settingsContext.js";
 import { getDefaultPageSize } from "../system/settingsFormat.js";
@@ -208,6 +209,11 @@ function CustomerForm({ mode, onCancel, onSave, record }) {
           value={form.notes}
         />
       </Field>
+      {mode === "edit" && record?.customer?.id ? (
+        <div className="form-attachments">
+          <AttachmentsPanel entityType="customers" entityId={record.customer.id} />
+        </div>
+      ) : null}
     </FormPanel>
   );
 }
