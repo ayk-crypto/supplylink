@@ -5,6 +5,7 @@ import ProtectedRoute from "../features/auth/ProtectedRoute.jsx";
 import AuditScreen from "../features/audit/AuditScreen.jsx";
 import EntityAuditScreen from "../features/audit/EntityAuditScreen.jsx";
 import DashboardScreen from "../features/dashboard/DashboardScreen.jsx";
+import PublicDocumentScreen from "../features/documents/PublicDocumentScreen.jsx";
 import InvoiceCreateScreen from "../features/invoices/InvoiceCreateScreen.jsx";
 import InvoiceDetailScreen from "../features/invoices/InvoiceDetailScreen.jsx";
 import InvoiceListScreen from "../features/invoices/InvoiceListScreen.jsx";
@@ -96,8 +97,7 @@ function NotFoundScreen({ onGoHome }) {
   );
 }
 
-function AuthenticatedApp() {
-  const { navigate, path } = useBrowserRoute();
+function AuthenticatedApp({ navigate, path }) {
   const route = findRoute(path);
   const ActiveScreen = route ? screens[route.id] : null;
 
@@ -130,10 +130,21 @@ function AuthenticatedApp() {
 }
 
 function App() {
+  const { navigate, path } = useBrowserRoute();
+  const route = findRoute(path);
+
+  if (route?.id === "public-document") {
+    return (
+      <ToastProvider>
+        <PublicDocumentScreen token={route.params?.token} />
+      </ToastProvider>
+    );
+  }
+
   return (
     <AuthProvider>
       <ToastProvider>
-        <AuthenticatedApp />
+        <AuthenticatedApp navigate={navigate} path={path} />
       </ToastProvider>
     </AuthProvider>
   );

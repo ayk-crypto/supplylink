@@ -180,6 +180,12 @@ const routeDefinitions = [
     path: /^\/audit\/([^/]+)\/([^/]+)$/,
     navPath: "/audit",
     paramNames: ["entityType", "entityId"]
+  },
+  {
+    id: "public-document",
+    path: /^\/share\/([^/]+)$/,
+    navPath: null,
+    paramNames: ["token"]
   }
 ];
 

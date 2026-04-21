@@ -10,6 +10,10 @@ import {
   buildQuotationPdfDocument,
   buildQuotationPrintDocument
 } from "../documents/documents.service.js";
+import {
+  ensureDocumentShare,
+  getDocumentShareSummary
+} from "../documents/documents.share.service.js";
 import { convertQuotationToOrder } from "../orders/orders.service.js";
 
 async function list(request, response) {
@@ -26,11 +30,17 @@ async function list(request, response) {
 }
 
 async function getById(request, response) {
-  const result = await getQuotationDetail(request.access.vendorId, request.params.quotationId);
+  const [quotation, sharing] = await Promise.all([
+    getQuotationDetail(request.access.vendorId, request.params.quotationId),
+    getDocumentShareSummary(request.access.vendorId, "quotation", request.params.quotationId)
+  ]);
 
   sendSuccess(response, {
     message: "Quotation loaded",
-    data: result,
+    data: {
+      ...quotation,
+      sharing
+    },
     meta: {
       requestId: request.context.requestId,
       vendorId: request.access.vendorId
@@ -66,6 +76,24 @@ async function pdf(request, response) {
   response.setHeader("Cache-Control", "private, max-age=0, must-revalidate");
 
   return response.send(result.buffer);
+}
+
+async function share(request, response) {
+  const result = await ensureDocumentShare(
+    request.access.vendorId,
+    "quotation",
+    request.params.quotationId,
+    request.auth
+  );
+
+  sendSuccess(response, {
+    message: "Quotation share link ready",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId
+    }
+  });
 }
 
 async function create(request, response) {
@@ -164,5 +192,6 @@ export {
   print,
   reject,
   send,
+  share,
   update
 };

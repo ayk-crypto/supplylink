@@ -11,6 +11,7 @@ import {
   quotationUpdateBodySchema
 } from "./quotations/quotations.schemas.js";
 import { routeCreateBodySchema, routeStopOrderParamsSchema } from "./routes/routes.schemas.js";
+import { publicTokenParamsSchema } from "./documents/documents.schemas.js";
 import {
   routeTemplateCreateBodySchema,
   routeTemplateGenerateBodySchema
@@ -178,6 +179,18 @@ test("route stop order assignment params require valid UUIDs", () => {
     routeId: "bad-id",
     stopId: PRODUCT_ID,
     orderId: ORDER_ID
+  });
+
+  assert.equal(valid.success, true);
+  assert.equal(invalid.success, false);
+});
+
+test("public document share token params reject very short tokens", () => {
+  const valid = publicTokenParamsSchema.safeParse({
+    token: "abcdefghijklmnopqrstuvwxyz"
+  });
+  const invalid = publicTokenParamsSchema.safeParse({
+    token: "short"
   });
 
   assert.equal(valid.success, true);

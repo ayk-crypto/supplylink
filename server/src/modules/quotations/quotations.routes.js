@@ -16,6 +16,7 @@ import {
   print,
   reject,
   send,
+  share,
   update
 } from "./quotations.controller.js";
 import {
@@ -57,7 +58,18 @@ function quotationAction(handler) {
   ];
 }
 
+function quotationShareAction(handler) {
+  return [
+    authenticate,
+    authorizeRoles("super_admin", "vendor_admin", "vendor_staff"),
+    validateRequest({ params: quotationIdParamsSchema, query: quotationQuerySchema }),
+    requireVendorAccess(),
+    asyncHandler(handler)
+  ];
+}
+
 quotationsRoutes.post("/:quotationId/send", ...quotationAction(send));
+quotationsRoutes.post("/:quotationId/share", ...quotationShareAction(share));
 quotationsRoutes.post("/:quotationId/accept", ...quotationAction(accept));
 quotationsRoutes.post("/:quotationId/reject", ...quotationAction(reject));
 quotationsRoutes.post("/:quotationId/expire", ...quotationAction(expire));

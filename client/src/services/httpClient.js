@@ -51,7 +51,7 @@ async function request(path, options = {}) {
 
   if (!response.ok) {
     const errorMessage =
-      responseType === "json"
+      responseType === "json" || (payload && typeof payload === "object" && "message" in payload)
         ? payload?.message || `API request failed with status ${response.status}`
         : `API request failed with status ${response.status}`;
     const error = new Error(errorMessage);

@@ -499,9 +499,27 @@ function downloadBlobFile(blob, filename) {
   window.URL.revokeObjectURL(url);
 }
 
+async function copyTextToClipboard(value) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const textArea = window.document.createElement("textarea");
+  textArea.value = value;
+  textArea.setAttribute("readonly", "");
+  textArea.style.position = "absolute";
+  textArea.style.left = "-9999px";
+  window.document.body.appendChild(textArea);
+  textArea.select();
+  window.document.execCommand("copy");
+  window.document.body.removeChild(textArea);
+}
+
 export {
   buildDocumentFilename,
   buildDocumentHtml,
+  copyTextToClipboard,
   downloadBlobFile,
   downloadDocumentHtml,
   getDownloadFilename,

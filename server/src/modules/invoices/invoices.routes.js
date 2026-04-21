@@ -12,6 +12,7 @@ import {
   list,
   pdf,
   print,
+  share,
   update,
   voidInvoice
 } from "./invoices.controller.js";
@@ -54,7 +55,18 @@ function invoiceAction(handler) {
   ];
 }
 
+function invoiceShareAction(handler) {
+  return [
+    authenticate,
+    authorizeRoles("super_admin", "vendor_admin", "vendor_staff"),
+    validateRequest({ params: invoiceIdParamsSchema, query: invoiceQuerySchema }),
+    requireVendorAccess(),
+    asyncHandler(handler)
+  ];
+}
+
 invoicesRoutes.post("/:invoiceId/issue", ...invoiceAction(issue));
+invoicesRoutes.post("/:invoiceId/share", ...invoiceShareAction(share));
 invoicesRoutes.post("/:invoiceId/void", ...invoiceAction(voidInvoice));
 
 invoicesRoutes.get(

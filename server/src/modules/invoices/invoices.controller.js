@@ -10,6 +10,10 @@ import {
   buildInvoicePdfDocument,
   buildInvoicePrintDocument
 } from "../documents/documents.service.js";
+import {
+  ensureDocumentShare,
+  getDocumentShareSummary
+} from "../documents/documents.share.service.js";
 
 async function list(request, response) {
   const result = await getInvoiceDirectory(request.access.vendorId, request.query);
@@ -25,11 +29,17 @@ async function list(request, response) {
 }
 
 async function getById(request, response) {
-  const result = await getInvoiceDetail(request.access.vendorId, request.params.invoiceId);
+  const [invoice, sharing] = await Promise.all([
+    getInvoiceDetail(request.access.vendorId, request.params.invoiceId),
+    getDocumentShareSummary(request.access.vendorId, "invoice", request.params.invoiceId)
+  ]);
 
   sendSuccess(response, {
     message: "Invoice loaded",
-    data: result,
+    data: {
+      ...invoice,
+      sharing
+    },
     meta: {
       requestId: request.context.requestId,
       vendorId: request.access.vendorId
@@ -59,6 +69,24 @@ async function pdf(request, response) {
   response.setHeader("Cache-Control", "private, max-age=0, must-revalidate");
 
   return response.send(result.buffer);
+}
+
+async function share(request, response) {
+  const result = await ensureDocumentShare(
+    request.access.vendorId,
+    "invoice",
+    request.params.invoiceId,
+    request.auth
+  );
+
+  sendSuccess(response, {
+    message: "Invoice share link ready",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId
+    }
+  });
 }
 
 async function create(request, response) {
@@ -119,4 +147,4 @@ async function voidInvoice(request, response) {
   return transition("void", request, response);
 }
 
-export { create, getById, issue, list, pdf, print, update, voidInvoice };
+export { create, getById, issue, list, pdf, print, share, update, voidInvoice };

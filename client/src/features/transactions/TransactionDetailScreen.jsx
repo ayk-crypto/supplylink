@@ -8,6 +8,7 @@ import {
   transitionOrder,
   transitionQuotation
 } from "../../services/transactionApi.js";
+import { shareQuotation } from "../../services/documentShareApi.js";
 import {
   EmptyState,
   ErrorState,
@@ -22,10 +23,12 @@ import { useAppSettings } from "../system/settingsContext.js";
 import { confirmDestructive, formatDateWith } from "../system/settingsFormat.js";
 import { formatCustomer } from "./transactionUtils.js";
 import DocumentPreviewModal from "../documents/DocumentPreviewModal.jsx";
+import DocumentShareModal from "../documents/DocumentShareModal.jsx";
 import DocumentHeroPanel from "../documents/DocumentHeroPanel.jsx";
 import DocumentTotalsCard from "../documents/DocumentTotalsCard.jsx";
 import DocumentActionBar from "../documents/DocumentActionBar.jsx";
 import {
+  copyTextToClipboard,
   downloadBlobFile,
   getDownloadFilename,
   openDocumentPrintWindow
@@ -80,6 +83,9 @@ function TransactionDetailScreen({ id, kind, navigate }) {
   const [pendingAction, setPendingAction] = useState("");
   const [previewDocument, setPreviewDocument] = useState(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [shareDetails, setShareDetails] = useState(null);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isShareLoading, setIsShareLoading] = useState(false);
 
   async function runLifecycleAction(spec) {
     if (!detail || pendingAction) {
@@ -214,6 +220,63 @@ function TransactionDetailScreen({ id, kind, navigate }) {
     }
   }
 
+  async function openShareModal() {
+    if (kind !== "quotations") {
+      return;
+    }
+
+    setIsShareOpen(true);
+    if (isShareLoading) {
+      return;
+    }
+
+    setIsShareLoading(true);
+
+    try {
+      const response = await shareQuotation(id);
+      setShareDetails(response.data);
+      setDetail((current) => (current ? { ...current, sharing: response.data } : current));
+    } catch (requestError) {
+      setIsShareOpen(false);
+      showToast({
+        message: getApiErrorMessage(requestError, "Share link could not be prepared."),
+        title: "Share unavailable",
+        tone: "error"
+      });
+    } finally {
+      setIsShareLoading(false);
+    }
+  }
+
+  async function copyShareLink() {
+    if (!shareDetails?.publicUrl) {
+      return;
+    }
+
+    try {
+      await copyTextToClipboard(shareDetails.publicUrl);
+      showToast({
+        message: "Secure share link copied.",
+        title: "Link copied"
+      });
+    } catch (requestError) {
+      showToast({
+        message: "Copy failed. Open the preview and copy the URL manually.",
+        title: "Copy unavailable",
+        tone: "error"
+      });
+      void requestError;
+    }
+  }
+
+  function openSharedPreview() {
+    if (!shareDetails?.publicUrl) {
+      return;
+    }
+
+    window.open(shareDetails.publicUrl, "_blank", "noopener,noreferrer");
+  }
+
   useEffect(() => {
     let active = true;
     const controller = new AbortController();
@@ -231,6 +294,7 @@ function TransactionDetailScreen({ id, kind, navigate }) {
 
         if (active) {
           setDetail(response.data);
+          setShareDetails(response.data?.sharing || null);
         }
       } catch (requestError) {
         if (!active || requestError.name === "AbortError") {
@@ -273,7 +337,10 @@ function TransactionDetailScreen({ id, kind, navigate }) {
           setIsLoading(true);
           config
             .get(id)
-            .then((response) => setDetail(response.data))
+            .then((response) => {
+              setDetail(response.data);
+              setShareDetails(response.data?.sharing || null);
+            })
             .catch((requestError) =>
               setError(getApiErrorMessage(requestError, `${config.title} could not load.`))
             )
@@ -338,6 +405,15 @@ function TransactionDetailScreen({ id, kind, navigate }) {
           <div className="doc-toolbar">
             {kind === "quotations" ? (
               <DocumentActionBar
+                extras={
+                  <button
+                    className="secondary-button doc-action-bar-button"
+                    onClick={openShareModal}
+                    type="button"
+                  >
+                    Send link
+                  </button>
+                }
                 isBusy={isPreviewLoading}
                 onDownload={handleQuotationDownload}
                 onPreview={openQuotationPreview}
@@ -476,6 +552,16 @@ function TransactionDetailScreen({ id, kind, navigate }) {
           onDownload={handleQuotationDownload}
           onPrint={handleQuotationPrint}
           settings={settings}
+        />
+      ) : null}
+
+      {kind === "quotations" && isShareOpen ? (
+        <DocumentShareModal
+          isLoading={isShareLoading}
+          onClose={() => setIsShareOpen(false)}
+          onCopy={copyShareLink}
+          onOpen={openSharedPreview}
+          share={shareDetails}
         />
       ) : null}
     </div>

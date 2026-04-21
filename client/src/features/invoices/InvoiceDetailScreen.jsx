@@ -7,6 +7,7 @@ import {
   listPayments,
   transitionInvoice
 } from "../../services/invoiceApi.js";
+import { shareInvoice } from "../../services/documentShareApi.js";
 
 const INVOICE_ACTIONS = [
   { action: "issue", label: "Issue", from: ["draft"], successTitle: "Invoice issued", successMessage: "Invoice issued.", tone: "primary" },
@@ -32,10 +33,12 @@ import {
 } from "../system/settingsFormat.js";
 import { formatCustomer } from "../transactions/transactionUtils.js";
 import DocumentPreviewModal from "../documents/DocumentPreviewModal.jsx";
+import DocumentShareModal from "../documents/DocumentShareModal.jsx";
 import DocumentHeroPanel from "../documents/DocumentHeroPanel.jsx";
 import DocumentTotalsCard from "../documents/DocumentTotalsCard.jsx";
 import DocumentActionBar from "../documents/DocumentActionBar.jsx";
 import {
+  copyTextToClipboard,
   downloadBlobFile,
   getDownloadFilename,
   openDocumentPrintWindow
@@ -202,6 +205,9 @@ function InvoiceDetailScreen({ id, navigate }) {
   const [isPrinting, setIsPrinting] = useState(false);
   const [pendingAction, setPendingAction] = useState("");
   const [previewDocument, setPreviewDocument] = useState(null);
+  const [shareDetails, setShareDetails] = useState(null);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isShareLoading, setIsShareLoading] = useState(false);
 
   async function runLifecycleAction(spec) {
     if (!invoice || pendingAction) {
@@ -244,6 +250,7 @@ function InvoiceDetailScreen({ id, navigate }) {
       ]);
 
       setInvoice(invoiceResponse.data);
+      setShareDetails(invoiceResponse.data?.sharing || null);
       setPayments(paymentResponse.data.items || []);
     },
     [id]
@@ -369,6 +376,59 @@ function InvoiceDetailScreen({ id, navigate }) {
     }
   }
 
+  async function openShareModal() {
+    setIsShareOpen(true);
+    if (isShareLoading) {
+      return;
+    }
+
+    setIsShareLoading(true);
+
+    try {
+      const response = await shareInvoice(invoice.id);
+      setShareDetails(response.data);
+      setInvoice((current) => (current ? { ...current, sharing: response.data } : current));
+    } catch (requestError) {
+      setIsShareOpen(false);
+      showToast({
+        message: getApiErrorMessage(requestError, "Share link could not be prepared."),
+        title: "Share unavailable",
+        tone: "error"
+      });
+    } finally {
+      setIsShareLoading(false);
+    }
+  }
+
+  async function copyShareLink() {
+    if (!shareDetails?.publicUrl) {
+      return;
+    }
+
+    try {
+      await copyTextToClipboard(shareDetails.publicUrl);
+      showToast({
+        message: "Secure share link copied.",
+        title: "Link copied"
+      });
+    } catch (requestError) {
+      showToast({
+        message: "Copy failed. Open the preview and copy the URL manually.",
+        title: "Copy unavailable",
+        tone: "error"
+      });
+      void requestError;
+    }
+  }
+
+  function openSharedPreview() {
+    if (!shareDetails?.publicUrl) {
+      return;
+    }
+
+    window.open(shareDetails.publicUrl, "_blank", "noopener,noreferrer");
+  }
+
   const balanceDueAmount = Number(invoice.balanceDue || 0);
   const isOutstanding = balanceDueAmount > 0 && invoice.status !== "void";
   const isPaidInFull =
@@ -428,6 +488,15 @@ function InvoiceDetailScreen({ id, navigate }) {
         action={
           <div className="doc-toolbar">
             <DocumentActionBar
+              extras={
+                <button
+                  className="secondary-button doc-action-bar-button"
+                  onClick={openShareModal}
+                  type="button"
+                >
+                  Send link
+                </button>
+              }
               isBusy={isPrinting}
               onDownload={downloadInvoiceDocument}
               onPreview={openInvoicePreview}
@@ -581,6 +650,16 @@ function InvoiceDetailScreen({ id, navigate }) {
           onDownload={downloadInvoiceDocument}
           onPrint={openPrintView}
           settings={settings}
+        />
+      ) : null}
+
+      {isShareOpen ? (
+        <DocumentShareModal
+          isLoading={isShareLoading}
+          onClose={() => setIsShareOpen(false)}
+          onCopy={copyShareLink}
+          onOpen={openSharedPreview}
+          share={shareDetails}
         />
       ) : null}
     </div>
