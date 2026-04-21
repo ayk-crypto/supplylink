@@ -507,13 +507,13 @@ function RouteDetailScreen({ id, navigate }) {
 
       <section className="detail-grid">
         <DetailField label="Status" value={formattedStatus} />
-        <DetailField label="Date" value={formatRouteDate(route.routeDate)} />
+        <DetailField label="Date" value={formatRouteDate(settings, route.routeDate)} />
         <DetailField label="Driver" value={route.driver?.fullName || "Unassigned"} />
         <DetailField label="Vehicle" value={route.vehicleLabel || "Not set"} />
         <DetailField label="Stops" value={String(sortedStops.length)} />
         <DetailField
           label="Last update"
-          value={route.updatedAt ? formatDateTime(route.updatedAt) : ""}
+          value={route.updatedAt ? formatDateTime(settings, route.updatedAt) : ""}
         />
       </section>
 
@@ -624,7 +624,7 @@ function RouteDetailScreen({ id, navigate }) {
                         <span>{stop.notes || "No notes"}</span>
                       </div>
                       <StatusPill kind="stop" status={stop.status} label={formatStopStatus(stop.status)} />
-                      <span>{formatDateTime(stop.plannedArrivalAt) || "—"}</span>
+                      <span>{formatDateTime(settings, stop.plannedArrivalAt) || "—"}</span>
                       <span>{ordersLabel}</span>
                       <div className="stop-actions">
                         <button
@@ -687,7 +687,7 @@ function RouteDetailScreen({ id, navigate }) {
                                   isThisStopBusy &&
                                   pendingAssignment.orderId === order.id;
                                 const orderDate = order.orderDate
-                                  ? formatRouteDate(order.orderDate)
+                                  ? formatRouteDate(settings, order.orderDate)
                                   : "";
                                 return (
                                   <li key={order.id}>

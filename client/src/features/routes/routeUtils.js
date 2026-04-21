@@ -1,3 +1,5 @@
+import { formatDateTimeWith, formatDateWith } from "../system/settingsFormat.js";
+
 const ROUTE_STATUSES = ["draft", "planned", "in_progress", "completed", "cancelled"];
 
 const ROUTE_STATUS_LABELS = {
@@ -24,16 +26,15 @@ function formatStopStatus(status) {
   return STOP_STATUS_LABELS[status] || status || "Pending";
 }
 
-function formatRouteDate(value) {
+function formatRouteDate(settings, value) {
   if (!value) return "No date";
-  return value;
+  const formatted = formatDateWith(settings, value);
+  return formatted || "No date";
 }
 
-function formatDateTime(value) {
+function formatDateTime(settings, value) {
   if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString();
+  return formatDateTimeWith(settings, value) || "";
 }
 
 function formatStopCustomer(stop) {

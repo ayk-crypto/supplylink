@@ -25,6 +25,8 @@ import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
 import { useAppSettings } from "../system/settingsContext.js";
 import {
   confirmDestructive,
+  formatDateTimeWith,
+  formatDateWith,
   getBrandColor,
   getLogoUrl
 } from "../system/settingsFormat.js";
@@ -82,8 +84,8 @@ function buildInvoicePrintHtml(document, branding = {}) {
       <div>
         <h1>${escapeHtml(document.title || "Invoice")}</h1>
         <p>Status: ${escapeHtml(header.status)}</p>
-        <p>Issue date: ${escapeHtml(header.issueDate || "Not set")}</p>
-        <p>Due date: ${escapeHtml(header.dueDate || "Not set")}</p>
+        <p>Issue date: ${escapeHtml(branding.issueDateLabel || header.issueDate || "Not set")}</p>
+        <p>Due date: ${escapeHtml(branding.dueDateLabel || header.dueDate || "Not set")}</p>
       </div>
       <div class="vendor-block">
         ${
@@ -433,9 +435,16 @@ function InvoiceDetailScreen({ id, navigate }) {
 
     try {
       const response = await getInvoicePrintDocument(invoice.id);
+      const printHeader = response.data?.sections?.header || {};
       const html = buildInvoicePrintHtml(response.data, {
         brandColor: getBrandColor(settings),
-        logoUrl: getLogoUrl(settings)
+        logoUrl: getLogoUrl(settings),
+        issueDateLabel: printHeader.issueDate
+          ? formatDateWith(settings, printHeader.issueDate)
+          : "",
+        dueDateLabel: printHeader.dueDate
+          ? formatDateWith(settings, printHeader.dueDate)
+          : ""
       });
 
       printWindow.document.open();
@@ -505,8 +514,14 @@ function InvoiceDetailScreen({ id, navigate }) {
       <section className="detail-grid">
         <DetailField label="Status" value={invoice.status} />
         <DetailField label="Customer" value={formatCustomer(invoice.customer)} />
-        <DetailField label="Issue date" value={invoice.issueDate} />
-        <DetailField label="Due date" value={invoice.dueDate} />
+        <DetailField
+          label="Issue date"
+          value={invoice.issueDate ? formatDateWith(settings, invoice.issueDate) : "Not set"}
+        />
+        <DetailField
+          label="Due date"
+          value={invoice.dueDate ? formatDateWith(settings, invoice.dueDate) : "Not set"}
+        />
         <DetailField label="Subtotal" value={toMoney(invoice.subtotal)} />
         <DetailField
           label={
@@ -595,7 +610,11 @@ function InvoiceDetailScreen({ id, navigate }) {
                   <span>{payment.referenceNumber || payment.paymentMethod || "Payment"}</span>
                 </div>
                 <div>
-                  <span>{payment.paymentDate || payment.createdAt}</span>
+                  <span>
+                    {payment.paymentDate
+                      ? formatDateWith(settings, payment.paymentDate)
+                      : formatDateTimeWith(settings, payment.createdAt)}
+                  </span>
                   <small>{payment.notes || "No note"}</small>
                 </div>
               </article>

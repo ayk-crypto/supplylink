@@ -279,7 +279,7 @@ function RoutesListScreen({ navigate }) {
                   </strong>
                   <span>{route.driver?.fullName || "No driver assigned"}</span>
                 </div>
-                <span>{formatRouteDate(route.routeDate)}</span>
+                <span>{formatRouteDate(settings, route.routeDate)}</span>
                 <StatusPill kind="route" status={route.status} label={formatRouteStatus(route.status)} />
                 <span>{route.vehicleLabel || "No vehicle"}</span>
                 <button
