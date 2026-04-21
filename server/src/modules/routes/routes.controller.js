@@ -1,10 +1,13 @@
 import { sendSuccess } from "../../core/http/apiResponse.js";
 import {
+  assignOrderToRouteStop,
   createRoute,
   createRouteStop,
   getRouteDetail,
   getRouteDirectory,
+  getRouteIntelligence,
   getRouteStops,
+  unassignOrderFromRouteStop,
   updateRoute,
   updateRouteStop
 } from "./routes.service.js";
@@ -76,6 +79,20 @@ async function listStops(request, response) {
   });
 }
 
+async function getIntelligence(request, response) {
+  const result = await getRouteIntelligence(request.access.vendorId, request.params.routeId);
+
+  sendSuccess(response, {
+    message: "Route intelligence loaded",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId,
+      routeId: request.params.routeId
+    }
+  });
+}
+
 async function createStop(request, response) {
   const result = await createRouteStop(request.access.vendorId, request.params.routeId, request.body);
 
@@ -111,4 +128,57 @@ async function updateStop(request, response) {
   });
 }
 
-export { create, createStop, getById, list, listStops, update, updateStop };
+async function assignStopOrder(request, response) {
+  const result = await assignOrderToRouteStop(
+    request.access.vendorId,
+    request.params.routeId,
+    request.params.stopId,
+    request.params.orderId
+  );
+
+  sendSuccess(response, {
+    message: "Order assigned to route stop",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId,
+      routeId: request.params.routeId,
+      stopId: request.params.stopId,
+      orderId: request.params.orderId
+    }
+  });
+}
+
+async function unassignStopOrder(request, response) {
+  const result = await unassignOrderFromRouteStop(
+    request.access.vendorId,
+    request.params.routeId,
+    request.params.stopId,
+    request.params.orderId
+  );
+
+  sendSuccess(response, {
+    message: "Order unassigned from route stop",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId,
+      routeId: request.params.routeId,
+      stopId: request.params.stopId,
+      orderId: request.params.orderId
+    }
+  });
+}
+
+export {
+  assignStopOrder,
+  create,
+  createStop,
+  getById,
+  getIntelligence,
+  list,
+  listStops,
+  unassignStopOrder,
+  update,
+  updateStop
+};

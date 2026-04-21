@@ -5,12 +5,24 @@ import authorizeRoles from "../../middlewares/authorizeRoles.js";
 import requireVendorAccess from "../../middlewares/requireVendorAccess.js";
 import requireVendorWritable from "../../middlewares/requireVendorWritable.js";
 import validateRequest from "../../middlewares/validateRequest.js";
-import { create, createStop, getById, list, listStops, update, updateStop } from "./routes.controller.js";
+import {
+  assignStopOrder,
+  create,
+  createStop,
+  getById,
+  getIntelligence,
+  list,
+  listStops,
+  unassignStopOrder,
+  update,
+  updateStop
+} from "./routes.controller.js";
 import {
   routeCreateBodySchema,
   routeIdParamsSchema,
   routeQuerySchema,
   routeStopCreateBodySchema,
+  routeStopOrderParamsSchema,
   routeStopParamsSchema,
   routeStopUpdateBodySchema,
   routeUpdateBodySchema
@@ -44,6 +56,15 @@ routesRoutes.get(
   validateRequest({ params: routeIdParamsSchema, query: routeQuerySchema }),
   requireVendorAccess(),
   asyncHandler(getById)
+);
+
+routesRoutes.get(
+  "/:routeId/intelligence",
+  authenticate,
+  authorizeRoles("super_admin", "vendor_admin", "vendor_staff"),
+  validateRequest({ params: routeIdParamsSchema, query: routeQuerySchema }),
+  requireVendorAccess(),
+  asyncHandler(getIntelligence)
 );
 
 routesRoutes.patch(
@@ -95,6 +116,32 @@ routesRoutes.patch(
   requireVendorAccess(),
   requireVendorWritable(),
   asyncHandler(updateStop)
+);
+
+routesRoutes.post(
+  "/:routeId/stops/:stopId/orders/:orderId",
+  authenticate,
+  authorizeRoles("super_admin", "vendor_admin"),
+  validateRequest({
+    params: routeStopOrderParamsSchema,
+    query: routeQuerySchema
+  }),
+  requireVendorAccess(),
+  requireVendorWritable(),
+  asyncHandler(assignStopOrder)
+);
+
+routesRoutes.delete(
+  "/:routeId/stops/:stopId/orders/:orderId",
+  authenticate,
+  authorizeRoles("super_admin", "vendor_admin"),
+  validateRequest({
+    params: routeStopOrderParamsSchema,
+    query: routeQuerySchema
+  }),
+  requireVendorAccess(),
+  requireVendorWritable(),
+  asyncHandler(unassignStopOrder)
 );
 
 export default routesRoutes;

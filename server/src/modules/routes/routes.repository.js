@@ -51,7 +51,31 @@ const STOP_SELECT = `stop.id,
                      relationship.status AS customer_relationship_status,
                      orders.order_number,
                      orders.status AS order_status,
-                     orders.delivery_date AS order_delivery_date`;
+                     orders.delivery_date AS order_delivery_date,
+                     orders.order_date AS order_order_date,
+                     orders.grand_total AS order_grand_total`;
+
+const ELIGIBLE_ORDER_SELECT = `orders.id,
+                               orders.vendor_id,
+                               orders.customer_id,
+                               orders.vendor_customer_relationship_id,
+                               orders.order_number,
+                               orders.status,
+                               orders.order_date,
+                               orders.delivery_date,
+                               orders.grand_total,
+                               orders.subtotal,
+                               orders.discount_total,
+                               orders.tax_total,
+                               orders.notes,
+                               orders.created_at,
+                               orders.updated_at,
+                               customer.full_name AS customer_full_name,
+                               customer.company_name AS customer_company_name,
+                               customer.email AS customer_email,
+                               customer.phone AS customer_phone,
+                               relationship.account_code AS customer_account_code,
+                               relationship.status AS customer_relationship_status`;
 
 function routeJoinClause() {
   return `FROM routes route
@@ -280,6 +304,52 @@ async function findOrderForVendor(vendorId, orderId, client = { query }) {
   return result.rows[0] || null;
 }
 
+async function findRouteStopByOrderForVendor(vendorId, orderId, client = { query }) {
+  const result = await client.query(
+    `SELECT id,
+            route_id,
+            vendor_id,
+            customer_id,
+            sequence_number,
+            order_id
+     FROM route_stops
+     WHERE vendor_id = $1
+       AND order_id = $2
+     LIMIT 1`,
+    [vendorId, orderId]
+  );
+
+  return result.rows[0] || null;
+}
+
+async function listEligibleOrdersForCustomers(vendorId, customerIds, statuses, client = { query }) {
+  if (!customerIds.length || !statuses.length) {
+    return [];
+  }
+
+  const result = await client.query(
+    `SELECT ${ELIGIBLE_ORDER_SELECT}
+     FROM orders
+     INNER JOIN customers customer ON customer.id = orders.customer_id
+     LEFT JOIN vendor_customer_relationships relationship
+       ON relationship.id = orders.vendor_customer_relationship_id
+      AND relationship.vendor_id = orders.vendor_id
+     WHERE orders.vendor_id = $1
+       AND orders.customer_id = ANY($2::uuid[])
+       AND orders.status = ANY($3::text[])
+       AND NOT EXISTS (
+         SELECT 1
+         FROM route_stops assigned_stop
+         WHERE assigned_stop.vendor_id = orders.vendor_id
+           AND assigned_stop.order_id = orders.id
+       )
+     ORDER BY orders.delivery_date ASC NULLS LAST, orders.created_at DESC`,
+    [vendorId, customerIds, statuses]
+  );
+
+  return result.rows;
+}
+
 async function createRouteStopForVendor(vendorId, routeId, payload) {
   return withTransaction(async (client) => {
     await client.query(
@@ -428,7 +498,9 @@ export {
   findCustomerRelationshipForVendor,
   findOrderForVendor,
   findRouteForVendor,
+  findRouteStopByOrderForVendor,
   findRouteStopForVendor,
+  listEligibleOrdersForCustomers,
   listRouteStopsForVendor,
   listRoutesForVendor,
   updateRouteForVendor,

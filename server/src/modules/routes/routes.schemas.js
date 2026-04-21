@@ -15,6 +15,12 @@ const routeStopParamsSchema = z.object({
   stopId: uuidParam
 });
 
+const routeStopOrderParamsSchema = z.object({
+  routeId: uuidParam,
+  stopId: uuidParam,
+  orderId: uuidParam
+});
+
 const routeQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
   pageSize: z.coerce.number().int().min(1).max(100).optional(),
@@ -84,6 +90,7 @@ export {
   routeQuerySchema,
   routeStatusEnum,
   routeStopCreateBodySchema,
+  routeStopOrderParamsSchema,
   routeStopParamsSchema,
   routeStopUpdateBodySchema,
   routeUpdateBodySchema,

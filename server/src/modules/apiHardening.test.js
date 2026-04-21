@@ -8,7 +8,7 @@ import {
   quotationCreateBodySchema,
   quotationUpdateBodySchema
 } from "./quotations/quotations.schemas.js";
-import { routeCreateBodySchema } from "./routes/routes.schemas.js";
+import { routeCreateBodySchema, routeStopOrderParamsSchema } from "./routes/routes.schemas.js";
 import {
   routeTemplateCreateBodySchema,
   routeTemplateGenerateBodySchema
@@ -98,6 +98,22 @@ test("route creation rejects completed routes", () => {
   });
 
   assert.equal(result.success, false);
+});
+
+test("route stop order assignment params require valid UUIDs", () => {
+  const valid = routeStopOrderParamsSchema.safeParse({
+    routeId: CUSTOMER_ID,
+    stopId: PRODUCT_ID,
+    orderId: ORDER_ID
+  });
+  const invalid = routeStopOrderParamsSchema.safeParse({
+    routeId: "bad-id",
+    stopId: PRODUCT_ID,
+    orderId: ORDER_ID
+  });
+
+  assert.equal(valid.success, true);
+  assert.equal(invalid.success, false);
 });
 
 test("notification unreadOnly query parsing handles false safely", () => {

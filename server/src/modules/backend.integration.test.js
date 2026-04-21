@@ -1059,6 +1059,259 @@ if (!testDatabaseUrl) {
       assert.equal(Number(voidInvoice.payload.data.balanceDue), 0);
     });
 
+    await t.test("route intelligence supports assignment, unassignment, summaries, and eligibility rules", async () => {
+      const mismatchCustomer = await api.post("/customers", {
+        token: state.vendorA.token,
+        body: {
+          customer: {
+            fullName: "Mismatch Customer",
+            companyName: "Mismatch Customer Co",
+            email: `mismatch.${suffix}@example.com`,
+            phone: "+1-555-0300"
+          },
+          relationship: {
+            accountCode: `MIS-${suffix}`.slice(0, 80),
+            status: "active"
+          }
+        },
+        expectedStatus: 201
+      });
+
+      const assignableOrder = await api.post("/orders", {
+        token: state.vendorA.token,
+        body: {
+          customerId: state.customer.id,
+          items: [
+            {
+              productId: state.product.id,
+              quantity: 2,
+              unitPrice: 10
+            }
+          ]
+        },
+        expectedStatus: 201
+      });
+
+      const secondAssignableOrder = await api.post("/orders", {
+        token: state.vendorA.token,
+        body: {
+          customerId: state.customer.id,
+          items: [
+            {
+              productId: state.product.id,
+              quantity: 1,
+              unitPrice: 12
+            }
+          ]
+        },
+        expectedStatus: 201
+      });
+
+      const mismatchedOrder = await api.post("/orders", {
+        token: state.vendorA.token,
+        body: {
+          customerId: mismatchCustomer.payload.data.customer.id,
+          items: [
+            {
+              productId: state.product.id,
+              quantity: 1,
+              unitPrice: 15
+            }
+          ]
+        },
+        expectedStatus: 201
+      });
+
+      const terminalOrder = await api.post("/orders", {
+        token: state.vendorA.token,
+        body: {
+          customerId: state.customer.id,
+          items: [
+            {
+              productId: state.product.id,
+              quantity: 1,
+              unitPrice: 8
+            }
+          ]
+        },
+        expectedStatus: 201
+      });
+      await api.post(`/orders/${terminalOrder.payload.data.id}/cancel`, {
+        token: state.vendorA.token
+      });
+
+      const route = await api.post("/routes", {
+        token: state.vendorA.token,
+        body: {
+          name: "Dispatch Intelligence Route",
+          routeDate: "2026-05-06",
+          status: "planned",
+          notes: "Operational assignment test"
+        },
+        expectedStatus: 201
+      });
+
+      const firstStop = await api.post(`/routes/${route.payload.data.id}/stops`, {
+        token: state.vendorA.token,
+        body: {
+          customerId: state.customer.id,
+          sequenceNumber: 1
+        },
+        expectedStatus: 201
+      });
+
+      const secondStop = await api.post(`/routes/${route.payload.data.id}/stops`, {
+        token: state.vendorA.token,
+        body: {
+          customerId: state.customer.id,
+          sequenceNumber: 2
+        },
+        expectedStatus: 201
+      });
+
+      const mismatchStop = await api.post(`/routes/${route.payload.data.id}/stops`, {
+        token: state.vendorA.token,
+        body: {
+          customerId: mismatchCustomer.payload.data.customer.id,
+          sequenceNumber: 3
+        },
+        expectedStatus: 201
+      });
+
+      const assigned = await api.post(
+        `/routes/${route.payload.data.id}/stops/${firstStop.payload.data.id}/orders/${assignableOrder.payload.data.id}`,
+        {
+          token: state.vendorA.token
+        }
+      );
+      assert.equal(assigned.payload.data.orderId, assignableOrder.payload.data.id);
+      assert.equal(assigned.payload.data.assignmentSummary.orderCount, 1);
+
+      await api.post(
+        `/routes/${route.payload.data.id}/stops/${secondStop.payload.data.id}/orders/${assignableOrder.payload.data.id}`,
+        {
+          token: state.vendorA.token,
+          expectedStatus: 409
+        }
+      );
+
+      await api.post(
+        `/routes/${route.payload.data.id}/stops/${firstStop.payload.data.id}/orders/${mismatchedOrder.payload.data.id}`,
+        {
+          token: state.vendorA.token,
+          expectedStatus: 422
+        }
+      );
+
+      await api.post(
+        `/routes/${route.payload.data.id}/stops/${firstStop.payload.data.id}/orders/${terminalOrder.payload.data.id}`,
+        {
+          token: state.vendorA.token,
+          expectedStatus: 409
+        }
+      );
+
+      await api.post(
+        `/routes/${route.payload.data.id}/stops/${mismatchStop.payload.data.id}/orders/${secondAssignableOrder.payload.data.id}`,
+        {
+          token: state.vendorA.token,
+          expectedStatus: 422
+        }
+      );
+
+      await api.post(
+        `/routes/${route.payload.data.id}/stops/${secondStop.payload.data.id}/orders/${secondAssignableOrder.payload.data.id}`,
+        {
+          token: state.vendorAStaff.token,
+          expectedStatus: 403
+        }
+      );
+
+      await api.post(
+        `/routes/${route.payload.data.id}/stops/${secondStop.payload.data.id}/orders/${secondAssignableOrder.payload.data.id}`,
+        {
+          token: state.vendorB.token,
+          expectedStatus: 404
+        }
+      );
+
+      const routeDetail = await api.get(`/routes/${route.payload.data.id}`, {
+        token: state.vendorA.token
+      });
+      assert.equal(routeDetail.payload.data.summary.assignedOrderCount, 1);
+      assert.equal(routeDetail.payload.data.stops[0].assignedOrders.length, 1);
+      assert.equal(routeDetail.payload.data.stops[0].assignedOrders[0].id, assignableOrder.payload.data.id);
+
+      const routeStops = await api.get(`/routes/${route.payload.data.id}/stops`, {
+        token: state.vendorA.token
+      });
+      assert.equal(routeStops.payload.data.routeSummary.assignedOrderCount, 1);
+      assert.equal(routeStops.payload.data.items[0].assignmentSummary.orderCount, 1);
+
+      const intelligence = await api.get(`/routes/${route.payload.data.id}/intelligence`, {
+        token: state.vendorA.token
+      });
+      assert.equal(intelligence.payload.data.summary.assignedOrderCount, 1);
+      assert.equal(intelligence.payload.data.summary.stopCount, 3);
+      assert.ok(
+        intelligence.payload.data.summary.assignedOrderValueTotal >=
+          Number(assignableOrder.payload.data.grandTotal)
+      );
+      const firstIntelligenceStop = intelligence.payload.data.stops.find(
+        (stop) => stop.id === firstStop.payload.data.id
+      );
+      const secondIntelligenceStop = intelligence.payload.data.stops.find(
+        (stop) => stop.id === secondStop.payload.data.id
+      );
+      assert.equal(firstIntelligenceStop.assignedOrders[0].id, assignableOrder.payload.data.id);
+      assert.ok(
+        secondIntelligenceStop.eligibleOrders.some(
+          (order) => order.id === secondAssignableOrder.payload.data.id
+        )
+      );
+      assert.ok(
+        secondIntelligenceStop.eligibleOrders.every((order) => order.id !== assignableOrder.payload.data.id)
+      );
+
+      const orderDetailWhileAssigned = await api.get(`/orders/${assignableOrder.payload.data.id}`, {
+        token: state.vendorA.token
+      });
+      assert.equal(orderDetailWhileAssigned.payload.data.status, "draft");
+
+      const unassigned = await api.delete(
+        `/routes/${route.payload.data.id}/stops/${firstStop.payload.data.id}/orders/${assignableOrder.payload.data.id}`,
+        {
+          token: state.vendorA.token
+        }
+      );
+      assert.equal(unassigned.payload.data.orderId, null);
+      assert.equal(unassigned.payload.data.assignmentSummary.orderCount, 0);
+
+      await api.delete(
+        `/routes/${route.payload.data.id}/stops/${firstStop.payload.data.id}/orders/${assignableOrder.payload.data.id}`,
+        {
+          token: state.vendorA.token,
+          expectedStatus: 404
+        }
+      );
+
+      const intelligenceAfterUnassign = await api.get(`/routes/${route.payload.data.id}/intelligence`, {
+        token: state.vendorA.token
+      });
+      const secondStopAfterUnassign = intelligenceAfterUnassign.payload.data.stops.find(
+        (stop) => stop.id === secondStop.payload.data.id
+      );
+      assert.equal(intelligenceAfterUnassign.payload.data.summary.assignedOrderCount, 0);
+      assert.ok(
+        secondStopAfterUnassign.eligibleOrders.some((order) => order.id === assignableOrder.payload.data.id)
+      );
+
+      const orderDetailAfterUnassign = await api.get(`/orders/${assignableOrder.payload.data.id}`, {
+        token: state.vendorA.token
+      });
+      assert.equal(orderDetailAfterUnassign.payload.data.status, "draft");
+    });
+
     await t.test("conversion actions reject invalid, duplicate, and cross-tenant conversions", async () => {
       await api.post(`/quotations/${state.quotation.id}/convert-to-order`, {
         token: state.vendorA.token,

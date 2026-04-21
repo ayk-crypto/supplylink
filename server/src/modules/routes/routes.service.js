@@ -5,13 +5,17 @@ import {
   findCustomerRelationshipForVendor,
   findOrderForVendor,
   findRouteForVendor,
+  findRouteStopByOrderForVendor,
   findRouteStopForVendor,
+  listEligibleOrdersForCustomers,
   listRouteStopsForVendor,
   listRoutesForVendor,
   updateRouteForVendor,
   updateRouteStopForVendor
 } from "./routes.repository.js";
 import { notifyVendorUsers, runNotificationTask } from "../notifications/notifications.service.js";
+
+const ASSIGNABLE_ORDER_STATUSES = ["draft", "confirmed", "packed", "dispatched"];
 
 const ROUTE_FIELDS = {
   name: "name",
@@ -72,6 +76,17 @@ function mapRoute(row) {
 }
 
 function mapRouteStop(row) {
+  const assignedOrder = row.order_id
+    ? {
+        id: row.order_id,
+        orderNumber: row.order_number,
+        status: row.order_status,
+        orderDate: row.order_order_date,
+        deliveryDate: row.order_delivery_date,
+        grandTotal: Number(row.order_grand_total || 0)
+      }
+    : null;
+
   return {
     id: row.id,
     routeId: row.route_id,
@@ -98,17 +113,60 @@ function mapRouteStop(row) {
           phone: row.customer_phone
         }
       : null,
-    order: row.order_id
-      ? {
-          id: row.order_id,
-          orderNumber: row.order_number,
-          status: row.order_status,
-          deliveryDate: row.order_delivery_date
-        }
-      : null,
+    order: assignedOrder,
+    assignedOrders: assignedOrder ? [assignedOrder] : [],
+    assignmentSummary: {
+      orderCount: assignedOrder ? 1 : 0,
+      orderValueTotal: assignedOrder ? Number(row.order_grand_total || 0) : 0
+    },
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
+}
+
+function mapAssignableOrder(row) {
+  return {
+    id: row.id,
+    vendorId: row.vendor_id,
+    customerId: row.customer_id,
+    vendorCustomerRelationshipId: row.vendor_customer_relationship_id,
+    orderNumber: row.order_number,
+    status: row.status,
+    orderDate: row.order_date,
+    deliveryDate: row.delivery_date,
+    subtotal: row.subtotal !== undefined ? Number(row.subtotal || 0) : undefined,
+    discountTotal: row.discount_total !== undefined ? Number(row.discount_total || 0) : undefined,
+    taxTotal: row.tax_total !== undefined ? Number(row.tax_total || 0) : undefined,
+    grandTotal: Number(row.grand_total || 0),
+    notes: row.notes || null,
+    customer: {
+      id: row.customer_id,
+      relationshipId: row.vendor_customer_relationship_id,
+      accountCode: row.customer_account_code,
+      relationshipStatus: row.customer_relationship_status,
+      fullName: row.customer_full_name,
+      companyName: row.customer_company_name,
+      email: row.customer_email,
+      phone: row.customer_phone
+    },
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+function buildRouteAssignmentSummary(stops) {
+  return stops.reduce(
+    (summary, stop) => {
+      summary.assignedOrderCount += stop.assignmentSummary.orderCount;
+      summary.assignedOrderValueTotal += Number(stop.assignmentSummary.orderValueTotal || 0);
+      return summary;
+    },
+    {
+      stopCount: stops.length,
+      assignedOrderCount: 0,
+      assignedOrderValueTotal: 0
+    }
+  );
 }
 
 function assertRouteFound(row, routeId) {
@@ -160,12 +218,62 @@ async function assertCustomerLinkedToVendor(vendorId, customerId) {
   return relationship;
 }
 
-async function resolveStopContext(vendorId, payload, currentStop = null) {
+function assertOrderStatusAssignable(order) {
+  if (!ASSIGNABLE_ORDER_STATUSES.includes(order.status)) {
+    throw new AppError("Order is not eligible for route assignment", {
+      statusCode: 409,
+      code: "ORDER_NOT_ASSIGNABLE",
+      details: [
+        {
+          path: "orderId",
+          message: `Only orders in statuses ${ASSIGNABLE_ORDER_STATUSES.join(", ")} can be assigned`
+        }
+      ]
+    });
+  }
+}
+
+async function assertOrderAssignableToStop(vendorId, routeId, stop, order) {
+  void routeId;
+  assertOrderStatusAssignable(order);
+
+  if (!stop?.customer_id || stop.customer_id !== order.customer_id) {
+    throw new AppError("Order customer does not match route stop customer", {
+      statusCode: 422,
+      code: "ORDER_CUSTOMER_MISMATCH",
+      details: [
+        {
+          path: "orderId",
+          message: "Assigned order must belong to the same customer as the route stop"
+        }
+      ]
+    });
+  }
+
+  const existingAssignment = await findRouteStopByOrderForVendor(vendorId, order.id);
+
+  if (existingAssignment && existingAssignment.id !== stop?.id) {
+    throw new AppError("Order is already assigned to another route stop", {
+      statusCode: 409,
+      code: "ORDER_ALREADY_ASSIGNED",
+      details: [
+        {
+          path: "orderId",
+          message: "Unassign the order from its current stop before reassigning it"
+        }
+      ]
+    });
+  }
+}
+
+async function resolveStopContext(vendorId, routeId, payload, currentStop = null) {
   let customerId = payload.customerId || currentStop?.customer_id;
   let order = null;
+  const hasOrderField = Object.prototype.hasOwnProperty.call(payload, "orderId");
+  const resolvedOrderId = hasOrderField ? payload.orderId : currentStop?.order_id;
 
-  if (payload.orderId) {
-    order = await findOrderForVendor(vendorId, payload.orderId);
+  if (resolvedOrderId) {
+    order = await findOrderForVendor(vendorId, resolvedOrderId);
 
     if (!order) {
       throw new AppError("Order not found for this vendor", {
@@ -211,10 +319,60 @@ async function resolveStopContext(vendorId, payload, currentStop = null) {
 
   const relationship = await assertCustomerLinkedToVendor(vendorId, customerId);
 
+  if (order) {
+    await assertOrderAssignableToStop(
+      vendorId,
+      routeId,
+      {
+        id: currentStop?.id || null,
+        customer_id: customerId
+      },
+      order
+    );
+  }
+
   return {
     customerId,
     relationship,
     order
+  };
+}
+
+async function buildRouteIntelligence(route, stopRows, vendorId, { includeEligibleOrders = false } = {}) {
+  const mappedStops = stopRows.map(mapRouteStop);
+  const summary = buildRouteAssignmentSummary(mappedStops);
+
+  if (!includeEligibleOrders) {
+    return {
+      ...mapRoute(route),
+      summary,
+      stops: mappedStops
+    };
+  }
+
+  const customerIds = [...new Set(mappedStops.map((stop) => stop.customerId).filter(Boolean))];
+  const eligibleOrders = await listEligibleOrdersForCustomers(
+    vendorId,
+    customerIds,
+    ASSIGNABLE_ORDER_STATUSES
+  );
+  const eligibleOrdersByCustomerId = new Map();
+
+  eligibleOrders.map(mapAssignableOrder).forEach((order) => {
+    const bucket = eligibleOrdersByCustomerId.get(order.customerId) || [];
+    bucket.push(order);
+    eligibleOrdersByCustomerId.set(order.customerId, bucket);
+  });
+
+  const enrichedStops = mappedStops.map((stop) => ({
+    ...stop,
+    eligibleOrders: eligibleOrdersByCustomerId.get(stop.customerId) || []
+  }));
+
+  return {
+    ...mapRoute(route),
+    summary,
+    stops: enrichedStops
   };
 }
 
@@ -257,10 +415,7 @@ async function getRouteDetail(vendorId, routeId) {
 
   const stops = await listRouteStopsForVendor(vendorId, routeId);
 
-  return {
-    ...mapRoute(route),
-    stops: stops.map(mapRouteStop)
-  };
+  return buildRouteIntelligence(route, stops, vendorId);
 }
 
 async function createRoute(vendorId, payload) {
@@ -319,10 +474,12 @@ async function getRouteStops(vendorId, routeId) {
   assertRouteFound(route, routeId);
 
   const stops = await listRouteStopsForVendor(vendorId, routeId);
+  const detail = await buildRouteIntelligence(route, stops, vendorId);
 
   return {
     route: mapRoute(route),
-    items: stops.map(mapRouteStop)
+    routeSummary: detail.summary,
+    items: detail.stops
   };
 }
 
@@ -331,7 +488,7 @@ async function createRouteStop(vendorId, routeId, payload) {
 
   assertRouteFound(route, routeId);
 
-  const stopContext = await resolveStopContext(vendorId, payload);
+  const stopContext = await resolveStopContext(vendorId, routeId, payload);
   const stop = await createRouteStopForVendor(vendorId, routeId, {
     ...toColumnPayload(payload, STOP_FIELDS),
     customer_id: stopContext.customerId,
@@ -353,7 +510,7 @@ async function updateRouteStop(vendorId, routeId, stopId, payload) {
 
   const needsRelationshipRefresh = payload.customerId || Object.prototype.hasOwnProperty.call(payload, "orderId");
   const stopContext = needsRelationshipRefresh
-    ? await resolveStopContext(vendorId, payload, existing)
+    ? await resolveStopContext(vendorId, routeId, payload, existing)
     : null;
   const updates = {
     ...toColumnPayload(payload, STOP_FIELDS),
@@ -368,12 +525,104 @@ async function updateRouteStop(vendorId, routeId, stopId, payload) {
   return mapRouteStop(stop);
 }
 
+async function getRouteIntelligence(vendorId, routeId) {
+  const route = await findRouteForVendor(vendorId, routeId);
+
+  assertRouteFound(route, routeId);
+
+  const stops = await listRouteStopsForVendor(vendorId, routeId);
+
+  return buildRouteIntelligence(route, stops, vendorId, { includeEligibleOrders: true });
+}
+
+async function assignOrderToRouteStop(vendorId, routeId, stopId, orderId) {
+  const route = await findRouteForVendor(vendorId, routeId);
+
+  assertRouteFound(route, routeId);
+
+  const stop = await findRouteStopForVendor(vendorId, routeId, stopId);
+
+  assertStopFound(stop, stopId);
+
+  const order = await findOrderForVendor(vendorId, orderId);
+
+  if (!order) {
+    throw new AppError("Order not found for this vendor", {
+      statusCode: 404,
+      code: "ORDER_NOT_FOUND",
+      details: [
+        {
+          path: "orderId",
+          message: `No order was found for ${orderId}`
+        }
+      ]
+    });
+  }
+
+  await assertOrderAssignableToStop(vendorId, routeId, stop, order);
+
+  const updated = await updateRouteStopForVendor(vendorId, routeId, stopId, {
+    order_id: orderId
+  });
+
+  assertStopFound(updated, stopId);
+
+  return mapRouteStop(updated);
+}
+
+async function unassignOrderFromRouteStop(vendorId, routeId, stopId, orderId) {
+  const route = await findRouteForVendor(vendorId, routeId);
+
+  assertRouteFound(route, routeId);
+
+  const stop = await findRouteStopForVendor(vendorId, routeId, stopId);
+
+  assertStopFound(stop, stopId);
+
+  if (!stop.order_id) {
+    throw new AppError("Route stop has no assigned order", {
+      statusCode: 404,
+      code: "ROUTE_STOP_ORDER_NOT_FOUND",
+      details: [
+        {
+          path: "orderId",
+          message: "There is no assigned order to remove from this route stop"
+        }
+      ]
+    });
+  }
+
+  if (stop.order_id !== orderId) {
+    throw new AppError("Requested order is not assigned to this route stop", {
+      statusCode: 409,
+      code: "ROUTE_STOP_ORDER_MISMATCH",
+      details: [
+        {
+          path: "orderId",
+          message: "The specified order is not the order currently assigned to this stop"
+        }
+      ]
+    });
+  }
+
+  const updated = await updateRouteStopForVendor(vendorId, routeId, stopId, {
+    order_id: null
+  });
+
+  assertStopFound(updated, stopId);
+
+  return mapRouteStop(updated);
+}
+
 export {
+  assignOrderToRouteStop,
   createRoute,
   createRouteStop,
   getRouteDetail,
   getRouteDirectory,
+  getRouteIntelligence,
   getRouteStops,
+  unassignOrderFromRouteStop,
   updateRoute,
   updateRouteStop
 };
