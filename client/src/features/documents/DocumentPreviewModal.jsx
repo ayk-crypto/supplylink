@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { buildDocumentHtml } from "./documentUtils.js";
 
 function DocumentPreviewModal({ document, isLoading = false, onClose, onDownload, onPrint, settings }) {
@@ -10,30 +10,95 @@ function DocumentPreviewModal({ document, isLoading = false, onClose, onDownload
     return buildDocumentHtml(document, settings);
   }, [document, settings]);
 
+  const closeButtonRef = useRef(null);
+
+  useEffect(() => {
+    const doc = typeof window !== "undefined" ? window.document : null;
+    const previouslyFocused =
+      doc && doc.activeElement instanceof HTMLElement ? doc.activeElement : null;
+
+    closeButtonRef.current?.focus();
+
+    function handleKey(event) {
+      if (event.key === "Escape") {
+        onClose?.();
+      }
+    }
+    window.addEventListener("keydown", handleKey);
+    return () => {
+      window.removeEventListener("keydown", handleKey);
+      if (previouslyFocused && typeof previouslyFocused.focus === "function") {
+        previouslyFocused.focus();
+      }
+    };
+  }, [onClose]);
+
   return (
-    <div className="modal-backdrop document-preview-backdrop">
-      <div className="document-preview-shell">
+    <div
+      className="modal-backdrop document-preview-backdrop"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose?.();
+        }
+      }}
+      role="presentation"
+    >
+      <div
+        aria-labelledby="document-preview-title"
+        aria-modal="true"
+        className="document-preview-shell"
+        role="dialog"
+      >
         <div className="document-preview-toolbar">
-          <div>
-            <strong>{document?.title || "Document preview"}</strong>
-            <span>{document?.documentType ? `${document.documentType} preview` : "Preview"}</span>
+          <div className="document-preview-toolbar-meta">
+            <strong id="document-preview-title">
+              {document?.title || "Document preview"}
+            </strong>
+            <span>
+              {document?.documentType
+                ? `${document.documentType} preview`
+                : "Preview"}
+            </span>
           </div>
           <div className="button-row">
-            <button className="secondary-button" disabled={!document || isLoading} onClick={onDownload} type="button">
+            <button
+              className="secondary-button"
+              disabled={!document || isLoading}
+              onClick={onDownload}
+              type="button"
+            >
               Download
             </button>
-            <button className="primary-button" disabled={!document || isLoading} onClick={onPrint} type="button">
+            <button
+              className="primary-button"
+              disabled={!document || isLoading}
+              onClick={onPrint}
+              type="button"
+            >
               Print
             </button>
-            <button className="secondary-button" onClick={onClose} type="button">
+            <button
+              aria-label="Close preview"
+              className="secondary-button"
+              onClick={onClose}
+              ref={closeButtonRef}
+              type="button"
+            >
               Close
             </button>
           </div>
         </div>
-        {isLoading ? (
-          <div className="document-preview-loading">Preparing document preview...</div>
+        {isLoading || !document ? (
+          <div className="document-preview-loading" role="status">
+            <span className="document-preview-spinner" aria-hidden="true" />
+            <span>Preparing document preview…</span>
+          </div>
         ) : (
-          <iframe className="document-preview-frame" srcDoc={html} title={document?.title || "Document preview"} />
+          <iframe
+            className="document-preview-frame"
+            srcDoc={html}
+            title={document?.title || "Document preview"}
+          />
         )}
       </div>
     </div>

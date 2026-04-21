@@ -31,18 +31,12 @@ import {
 } from "../system/settingsFormat.js";
 import { formatCustomer } from "../transactions/transactionUtils.js";
 import DocumentPreviewModal from "../documents/DocumentPreviewModal.jsx";
+import DocumentHeroPanel from "../documents/DocumentHeroPanel.jsx";
+import DocumentTotalsCard from "../documents/DocumentTotalsCard.jsx";
+import DocumentActionBar from "../documents/DocumentActionBar.jsx";
 import { downloadDocumentHtml, openDocumentPrintWindow } from "../documents/documentUtils.js";
 
 const paymentMethods = ["cash", "card", "bank_transfer", "check", "other"];
-
-function DetailField({ label, value }) {
-  return (
-    <div className="detail-field">
-      <span>{label}</span>
-      <strong>{value || "Not set"}</strong>
-    </div>
-  );
-}
 
 function PaymentForm({ invoice, onPaid }) {
   const { showToast } = useToast();
@@ -370,47 +364,101 @@ function InvoiceDetailScreen({ id, navigate }) {
     }
   }
 
+  const balanceDueAmount = Number(invoice.balanceDue || 0);
+  const isOutstanding = balanceDueAmount > 0 && invoice.status !== "void";
+  const isPaidInFull =
+    balanceDueAmount <= 0 && Number(invoice.grandTotal || 0) > 0 && invoice.status !== "draft";
+  const highlight = isOutstanding
+    ? {
+        label: "Balance due",
+        value: formatMoneyWith(settings, invoice.balanceDue),
+        tone: "warning",
+        note: invoice.dueDate ? `Due ${formatDateWith(settings, invoice.dueDate)}` : null
+      }
+    : isPaidInFull
+      ? {
+          label: "Paid in full",
+          value: toMoney(invoice.grandTotal),
+          tone: "success"
+        }
+      : {
+          label: "Grand total",
+          value: toMoney(invoice.grandTotal),
+          tone: "primary"
+        };
+
+  const invoiceDiscount = Number(invoice.discountTotal || invoice.discountAmount || 0);
+  const invoiceTax = Number(invoice.taxTotal || invoice.taxAmount || 0);
+  const totalsRows = [
+    { label: "Subtotal", value: toMoney(invoice.subtotal) },
+    invoiceDiscount > 0
+      ? {
+          label:
+            invoice.discountType === "percent"
+              ? `Discount (${Number(invoice.discountValue || 0)}%)`
+              : "Discount",
+          value: `- ${toMoney(invoiceDiscount)}`,
+          tone: "negative"
+        }
+      : null,
+    invoice.taxEnabled
+      ? {
+          label: `Tax (${Number(invoice.taxRate || 0)}%)`,
+          value: toMoney(invoiceTax)
+        }
+      : null
+  ];
+  const totalsFooter = [
+    { label: "Paid", value: toMoney(paidAmount), tone: "success" },
+    {
+      label: "Outstanding",
+      value: formatMoneyWith(settings, invoice.balanceDue),
+      tone: balanceDueAmount > 0 ? "warning" : "neutral"
+    }
+  ];
+
   return (
     <div className="resource-page">
       <PageHeader
         action={
-          <div className="button-row">
-            {INVOICE_ACTIONS.map((spec) => {
-              const enabled = spec.from.includes(invoice.status);
-              const isBusy = pendingAction === spec.action;
-              return (
-                <button
-                  className={spec.tone === "primary" ? "primary-button" : "secondary-button"}
-                  disabled={!enabled || Boolean(pendingAction)}
-                  key={spec.action}
-                  onClick={() => runLifecycleAction(spec)}
-                  title={
-                    enabled
-                      ? `${spec.label} this invoice`
-                      : `${spec.label} is not available while status is "${invoice.status}".`
-                  }
-                  type="button"
-                >
-                  {isBusy ? `${spec.label}...` : spec.label}
-                </button>
-              );
-            })}
-            <button className="secondary-button" onClick={openInvoicePreview} type="button">
-              {isPrinting ? "Preparing..." : "Preview"}
-            </button>
-            <button className="secondary-button" onClick={downloadInvoiceDocument} type="button">
-              Download
-            </button>
-            <button className="secondary-button" onClick={openPrintView} type="button">
-              {isPrinting ? "Preparing..." : "Print"}
-            </button>
-            <button
-              className="secondary-button"
-              onClick={() => navigate("/invoices")}
-              type="button"
-            >
-              Back to invoices
-            </button>
+          <div className="doc-toolbar">
+            <DocumentActionBar
+              isBusy={isPrinting}
+              onDownload={downloadInvoiceDocument}
+              onPreview={openInvoicePreview}
+              onPrint={openPrintView}
+            />
+            <div className="button-row doc-toolbar-lifecycle">
+              {INVOICE_ACTIONS.map((spec) => {
+                const enabled = spec.from.includes(invoice.status);
+                const isBusy = pendingAction === spec.action;
+                return (
+                  <button
+                    className={
+                      spec.tone === "primary" ? "primary-button" : "secondary-button"
+                    }
+                    disabled={!enabled || Boolean(pendingAction)}
+                    key={spec.action}
+                    onClick={() => runLifecycleAction(spec)}
+                    title={
+                      enabled
+                        ? `${spec.label} this invoice`
+                        : `${spec.label} is not available while status is "${invoice.status}".`
+                    }
+                    type="button"
+                  >
+                    {isBusy ? `${spec.label}...` : spec.label}
+                  </button>
+                );
+              })}
+              <button
+                className="secondary-button"
+                onClick={() => navigate("/invoices")}
+                type="button"
+              >
+                Back to invoices
+              </button>
+            </div>
           </div>
         }
         description={`Invoice for ${formatCustomer(invoice.customer)}.`}
@@ -418,76 +466,64 @@ function InvoiceDetailScreen({ id, navigate }) {
         title={invoice.invoiceNumber}
       />
 
-      <section className="detail-grid">
-        <DetailField label="Status" value={invoice.status} />
-        <DetailField label="Customer" value={formatCustomer(invoice.customer)} />
-        <DetailField
-          label="Issue date"
-          value={invoice.issueDate ? formatDateWith(settings, invoice.issueDate) : "Not set"}
-        />
-        <DetailField
-          label="Due date"
-          value={invoice.dueDate ? formatDateWith(settings, invoice.dueDate) : "Not set"}
-        />
-        <DetailField label="Subtotal" value={toMoney(invoice.subtotal)} />
-        <DetailField
-          label={
-            invoice.discountType === "percent"
-              ? `Discount (${Number(invoice.discountValue || 0)}%)`
-              : "Discount"
-          }
-          value={
-            Number(invoice.discountTotal || invoice.discountAmount || 0) > 0
-              ? `- ${toMoney(invoice.discountTotal || invoice.discountAmount)}`
-              : "None"
-          }
-        />
-        <DetailField
-          label={
-            invoice.taxEnabled
-              ? `Tax (${Number(invoice.taxRate || 0)}%)`
-              : "Tax"
-          }
-          value={
-            invoice.taxEnabled
-              ? toMoney(invoice.taxTotal || invoice.taxAmount || 0)
-              : "Not applied"
-          }
-        />
-        <DetailField label="Grand total" value={toMoney(invoice.grandTotal)} />
-        <DetailField label="Paid" value={toMoney(paidAmount)} />
-        <DetailField label="Outstanding" value={formatMoneyWith(settings, invoice.balanceDue)} />
-      </section>
+      <DocumentHeroPanel
+        eyebrow="Invoice"
+        number={invoice.invoiceNumber}
+        description={`Issued for ${formatCustomer(invoice.customer)}`}
+        statusKind="invoice"
+        status={invoice.status}
+        highlight={highlight}
+        meta={[
+          { label: "Customer", value: formatCustomer(invoice.customer) },
+          {
+            label: "Issue date",
+            value: invoice.issueDate ? formatDateWith(settings, invoice.issueDate) : "—"
+          },
+          {
+            label: "Due date",
+            value: invoice.dueDate ? formatDateWith(settings, invoice.dueDate) : "—"
+          },
+          { label: "Grand total", value: toMoney(invoice.grandTotal) }
+        ]}
+      />
 
-      <section className="transaction-panel">
-        <div className="panel-heading">
-          <h3>Line items</h3>
-        </div>
-        {invoice.items?.length ? (
-          <TableScroll>
-          <div className="resource-table">
-            <div className="resource-table-head detail-line-grid">
-              <span>Product</span>
-              <span>Quantity</span>
-              <span>Unit price</span>
-              <span>Total</span>
-            </div>
-            {invoice.items.map((item) => (
-              <article className="resource-row detail-line-grid" key={item.id}>
-                <div>
-                  <strong>{item.product?.name || item.description}</strong>
-                  <span>{item.product?.sku || item.description}</span>
-                </div>
-                <span>{item.quantity}</span>
-                <span>{toMoney(item.unitPrice)}</span>
-                <span>{toMoney(item.lineTotal)}</span>
-              </article>
-            ))}
+      <section className="doc-body-grid">
+        <section className="transaction-panel doc-body-main">
+          <div className="panel-heading">
+            <h3>Line items</h3>
+            <span>{invoice.items?.length || 0} items</span>
           </div>
-          </TableScroll>
-        ) : (
-          <EmptyState>No line items found.</EmptyState>
-        )}
+          {invoice.items?.length ? (
+            <TableScroll>
+              <div className="resource-table">
+                <div className="resource-table-head detail-line-grid">
+                  <span>Product</span>
+                  <span>Quantity</span>
+                  <span>Unit price</span>
+                  <span>Total</span>
+                </div>
+                {invoice.items.map((item) => (
+                  <article className="resource-row detail-line-grid" key={item.id}>
+                    <div>
+                      <strong>{item.product?.name || item.description}</strong>
+                      <span>{item.product?.sku || item.description}</span>
+                    </div>
+                    <span>{item.quantity}</span>
+                    <span>{toMoney(item.unitPrice)}</span>
+                    <span>{toMoney(item.lineTotal)}</span>
+                  </article>
+                ))}
+              </div>
+            </TableScroll>
+          ) : (
+            <EmptyState>No line items found.</EmptyState>
+          )}
+        </section>
+        <DocumentTotalsCard
+          rows={totalsRows}
+          grand={{ label: "Grand total", value: toMoney(invoice.grandTotal) }}
+          footer={totalsFooter}
+        />
       </section>
 
       <section className="transaction-panel">

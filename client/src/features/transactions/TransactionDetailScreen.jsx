@@ -19,9 +19,11 @@ import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
 import { useAppSettings } from "../system/settingsContext.js";
 import { confirmDestructive, formatDateWith } from "../system/settingsFormat.js";
-import StatusPill from "../../components/ui/StatusPill.jsx";
 import { formatCustomer } from "./transactionUtils.js";
 import DocumentPreviewModal from "../documents/DocumentPreviewModal.jsx";
+import DocumentHeroPanel from "../documents/DocumentHeroPanel.jsx";
+import DocumentTotalsCard from "../documents/DocumentTotalsCard.jsx";
+import DocumentActionBar from "../documents/DocumentActionBar.jsx";
 import { downloadDocumentHtml, openDocumentPrintWindow } from "../documents/documentUtils.js";
 
 const QUOTATION_ACTIONS = [
@@ -60,15 +62,6 @@ const configs = {
 
 function describeReason(actionLabel, currentStatus) {
   return `${actionLabel} is not available while status is "${currentStatus}".`;
-}
-
-function DetailField({ label, value }) {
-  return (
-    <div className="detail-field">
-      <span>{label}</span>
-      <strong>{value || "Not set"}</strong>
-    </div>
-  );
 }
 
 function TransactionDetailScreen({ id, kind, navigate }) {
@@ -267,100 +260,130 @@ function TransactionDetailScreen({ id, kind, navigate }) {
   }
 
   if (error) {
-    return <ErrorState message={error} />;
+    return (
+      <ErrorState
+        message={error}
+        onRetry={() => {
+          setError("");
+          setIsLoading(true);
+          config
+            .get(id)
+            .then((response) => setDetail(response.data))
+            .catch((requestError) =>
+              setError(getApiErrorMessage(requestError, `${config.title} could not load.`))
+            )
+            .finally(() => setIsLoading(false));
+        }}
+      />
+    );
   }
 
   if (!detail) {
     return <EmptyState>{`No ${config.title.toLowerCase()} found.`}</EmptyState>;
   }
 
+  const discountAmount = Number(detail.discountTotal || detail.discountAmount || 0);
+  const taxAmount = Number(detail.taxTotal || detail.taxAmount || 0);
+  const totalsRows = [
+    { label: "Subtotal", value: toMoney(detail.subtotal) },
+    discountAmount > 0
+      ? {
+          label:
+            detail.discountType === "percent"
+              ? `Discount (${Number(detail.discountValue || 0)}%)`
+              : "Discount",
+          value: `- ${toMoney(discountAmount)}`,
+          tone: "negative"
+        }
+      : null,
+    detail.taxEnabled
+      ? {
+          label: `Tax (${Number(detail.taxRate || 0)}%)`,
+          value: toMoney(taxAmount)
+        }
+      : null
+  ];
+
+  const lifecycleButtons = config.actions.map((spec) => {
+    const enabled = spec.from.includes(detail.status);
+    const isBusy = pendingAction === spec.action;
+    const tone = spec.action === "cancel" || spec.action === "reject" ? "secondary" : "primary";
+    return (
+      <button
+        className={tone === "primary" ? "primary-button" : "secondary-button"}
+        disabled={!enabled || Boolean(pendingAction)}
+        key={spec.action}
+        onClick={() => runLifecycleAction(spec)}
+        title={
+          enabled
+            ? `${spec.label} this ${config.title.toLowerCase()}`
+            : describeReason(spec.label, detail.status)
+        }
+        type="button"
+      >
+        {isBusy ? `${spec.label}...` : spec.label}
+      </button>
+    );
+  });
+
   return (
     <div className="resource-page">
       <PageHeader
         action={
-          <div className="button-row">
-            {config.actions.map((spec) => {
-              const enabled = spec.from.includes(detail.status);
-              const isBusy = pendingAction === spec.action;
-              return (
-                <button
-                  className={spec.action === "cancel" || spec.action === "reject" ? "secondary-button" : "primary-button"}
-                  disabled={!enabled || Boolean(pendingAction)}
-                  key={spec.action}
-                  onClick={() => runLifecycleAction(spec)}
-                  title={enabled ? `${spec.label} this ${config.title.toLowerCase()}` : describeReason(spec.label, detail.status)}
-                  type="button"
-                >
-                  {isBusy ? `${spec.label}...` : spec.label}
-                </button>
-              );
-            })}
-            {kind === "orders" ? (
-              <button
-                className="primary-button"
-                onClick={() => navigate(`/invoices/from-order/${detail.id}`)}
-                type="button"
-              >
-                Create invoice
-              </button>
-            ) : null}
+          <div className="doc-toolbar">
             {kind === "quotations" ? (
-              <>
-                <button
-                  className="secondary-button"
-                  disabled={isPreviewLoading}
-                  onClick={openQuotationPreview}
-                  type="button"
-                >
-                  {isPreviewLoading ? "Preparing..." : "Preview"}
-                </button>
-                <button
-                  className="secondary-button"
-                  disabled={isPreviewLoading}
-                  onClick={handleQuotationDownload}
-                  type="button"
-                >
-                  Download
-                </button>
-                <button
-                  className="secondary-button"
-                  disabled={isPreviewLoading}
-                  onClick={handleQuotationPrint}
-                  type="button"
-                >
-                  Print
-                </button>
-              </>
+              <DocumentActionBar
+                isBusy={isPreviewLoading}
+                onDownload={handleQuotationDownload}
+                onPreview={openQuotationPreview}
+                onPrint={handleQuotationPrint}
+              />
             ) : null}
-            {kind === "quotations" ? (
+            <div className="button-row doc-toolbar-lifecycle">
+              {lifecycleButtons}
+              {kind === "orders" ? (
+                <button
+                  className="primary-button"
+                  onClick={() => navigate(`/invoices/from-order/${detail.id}`)}
+                  type="button"
+                >
+                  Create invoice
+                </button>
+              ) : null}
+              {kind === "quotations" ? (
+                <button
+                  className="primary-button"
+                  disabled={isConverting || detail.status !== "accepted"}
+                  onClick={handleConvertToOrder}
+                  title={
+                    detail.status === "accepted"
+                      ? "Create a confirmed order from this quotation"
+                      : "Only accepted quotations can be converted"
+                  }
+                  type="button"
+                >
+                  {isConverting ? "Converting..." : "Convert to order"}
+                </button>
+              ) : null}
               <button
-                className="primary-button"
-                disabled={isConverting || detail.status !== "accepted"}
-                onClick={handleConvertToOrder}
-                title={
-                  detail.status === "accepted"
-                    ? "Create a confirmed order from this quotation"
-                    : "Only accepted quotations can be converted"
+                className="secondary-button"
+                onClick={() =>
+                  navigate(
+                    `/audit/${kind === "orders" ? "order" : "quotation"}/${detail.id}`
+                  )
                 }
                 type="button"
               >
-                {isConverting ? "Converting..." : "Convert to order"}
+                Audit history
               </button>
-            ) : null}
-            <button
-              className="secondary-button"
-              onClick={() => navigate(`/audit/${kind === "orders" ? "order" : "quotation"}/${detail.id}`)}
-              type="button"
-            >
-              Audit history
-            </button>
-            <button
-              className="secondary-button"
-              onClick={() => navigate(config.listPath)}
-              type="button"
-            >
-              Back to list
-            </button>
+              <button
+                className="secondary-button"
+                onClick={() => navigate(config.listPath)}
+                type="button"
+              >
+                Back to list
+              </button>
+            </div>
           </div>
         }
         description={`${config.title} for ${formatCustomer(detail.customer)}.`}
@@ -368,82 +391,67 @@ function TransactionDetailScreen({ id, kind, navigate }) {
         title={detail[config.numberKey]}
       />
 
-      <section className="detail-grid">
-        <div className="detail-field">
-          <span>Status</span>
-          <strong>
-            <StatusPill
-              kind={kind === "orders" ? "order" : "quotation"}
-              status={detail.status}
-            />
-          </strong>
-        </div>
-        <DetailField label="Customer" value={formatCustomer(detail.customer)} />
-        <DetailField
-          label="Date"
-          value={formatDateWith(settings, detail.orderDate || detail.issueDate)}
-        />
-        <DetailField
-          label="Due / delivery"
-          value={formatDateWith(settings, detail.deliveryDate || detail.expiryDate)}
-        />
-        <DetailField label="Subtotal" value={toMoney(detail.subtotal)} />
-        <DetailField
-          label={
-            detail.discountType === "percent"
-              ? `Discount (${Number(detail.discountValue || 0)}%)`
-              : "Discount"
-          }
-          value={
-            Number(detail.discountTotal || detail.discountAmount || 0) > 0
-              ? `- ${toMoney(detail.discountTotal || detail.discountAmount)}`
-              : "None"
-          }
-        />
-        <DetailField
-          label={
-            detail.taxEnabled
-              ? `Tax (${Number(detail.taxRate || 0)}%)`
-              : "Tax"
-          }
-          value={
-            detail.taxEnabled
-              ? toMoney(detail.taxTotal || detail.taxAmount || 0)
-              : "Not applied"
-          }
-        />
-        <DetailField label="Grand total" value={toMoney(detail.grandTotal)} />
-      </section>
+      <DocumentHeroPanel
+        eyebrow={config.title}
+        number={detail[config.numberKey]}
+        description={`Issued for ${formatCustomer(detail.customer)}`}
+        statusKind={kind === "orders" ? "order" : "quotation"}
+        status={detail.status}
+        highlight={{
+          label: "Grand total",
+          value: toMoney(detail.grandTotal),
+          tone: "primary"
+        }}
+        meta={[
+          { label: "Customer", value: formatCustomer(detail.customer) },
+          {
+            label: kind === "orders" ? "Order date" : "Issue date",
+            value: formatDateWith(settings, detail.orderDate || detail.issueDate)
+          },
+          {
+            label: kind === "orders" ? "Delivery date" : "Expires",
+            value: formatDateWith(settings, detail.deliveryDate || detail.expiryDate)
+          },
+          { label: "Subtotal", value: toMoney(detail.subtotal) }
+        ]}
+      />
 
-      <section className="transaction-panel">
-        <div className="panel-heading">
-          <h3>Line items</h3>
-        </div>
-        {detail.items?.length ? (
-          <TableScroll>
-          <div className="resource-table">
-            <div className="resource-table-head detail-line-grid">
-              <span>Product</span>
-              <span>Quantity</span>
-              <span>Unit price</span>
-              <span>Total</span>
-            </div>
-            {detail.items.map((item) => (
-              <article className="resource-row detail-line-grid" key={item.id}>
-                <div>
-                  <strong>{item.product?.name || item.description}</strong>
-                  <span>{item.product?.sku || item.description}</span>
-                </div>
-                <span>{item.quantity}</span>
-                <span>{toMoney(item.unitPrice)}</span>
-                <span>{toMoney(item.lineTotal)}</span>
-              </article>
-            ))}
+      <section className="doc-body-grid">
+        <section className="transaction-panel doc-body-main">
+          <div className="panel-heading">
+            <h3>Line items</h3>
+            <span>{detail.items?.length || 0} items</span>
           </div>
-          </TableScroll>
-        ) : (
-          <EmptyState>No line items found.</EmptyState>
-        )}
+          {detail.items?.length ? (
+            <TableScroll>
+              <div className="resource-table">
+                <div className="resource-table-head detail-line-grid">
+                  <span>Product</span>
+                  <span>Quantity</span>
+                  <span>Unit price</span>
+                  <span>Total</span>
+                </div>
+                {detail.items.map((item) => (
+                  <article className="resource-row detail-line-grid" key={item.id}>
+                    <div>
+                      <strong>{item.product?.name || item.description}</strong>
+                      <span>{item.product?.sku || item.description}</span>
+                    </div>
+                    <span>{item.quantity}</span>
+                    <span>{toMoney(item.unitPrice)}</span>
+                    <span>{toMoney(item.lineTotal)}</span>
+                  </article>
+                ))}
+              </div>
+            </TableScroll>
+          ) : (
+            <EmptyState>No line items found.</EmptyState>
+          )}
+        </section>
+        <DocumentTotalsCard
+          rows={totalsRows}
+          grand={{ label: "Grand total", value: toMoney(detail.grandTotal) }}
+        />
       </section>
 
       <section className="transaction-panel">
