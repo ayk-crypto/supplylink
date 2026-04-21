@@ -47,7 +47,11 @@ function mapShareSummary(row) {
 }
 
 function isMissingDocumentSharesTableError(error) {
-  return error?.code === "42P01";
+  return (
+    error?.code === "42P01" &&
+    typeof error?.message === "string" &&
+    /document_shares/i.test(error.message)
+  );
 }
 
 function assertShareFound(row) {

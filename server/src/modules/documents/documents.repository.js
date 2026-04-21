@@ -15,6 +15,21 @@ const SHARE_SELECT = `share.id,
                       share.created_at,
                       share.updated_at`;
 
+const SHARE_RETURNING = `id,
+                         vendor_id,
+                         document_type,
+                         quotation_id,
+                         invoice_id,
+                         public_token,
+                         created_by,
+                         sent_at,
+                         first_viewed_at,
+                         last_viewed_at,
+                         view_count,
+                         revoked_at,
+                         created_at,
+                         updated_at`;
+
 async function findActiveQuotationShareForVendor(vendorId, quotationId) {
   const result = await query(
     `SELECT ${SHARE_SELECT}
@@ -61,7 +76,7 @@ async function createDocumentShare({
        created_by
      )
      VALUES ($1, $2, $3, $4, $5, $6)
-     RETURNING ${SHARE_SELECT}`,
+     RETURNING ${SHARE_RETURNING}`,
     [vendorId, documentType, quotationId, invoiceId, publicToken, createdBy || null]
   );
 
