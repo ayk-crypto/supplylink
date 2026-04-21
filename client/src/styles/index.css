@@ -774,31 +774,31 @@ a {
 }
 
 .customer-grid {
-  grid-template-columns: minmax(180px, 1.4fr) minmax(180px, 1fr) minmax(120px, 0.8fr) 110px auto;
+  grid-template-columns: minmax(180px, 1.4fr) minmax(180px, 1fr) minmax(120px, 0.8fr) 110px 150px;
 }
 
 .category-grid {
-  grid-template-columns: minmax(180px, 1fr) minmax(160px, 0.8fr) minmax(220px, 1.4fr) auto;
+  grid-template-columns: minmax(180px, 1fr) minmax(160px, 0.8fr) minmax(220px, 1.4fr) 90px;
 }
 
 .product-grid {
   grid-template-columns:
     minmax(190px, 1.35fr) minmax(120px, 0.7fr) minmax(150px, 0.9fr)
-    minmax(100px, 0.6fr) 100px auto;
+    minmax(100px, 0.6fr) 100px 90px;
 }
 
 .transaction-grid {
-  grid-template-columns: minmax(170px, 1fr) minmax(190px, 1fr) 120px minmax(110px, 0.7fr) auto;
+  grid-template-columns: minmax(170px, 1fr) minmax(190px, 1fr) 120px minmax(110px, 0.7fr) 90px;
 }
 
 .invoice-grid {
   grid-template-columns:
     minmax(170px, 1fr) minmax(190px, 1fr) 120px minmax(110px, 0.65fr)
-    minmax(120px, 0.7fr) auto;
+    minmax(120px, 0.7fr) 90px;
 }
 
 .route-grid {
-  grid-template-columns: minmax(190px, 1.4fr) minmax(120px, 0.7fr) 130px minmax(120px, 0.7fr) auto;
+  grid-template-columns: minmax(190px, 1.4fr) minmax(120px, 0.7fr) 130px minmax(120px, 0.7fr) 90px;
 }
 
 .route-stop-grid {
