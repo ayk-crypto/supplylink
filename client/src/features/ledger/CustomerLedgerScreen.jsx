@@ -25,9 +25,9 @@ import {
 const entryTypes = ["debit", "credit"];
 const sourceTypes = ["invoice", "payment", "adjustment", "opening_balance"];
 
-function DetailField({ label, value }) {
+function DetailField({ label, value, wide }) {
   return (
-    <div className="detail-field">
+    <div className={wide ? "detail-field detail-field-wide-2" : "detail-field"}>
       <span>{label}</span>
       <strong>{value || "Not set"}</strong>
     </div>
@@ -203,7 +203,7 @@ function CustomerLedgerScreen({ id, navigate }) {
         <DetailField label="Ending balance" value={toMoney(statement.endingBalance)} />
         <DetailField label="Filtered debits" value={toMoney(filteredTotals.debit)} />
         <DetailField label="Filtered credits" value={toMoney(filteredTotals.credit)} />
-        <DetailField label="Email" value={displayCustomer.email} />
+        <DetailField label="Email" value={displayCustomer.email} wide />
         <DetailField label="Phone" value={displayCustomer.phone} />
         <DetailField label="Relationship status" value={customer?.relationship?.status} />
       </section>
