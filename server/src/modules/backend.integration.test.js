@@ -1245,6 +1245,23 @@ if (!testDatabaseUrl) {
       assert.equal(assigned.payload.data.orderId, assignableOrder.payload.data.id);
       assert.equal(assigned.payload.data.assignmentSummary.orderCount, 1);
 
+      const assignedSecondOrder = await api.post(
+        `/routes/${route.payload.data.id}/stops/${firstStop.payload.data.id}/orders/${secondAssignableOrder.payload.data.id}`,
+        {
+          token: state.vendorA.token
+        }
+      );
+      assert.equal(assignedSecondOrder.payload.data.assignmentSummary.orderCount, 2);
+      assert.equal(assignedSecondOrder.payload.data.assignedOrders.length, 2);
+
+      await api.post(
+        `/routes/${route.payload.data.id}/stops/${firstStop.payload.data.id}/orders/${assignableOrder.payload.data.id}`,
+        {
+          token: state.vendorA.token,
+          expectedStatus: 409
+        }
+      );
+
       await api.post(
         `/routes/${route.payload.data.id}/stops/${secondStop.payload.data.id}/orders/${assignableOrder.payload.data.id}`,
         {
@@ -1296,24 +1313,34 @@ if (!testDatabaseUrl) {
       const routeDetail = await api.get(`/routes/${route.payload.data.id}`, {
         token: state.vendorA.token
       });
-      assert.equal(routeDetail.payload.data.summary.assignedOrderCount, 1);
-      assert.equal(routeDetail.payload.data.stops[0].assignedOrders.length, 1);
-      assert.equal(routeDetail.payload.data.stops[0].assignedOrders[0].id, assignableOrder.payload.data.id);
+      assert.equal(routeDetail.payload.data.summary.assignedOrderCount, 2);
+      assert.equal(routeDetail.payload.data.stops[0].assignedOrders.length, 2);
+      assert.ok(
+        routeDetail.payload.data.stops[0].assignedOrders.some(
+          (order) => order.id === assignableOrder.payload.data.id
+        )
+      );
+      assert.ok(
+        routeDetail.payload.data.stops[0].assignedOrders.some(
+          (order) => order.id === secondAssignableOrder.payload.data.id
+        )
+      );
 
       const routeStops = await api.get(`/routes/${route.payload.data.id}/stops`, {
         token: state.vendorA.token
       });
-      assert.equal(routeStops.payload.data.routeSummary.assignedOrderCount, 1);
-      assert.equal(routeStops.payload.data.items[0].assignmentSummary.orderCount, 1);
+      assert.equal(routeStops.payload.data.routeSummary.assignedOrderCount, 2);
+      assert.equal(routeStops.payload.data.items[0].assignmentSummary.orderCount, 2);
 
       const intelligence = await api.get(`/routes/${route.payload.data.id}/intelligence`, {
         token: state.vendorA.token
       });
-      assert.equal(intelligence.payload.data.summary.assignedOrderCount, 1);
+      assert.equal(intelligence.payload.data.summary.assignedOrderCount, 2);
       assert.equal(intelligence.payload.data.summary.stopCount, 3);
       assert.ok(
         intelligence.payload.data.summary.assignedOrderValueTotal >=
-          Number(assignableOrder.payload.data.grandTotal)
+          Number(assignableOrder.payload.data.grandTotal) +
+            Number(secondAssignableOrder.payload.data.grandTotal)
       );
       const firstIntelligenceStop = intelligence.payload.data.stops.find(
         (stop) => stop.id === firstStop.payload.data.id
@@ -1321,14 +1348,22 @@ if (!testDatabaseUrl) {
       const secondIntelligenceStop = intelligence.payload.data.stops.find(
         (stop) => stop.id === secondStop.payload.data.id
       );
-      assert.equal(firstIntelligenceStop.assignedOrders[0].id, assignableOrder.payload.data.id);
+      assert.equal(firstIntelligenceStop.assignedOrders.length, 2);
       assert.ok(
-        secondIntelligenceStop.eligibleOrders.some(
+        firstIntelligenceStop.assignedOrders.some((order) => order.id === assignableOrder.payload.data.id)
+      );
+      assert.ok(
+        firstIntelligenceStop.assignedOrders.some(
           (order) => order.id === secondAssignableOrder.payload.data.id
         )
       );
       assert.ok(
         secondIntelligenceStop.eligibleOrders.every((order) => order.id !== assignableOrder.payload.data.id)
+      );
+      assert.ok(
+        secondIntelligenceStop.eligibleOrders.every(
+          (order) => order.id !== secondAssignableOrder.payload.data.id
+        )
       );
 
       const orderDetailWhileAssigned = await api.get(`/orders/${assignableOrder.payload.data.id}`, {
@@ -1342,8 +1377,10 @@ if (!testDatabaseUrl) {
           token: state.vendorA.token
         }
       );
-      assert.equal(unassigned.payload.data.orderId, null);
-      assert.equal(unassigned.payload.data.assignmentSummary.orderCount, 0);
+      assert.equal(unassigned.payload.data.orderId, secondAssignableOrder.payload.data.id);
+      assert.equal(unassigned.payload.data.assignmentSummary.orderCount, 1);
+      assert.equal(unassigned.payload.data.assignedOrders.length, 1);
+      assert.equal(unassigned.payload.data.assignedOrders[0].id, secondAssignableOrder.payload.data.id);
 
       await api.delete(
         `/routes/${route.payload.data.id}/stops/${firstStop.payload.data.id}/orders/${assignableOrder.payload.data.id}`,
@@ -1356,18 +1393,104 @@ if (!testDatabaseUrl) {
       const intelligenceAfterUnassign = await api.get(`/routes/${route.payload.data.id}/intelligence`, {
         token: state.vendorA.token
       });
+      const firstStopAfterUnassign = intelligenceAfterUnassign.payload.data.stops.find(
+        (stop) => stop.id === firstStop.payload.data.id
+      );
       const secondStopAfterUnassign = intelligenceAfterUnassign.payload.data.stops.find(
         (stop) => stop.id === secondStop.payload.data.id
       );
-      assert.equal(intelligenceAfterUnassign.payload.data.summary.assignedOrderCount, 0);
+      assert.equal(intelligenceAfterUnassign.payload.data.summary.assignedOrderCount, 1);
+      assert.equal(firstStopAfterUnassign.assignedOrders.length, 1);
+      assert.equal(firstStopAfterUnassign.assignedOrders[0].id, secondAssignableOrder.payload.data.id);
       assert.ok(
         secondStopAfterUnassign.eligibleOrders.some((order) => order.id === assignableOrder.payload.data.id)
+      );
+      assert.ok(
+        secondStopAfterUnassign.eligibleOrders.every(
+          (order) => order.id !== secondAssignableOrder.payload.data.id
+        )
       );
 
       const orderDetailAfterUnassign = await api.get(`/orders/${assignableOrder.payload.data.id}`, {
         token: state.vendorA.token
       });
       assert.equal(orderDetailAfterUnassign.payload.data.status, "draft");
+    });
+
+    await t.test("route stop order migration backfill preserves legacy assignments safely", async () => {
+      const legacyOrder = await api.post("/orders", {
+        token: state.vendorA.token,
+        body: {
+          customerId: state.customer.id,
+          items: [
+            {
+              productId: state.product.id,
+              quantity: 1,
+              unitPrice: 9
+            }
+          ]
+        },
+        expectedStatus: 201
+      });
+
+      const legacyRoute = await api.post("/routes", {
+        token: state.vendorA.token,
+        body: {
+          name: "Legacy Route Backfill",
+          routeDate: "2026-05-07",
+          status: "planned"
+        },
+        expectedStatus: 201
+      });
+
+      const legacyStop = await api.post(`/routes/${legacyRoute.payload.data.id}/stops`, {
+        token: state.vendorA.token,
+        body: {
+          customerId: state.customer.id,
+          sequenceNumber: 1
+        },
+        expectedStatus: 201
+      });
+
+      await app.pool.query("DELETE FROM route_stop_orders WHERE route_stop_id = $1", [
+        legacyStop.payload.data.id
+      ]);
+      await app.pool.query("UPDATE route_stops SET order_id = $1 WHERE id = $2", [
+        legacyOrder.payload.data.id,
+        legacyStop.payload.data.id
+      ]);
+
+      await app.pool.query(
+        `INSERT INTO route_stop_orders (route_stop_id, order_id)
+         SELECT stop.id, stop.order_id
+         FROM route_stops stop
+         LEFT JOIN route_stop_orders assignment
+           ON assignment.route_stop_id = stop.id
+          AND assignment.order_id = stop.order_id
+         WHERE stop.order_id IS NOT NULL
+           AND assignment.id IS NULL`
+      );
+      await app.pool.query(
+        `UPDATE route_stops
+         SET order_id = NULL,
+             updated_at = NOW()
+         WHERE order_id IS NOT NULL`
+      );
+
+      const backfilledDetail = await api.get(`/routes/${legacyRoute.payload.data.id}`, {
+        token: state.vendorA.token
+      });
+      const backfilledStop = backfilledDetail.payload.data.stops[0];
+
+      assert.equal(backfilledStop.assignedOrders.length, 1);
+      assert.equal(backfilledStop.assignedOrders[0].id, legacyOrder.payload.data.id);
+      assert.equal(backfilledStop.orderId, legacyOrder.payload.data.id);
+      assert.equal(backfilledStop.assignmentSummary.orderCount, 1);
+
+      const legacyColumn = await app.pool.query("SELECT order_id FROM route_stops WHERE id = $1", [
+        legacyStop.payload.data.id
+      ]);
+      assert.equal(legacyColumn.rows[0].order_id, null);
     });
 
     await t.test("conversion actions reject invalid, duplicate, and cross-tenant conversions", async () => {

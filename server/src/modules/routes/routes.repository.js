@@ -33,7 +33,6 @@ const STOP_SELECT = `stop.id,
                      stop.vendor_id,
                      stop.customer_id,
                      stop.vendor_customer_relationship_id,
-                     stop.order_id,
                      stop.sequence_number,
                      stop.stop_type,
                      stop.status,
@@ -49,11 +48,9 @@ const STOP_SELECT = `stop.id,
                      customer.phone AS customer_phone,
                      relationship.account_code AS customer_account_code,
                      relationship.status AS customer_relationship_status,
-                     orders.order_number,
-                     orders.status AS order_status,
-                     orders.delivery_date AS order_delivery_date,
-                     orders.order_date AS order_order_date,
-                     orders.grand_total AS order_grand_total`;
+                     assignment.assigned_order_count,
+                     assignment.assigned_order_value_total,
+                     assignment.assigned_orders`;
 
 const ELIGIBLE_ORDER_SELECT = `orders.id,
                                orders.vendor_id,
@@ -88,9 +85,28 @@ function stopJoinClause() {
           LEFT JOIN vendor_customer_relationships relationship
             ON relationship.id = stop.vendor_customer_relationship_id
            AND relationship.vendor_id = stop.vendor_id
-          LEFT JOIN orders
-            ON orders.id = stop.order_id
-           AND orders.vendor_id = stop.vendor_id`;
+          LEFT JOIN LATERAL (
+            SELECT COUNT(*)::int AS assigned_order_count,
+                   COALESCE(SUM(orders.grand_total), 0) AS assigned_order_value_total,
+                   COALESCE(
+                     json_agg(
+                       json_build_object(
+                         'id', orders.id,
+                         'orderNumber', orders.order_number,
+                         'status', orders.status,
+                         'orderDate', orders.order_date,
+                         'deliveryDate', orders.delivery_date,
+                         'grandTotal', orders.grand_total
+                       )
+                       ORDER BY orders.delivery_date ASC NULLS LAST, orders.created_at DESC
+                     ),
+                     '[]'::json
+                   ) AS assigned_orders
+            FROM route_stop_orders route_stop_order
+            INNER JOIN orders
+              ON orders.id = route_stop_order.order_id
+            WHERE route_stop_order.route_stop_id = stop.id
+          ) assignment ON TRUE`;
 }
 
 async function listRoutesForVendor({
@@ -293,6 +309,8 @@ async function findOrderForVendor(vendorId, orderId, client = { query }) {
             vendor_customer_relationship_id,
             order_number,
             status,
+            order_date,
+            grand_total,
             delivery_date
      FROM orders
      WHERE vendor_id = $1
@@ -306,15 +324,16 @@ async function findOrderForVendor(vendorId, orderId, client = { query }) {
 
 async function findRouteStopByOrderForVendor(vendorId, orderId, client = { query }) {
   const result = await client.query(
-    `SELECT id,
-            route_id,
-            vendor_id,
-            customer_id,
-            sequence_number,
-            order_id
-     FROM route_stops
-     WHERE vendor_id = $1
-       AND order_id = $2
+    `SELECT stop.id,
+            stop.route_id,
+            stop.vendor_id,
+            stop.customer_id,
+            stop.sequence_number,
+            route_stop_order.order_id
+     FROM route_stop_orders route_stop_order
+     INNER JOIN route_stops stop ON stop.id = route_stop_order.route_stop_id
+     WHERE stop.vendor_id = $1
+       AND route_stop_order.order_id = $2
      LIMIT 1`,
     [vendorId, orderId]
   );
@@ -339,9 +358,8 @@ async function listEligibleOrdersForCustomers(vendorId, customerIds, statuses, c
        AND orders.status = ANY($3::text[])
        AND NOT EXISTS (
          SELECT 1
-         FROM route_stops assigned_stop
-         WHERE assigned_stop.vendor_id = orders.vendor_id
-           AND assigned_stop.order_id = orders.id
+         FROM route_stop_orders assigned_stop_order
+         WHERE assigned_stop_order.order_id = orders.id
        )
      ORDER BY orders.delivery_date ASC NULLS LAST, orders.created_at DESC`,
     [vendorId, customerIds, statuses]
@@ -376,7 +394,6 @@ async function createRouteStopForVendor(vendorId, routeId, payload) {
          vendor_id,
          customer_id,
          vendor_customer_relationship_id,
-         order_id,
          sequence_number,
          stop_type,
          status,
@@ -385,14 +402,13 @@ async function createRouteStopForVendor(vendorId, routeId, payload) {
          notes,
          metadata
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING id`,
       [
         routeId,
         vendorId,
         payload.customer_id,
         payload.vendor_customer_relationship_id,
-        payload.order_id || null,
         payload.sequence_number,
         payload.stop_type || null,
         payload.status || "pending",
@@ -404,6 +420,75 @@ async function createRouteStopForVendor(vendorId, routeId, payload) {
     );
 
     return findRouteStopForVendor(vendorId, routeId, result.rows[0].id, client);
+  });
+}
+
+async function assignOrderToRouteStopForVendor(vendorId, routeId, stopId, orderId) {
+  return withTransaction(async (client) => {
+    const stop = await findRouteStopForVendor(vendorId, routeId, stopId, client);
+
+    if (!stop) {
+      return null;
+    }
+
+    await client.query(
+      `INSERT INTO route_stop_orders (route_stop_id, order_id)
+       VALUES ($1, $2)`,
+      [stopId, orderId]
+    );
+
+    return findRouteStopForVendor(vendorId, routeId, stopId, client);
+  });
+}
+
+async function unassignOrderFromRouteStopForVendor(vendorId, routeId, stopId, orderId) {
+  return withTransaction(async (client) => {
+    const stop = await findRouteStopForVendor(vendorId, routeId, stopId, client);
+
+    if (!stop) {
+      return {
+        deletedCount: 0,
+        stop: null
+      };
+    }
+
+    const deleteResult = await client.query(
+      `DELETE FROM route_stop_orders route_stop_order
+       USING route_stops stop
+       WHERE route_stop_order.route_stop_id = stop.id
+         AND stop.vendor_id = $1
+         AND stop.route_id = $2
+         AND stop.id = $3
+         AND route_stop_order.order_id = $4`,
+      [vendorId, routeId, stopId, orderId]
+    );
+
+    return {
+      deletedCount: deleteResult.rowCount,
+      stop: await findRouteStopForVendor(vendorId, routeId, stopId, client)
+    };
+  });
+}
+
+async function clearRouteStopOrdersForVendor(vendorId, routeId, stopId) {
+  return withTransaction(async (client) => {
+    const stop = await findRouteStopForVendor(vendorId, routeId, stopId, client);
+
+    if (!stop) {
+      return null;
+    }
+
+    await client.query(
+      `DELETE FROM route_stop_orders route_stop_order
+       USING route_stops stop
+       WHERE route_stop_order.route_stop_id = stop.id
+         AND stop.vendor_id = $1
+         AND stop.route_id = $2
+         AND stop.id = $3`,
+      [vendorId, routeId, stopId]
+    );
+
+    return findRouteStopForVendor(vendorId, routeId, stopId, client);
   });
 }
 
@@ -493,6 +578,8 @@ async function updateRouteStopForVendor(vendorId, routeId, stopId, updates) {
 }
 
 export {
+  assignOrderToRouteStopForVendor,
+  clearRouteStopOrdersForVendor,
   createRouteForVendor,
   createRouteStopForVendor,
   findCustomerRelationshipForVendor,
@@ -503,6 +590,7 @@ export {
   listEligibleOrdersForCustomers,
   listRouteStopsForVendor,
   listRoutesForVendor,
+  unassignOrderFromRouteStopForVendor,
   updateRouteForVendor,
   updateRouteStopForVendor
 };
