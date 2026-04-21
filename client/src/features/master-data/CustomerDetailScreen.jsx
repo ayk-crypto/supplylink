@@ -26,9 +26,9 @@ import {
 import CustomerForm from "./CustomerForm.jsx";
 import { getApiErrorMessage, toMoney } from "./resourceUtils.js";
 
-function DetailField({ label, value }) {
+function DetailField({ label, value, wide }) {
   return (
-    <div className="detail-field">
+    <div className={wide ? "detail-field detail-field-wide-2" : "detail-field"}>
       <span>{label}</span>
       <strong>{value || "Not set"}</strong>
     </div>
@@ -310,7 +310,7 @@ function CustomerDetailScreen({ id, navigate }) {
       <section className="detail-grid">
         <DetailField label="Full name" value={customer.fullName} />
         <DetailField label="Company" value={customer.companyName} />
-        <DetailField label="Email" value={customer.email} />
+        <DetailField label="Email" value={customer.email} wide />
         <DetailField label="Phone" value={customer.phone} />
         <DetailField label="Account code" value={relationship?.accountCode} />
         <div className="detail-field">
