@@ -9,6 +9,7 @@ import {
   readLegacySettings,
   toBackendPayload
 } from "./settingsDefaults.js";
+import { setActiveSettings } from "./settingsFormat.js";
 
 function unwrapSections(payload) {
   if (!payload || typeof payload !== "object") {
@@ -53,6 +54,7 @@ function SettingsProvider({ children }) {
   const [error, setError] = useState("");
   const isMountedRef = useRef(true);
   const legacyMigrationDoneRef = useRef(false);
+  const sessionGenerationRef = useRef(0);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -67,6 +69,8 @@ function SettingsProvider({ children }) {
       if (!isAuthenticated) {
         return DEFAULT_SETTINGS;
       }
+
+      const generation = sessionGenerationRef.current;
 
       if (isMountedRef.current) {
         setIsLoading(true);
@@ -90,7 +94,7 @@ function SettingsProvider({ children }) {
           }
         }
 
-        if (isMountedRef.current) {
+        if (isMountedRef.current && sessionGenerationRef.current === generation) {
           setSettings(merged);
           setIsHydrated(true);
         }
@@ -104,7 +108,7 @@ function SettingsProvider({ children }) {
         const legacy = readLegacySettings();
         const fallback = mergeSettings(DEFAULT_SETTINGS, legacy);
 
-        if (isMountedRef.current) {
+        if (isMountedRef.current && sessionGenerationRef.current === generation) {
           setSettings(fallback);
           setIsHydrated(true);
           setError(
@@ -116,7 +120,7 @@ function SettingsProvider({ children }) {
 
         return fallback;
       } finally {
-        if (isMountedRef.current) {
+        if (isMountedRef.current && sessionGenerationRef.current === generation) {
           setIsLoading(false);
         }
       }
@@ -125,12 +129,13 @@ function SettingsProvider({ children }) {
   );
 
   const save = useCallback(async (nextSettings) => {
+    const generation = sessionGenerationRef.current;
     const payload = toBackendPayload(nextSettings);
     const response = await updateSettings(payload);
     const persisted = extractSettings(response);
     const merged = mergeSettings(DEFAULT_SETTINGS, persisted ?? nextSettings);
 
-    if (isMountedRef.current) {
+    if (isMountedRef.current && sessionGenerationRef.current === generation) {
       setSettings(merged);
       setIsHydrated(true);
     }
@@ -144,6 +149,8 @@ function SettingsProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    sessionGenerationRef.current += 1;
+
     if (!isAuthenticated) {
       setSettings(DEFAULT_SETTINGS);
       setIsHydrated(false);
@@ -160,6 +167,10 @@ function SettingsProvider({ children }) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    setActiveSettings(settings);
+  }, [settings]);
 
   const value = useMemo(
     () => ({

@@ -10,6 +10,16 @@ const CURRENCY_SYMBOLS = {
   JPY: "¥"
 };
 
+let activeSettings = DEFAULT_SETTINGS;
+
+function setActiveSettings(settings) {
+  activeSettings = settings || DEFAULT_SETTINGS;
+}
+
+function getActiveSettings() {
+  return activeSettings;
+}
+
 function getCurrency(settings) {
   return settings?.currency || DEFAULT_SETTINGS.currency;
 }
@@ -157,6 +167,7 @@ export {
   formatDateTimeWith,
   formatDateWith,
   formatMoneyWith,
+  getActiveSettings,
   getBrandColor,
   getCompanyInitials,
   getCurrency,
@@ -164,6 +175,7 @@ export {
   getLogoUrl,
   getPreferences,
   isValidHexColor,
+  setActiveSettings,
   shouldConfirmDestructive,
   shouldShowNotificationsBadge
 };

@@ -1,3 +1,5 @@
+import { formatMoneyWith, getActiveSettings } from "../system/settingsFormat.js";
+
 function getApiErrorMessage(error, fallback = "The request could not be completed.") {
   if (!(error instanceof Error)) {
     return fallback;
@@ -39,13 +41,7 @@ function isValidSlug(value) {
 }
 
 function toMoney(value) {
-  const amount = Number(value || 0);
-
-  return new Intl.NumberFormat(undefined, {
-    currency: "USD",
-    maximumFractionDigits: 2,
-    style: "currency"
-  }).format(amount);
+  return formatMoneyWith(getActiveSettings(), value);
 }
 
 export { cleanOptional, cleanRequired, getApiErrorMessage, isValidEmail, isValidSlug, toMoney };

@@ -1,0 +1,97 @@
+Work only on the existing SupplyLink frontend.
+
+Do not change backend APIs.
+
+Goal:
+Implement Module 20AS: Currency Propagation and Remaining Real-World Refinements.
+
+Context:
+SupplyLink settings persistence is now working correctly, including currency save/reset. However, some screens still show a hardcoded `$` sign instead of using the workspace currency from Settings. Date formatting is fixed. Several UI issues were already fixed. This module should focus on finishing money-format consistency and tightening remaining visible rough edges.
+
+Core objective:
+Ensure the app is fully settings-driven for money formatting and remove any remaining obvious frontend inconsistencies that were surfaced in real testing.
+
+What to do:
+
+1) Currency propagation audit (HIGH PRIORITY)
+Audit all money rendering across the frontend and remove any hardcoded `$` or stale currency formatting.
+
+At minimum check:
+- dashboard
+- order creation
+- quotation creation
+- invoice creation
+- product price display
+- quotation/order/invoice detail screens
+- customer detail / ledger where values appear
+- routes/route intelligence summaries if values appear
+- reports
+- invoice print/output
+
+Requirements:
+- all money values must use the shared settings-aware formatter
+- do not hardcode currency symbols anywhere
+- respect current workspace settings for:
+  - currency
+  - decimal places
+  - separators
+- keep safe fallback behavior if settings are not loaded yet
+
+2) Centralize money formatting
+Where practical:
+- ensure all money formatting flows through the existing shared helper (for example formatMoneyWith(settings, value), or the equivalent in this codebase)
+- remove local ad-hoc formatting patterns like:
+  - "$" + amount
+  - template literals with fixed symbol
+  - stale local currency references
+
+3) Order/quotation/invoice create-form totals
+Because these are high-visibility commercial screens:
+- ensure live totals and price displays in create screens use the selected workspace currency
+- ensure discount/tax totals also use the same formatter
+- keep formatting consistent with detail screens
+
+4) Product and catalog pricing
+Check product price display carefully:
+- list screens
+- detail/edit surfaces if applicable
+- any related pricing preview areas
+
+Make sure product prices reflect workspace currency formatting too.
+
+5) Remaining small refinement issues
+While touching these screens, fix any small low-risk remaining readability inconsistencies that are directly related to value presentation, such as:
+- inconsistent spacing around totals
+- mixed old/new money formatting patterns
+- obvious stale currency references in labels/previews
+
+Do not redesign screens.
+Do not add new features.
+
+6) Verification
+- run client lint
+- run client build
+- manually verify:
+  - changing currency in Settings updates dashboard
+  - changing currency updates order/quotation/invoice create totals
+  - changing currency updates product price display
+  - changing currency updates detail and report totals where applicable
+  - no obvious hardcoded `$` remains in the app
+
+7) Documentation
+Update client README with a short Module 20AS section describing currency propagation completion.
+
+Deliverable:
+1. Summary
+2. Files changed
+3. Which screens had hardcoded/stale currency formatting fixed
+4. What shared formatter/path was standardized
+5. Verification results
+6. Any remaining minor follow-up items
+
+Constraints:
+- no backend changes
+- no redesign
+- no new features
+- keep changes additive and production-minded
+- focus on real issues only

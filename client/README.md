@@ -1442,3 +1442,56 @@ Files changed
 Verification
 - `npm run lint`: clean.
 - `npm run build`: passes.
+
+## Module 20AS — Currency propagation
+
+The frontend now renders all monetary values through a single
+settings-aware path so currency, decimal places, and thousands
+separator changes in Settings take effect everywhere immediately.
+
+How it works
+- `formatMoneyWith(settings, value)` in `settingsFormat.js` is the
+  canonical money formatter. It honours `settings.currency.code`,
+  `decimals`, and `thousandsSeparator`, and resolves the symbol via
+  the `CURRENCY_SYMBOLS` map (USD, EUR, GBP, INR, AED, PKR, JPY).
+- A module-level "active settings" snapshot lives in
+  `settingsFormat.js` (`getActiveSettings` / `setActiveSettings`).
+  `SettingsProvider` keeps it in sync via a `useEffect` whenever the
+  hydrated settings change.
+- `toMoney(value)` in `master-data/resourceUtils.js` (re-exported
+  through `ledgerUtils`, `transactionUtils`, `reportUtils`) now
+  delegates to `formatMoneyWith(getActiveSettings(), value)` instead
+  of a hardcoded USD `Intl.NumberFormat`. Every existing call site
+  (transactions, invoices, ledger, reports, products, customer
+  detail, dashboard, line-item editor) now follows workspace currency
+  with no per-screen changes.
+
+Surfaces verified
+- Dashboard summary tiles (already used `formatMoneyWith`).
+- Order / Quotation / Invoice create screens — live totals
+  (subtotal, discount, tax, grand total) and per-row line totals.
+- Order / Quotation / Invoice list and detail screens.
+- Invoice print HTML (line items, subtotal, tax, discount, grand
+  total, balance due) — built synchronously, picks up active
+  settings.
+- Customer detail (outstanding, grand total, ledger ending balance,
+  recent orders/quotations/invoices/payments).
+- Customer ledger (debits, credits, running balance, filtered
+  totals).
+- Reports (Reports home, Receivables report).
+- Products list (unit price column).
+
+Safe defaults
+- The active-settings snapshot starts at `DEFAULT_SETTINGS`, so any
+  money formatted before hydration still renders cleanly (USD `$`
+  with two decimals).
+
+Files changed
+- `client/src/features/system/settingsFormat.js`
+- `client/src/features/system/SettingsProvider.jsx`
+- `client/src/features/master-data/resourceUtils.js`
+- `client/README.md`
+
+Verification
+- `npm run lint`: clean.
+- `npm run build`: passes.
