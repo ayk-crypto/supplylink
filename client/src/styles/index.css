@@ -4986,3 +4986,525 @@ a:hover {
     text-align: left;
   }
 }
+
+/* === Module 23B: Dashboard refinement (premium polish) ============= */
+.dashboard-insights-page {
+  gap: 24px;
+}
+
+.dashboard-insights-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr);
+  gap: 22px;
+  padding: 32px;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 88% -10%, rgba(255, 222, 173, 0.18), transparent 45%),
+    radial-gradient(circle at -5% 110%, rgba(75, 192, 162, 0.22), transparent 50%),
+    linear-gradient(135deg, #0e2a23 0%, #173f34 60%, #1d4d3f 100%);
+  color: #f4f8f5;
+  box-shadow: 0 30px 70px -25px rgba(8, 28, 22, 0.55);
+  overflow: hidden;
+  isolation: isolate;
+}
+.dashboard-insights-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+  z-index: -1;
+  opacity: 0.6;
+}
+.dashboard-insights-hero > div:first-child {
+  display: grid;
+  align-content: center;
+  gap: 14px;
+  max-width: 540px;
+}
+.dashboard-insights-hero .eyebrow {
+  color: rgba(238, 247, 240, 0.78);
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  margin: 0;
+}
+.dashboard-insights-hero h2 {
+  margin: 0;
+  color: #fffdf8;
+  font-size: clamp(1.8rem, 2.8vw, 2.5rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  max-width: none;
+}
+.dashboard-insights-hero p {
+  color: rgba(238, 247, 240, 0.78);
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  max-width: 52ch;
+}
+
+.dashboard-hero-panel {
+  border-radius: 20px;
+  padding: 22px;
+  background: linear-gradient(180deg, rgba(255, 252, 245, 0.97), rgba(248, 244, 235, 0.95));
+  color: var(--ink);
+  display: grid;
+  gap: 18px;
+  align-content: start;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.dashboard-hero-panel-head span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #5a7569;
+}
+.dashboard-hero-panel-head strong {
+  display: block;
+  font-size: clamp(1.7rem, 2.6vw, 2.3rem);
+  margin-top: 8px;
+  color: #0e2a23;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.dashboard-hero-panel-head p {
+  color: #4b665c;
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.dashboard-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.dashboard-hero-stat {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(14, 42, 35, 0.06);
+  border: 1px solid rgba(14, 42, 35, 0.08);
+  display: grid;
+  gap: 4px;
+}
+.dashboard-hero-stat span {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #5a7569;
+}
+.dashboard-hero-stat strong {
+  color: #0e2a23;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Quick actions - pill toolbar */
+.dashboard-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+/* Summary cards - polished metric tiles */
+.dashboard-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+}
+.dashboard-summary-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 8px 24px -16px rgba(15, 35, 28, 0.18);
+  display: grid;
+  gap: 10px;
+  overflow: hidden;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  --tone-color: #1f5447;
+  --tone-bg: rgba(31, 84, 71, 0.10);
+}
+.dashboard-summary-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--tone-color);
+  opacity: 0.85;
+}
+.dashboard-summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 30px -18px rgba(15, 35, 28, 0.28);
+  border-color: rgba(15, 35, 28, 0.16);
+}
+.dashboard-summary-card[data-tone="success"] { --tone-color: #1d7a46; --tone-bg: rgba(29, 122, 70, 0.12); }
+.dashboard-summary-card[data-tone="warning"] { --tone-color: #b35c1e; --tone-bg: rgba(179, 92, 30, 0.12); }
+.dashboard-summary-card[data-tone="info"]    { --tone-color: #2557b7; --tone-bg: rgba(37, 87, 183, 0.12); }
+.dashboard-summary-card[data-tone="violet"]  { --tone-color: #6d4ec2; --tone-bg: rgba(109, 78, 194, 0.12); }
+.dashboard-summary-card[data-tone="teal"]    { --tone-color: #0f6b72; --tone-bg: rgba(15, 107, 114, 0.12); }
+.dashboard-summary-card[data-tone="rose"]    { --tone-color: #9e315b; --tone-bg: rgba(158, 49, 91, 0.12); }
+.dashboard-summary-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.dashboard-summary-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: var(--tone-bg);
+  color: var(--tone-color);
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+.dashboard-summary-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.dashboard-summary-card strong {
+  font-size: 1.5rem;
+  color: var(--ink);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  word-break: break-word;
+}
+.dashboard-summary-card small {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+/* Insights grid */
+.dashboard-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.dashboard-wide-panel { grid-column: 1 / -1; }
+
+/* Activity / overdue / customer / payment / notification rows */
+.dashboard-activity-feed,
+.dashboard-overdue-list,
+.dashboard-customer-list,
+.dashboard-payment-list,
+.dashboard-notification-list {
+  display: grid;
+  gap: 0;
+}
+.dashboard-activity-row,
+.dashboard-overdue-row,
+.dashboard-customer-row,
+.dashboard-payment-row,
+.dashboard-notification-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 4px;
+  border-top: 1px solid rgba(15, 35, 28, 0.08);
+}
+.dashboard-activity-row:first-child,
+.dashboard-overdue-row:first-child,
+.dashboard-customer-row:first-child,
+.dashboard-payment-row:first-child,
+.dashboard-notification-row:first-child {
+  border-top: 0;
+  padding-top: 4px;
+}
+.dashboard-activity-row,
+.dashboard-overdue-row,
+.dashboard-customer-row,
+.dashboard-payment-row {
+  border-radius: 10px;
+  padding: 12px;
+  margin: 0 -8px;
+  transition: background 0.15s ease;
+}
+.dashboard-activity-row:hover,
+.dashboard-overdue-row:hover,
+.dashboard-customer-row:hover,
+.dashboard-payment-row:hover {
+  background: rgba(15, 35, 28, 0.035);
+}
+
+.dashboard-activity-row {
+  position: relative;
+  padding-left: 14px;
+}
+.dashboard-activity-row::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 14px;
+  bottom: 14px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--row-accent, #cbd5d0);
+}
+.dashboard-activity-row[data-type="quotation"] { --row-accent: #6d4ec2; }
+.dashboard-activity-row[data-type="order"]     { --row-accent: #0f6b72; }
+.dashboard-activity-row[data-type="invoice"]   { --row-accent: #9e315b; }
+.dashboard-activity-row[data-type="payment"]   { --row-accent: #1d7a46; }
+
+.dashboard-activity-main {
+  flex: 1;
+  min-width: 0;
+}
+.dashboard-activity-main strong,
+.dashboard-overdue-row strong,
+.dashboard-customer-main strong,
+.dashboard-payment-row strong,
+.dashboard-notification-row strong {
+  color: var(--ink);
+  font-weight: 650;
+  font-size: 0.95rem;
+  letter-spacing: -0.005em;
+}
+.dashboard-activity-main p,
+.dashboard-overdue-row p,
+.dashboard-customer-main p,
+.dashboard-payment-row p,
+.dashboard-notification-row p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.dashboard-type-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 78px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(15, 35, 28, 0.06);
+  color: #1f5447;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+.dashboard-type-chip[data-type="quotation"] { background: rgba(109, 78, 194, 0.10); color: #5a3eaa; }
+.dashboard-type-chip[data-type="order"]     { background: rgba(15, 107, 114, 0.10); color: #0d5a60; }
+.dashboard-type-chip[data-type="invoice"]   { background: rgba(158, 49, 91, 0.10); color: #87264c; }
+.dashboard-type-chip[data-type="payment"]   { background: rgba(29, 122, 70, 0.10); color: #186b3c; }
+.dashboard-inline-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(29, 122, 70, 0.10);
+  color: #186b3c;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dashboard-activity-meta,
+.dashboard-overdue-meta,
+.dashboard-customer-meta,
+.dashboard-payment-meta {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+  text-align: right;
+  flex-shrink: 0;
+}
+.dashboard-activity-meta strong,
+.dashboard-overdue-meta strong,
+.dashboard-customer-meta strong,
+.dashboard-payment-meta strong {
+  font-variant-numeric: tabular-nums;
+  font-size: 1rem;
+  font-weight: 700;
+}
+.dashboard-activity-meta span {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* Overdue invoices - urgent treatment */
+.dashboard-overdue-row {
+  position: relative;
+  padding-left: 14px;
+  background: rgba(217, 119, 6, 0.04);
+  border-top: 1px solid rgba(217, 119, 6, 0.18);
+}
+.dashboard-overdue-row:first-child { border-top: 1px solid rgba(217, 119, 6, 0.18); padding-top: 12px; }
+.dashboard-overdue-row::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 4px;
+  border-radius: 4px;
+  background: #d97706;
+}
+.dashboard-overdue-row[data-severity="high"] { background: rgba(217, 86, 6, 0.06); }
+.dashboard-overdue-row[data-severity="high"]::before { background: #d05a06; }
+.dashboard-overdue-row[data-severity="critical"] { background: rgba(180, 35, 24, 0.07); border-top-color: rgba(180, 35, 24, 0.22); }
+.dashboard-overdue-row[data-severity="critical"]::before { background: #b42318; }
+.dashboard-overdue-row:hover { background: rgba(217, 119, 6, 0.08); }
+.dashboard-overdue-row[data-severity="critical"]:hover { background: rgba(180, 35, 24, 0.10); }
+
+.dashboard-overdue-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.dashboard-overdue-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(217, 119, 6, 0.14);
+  color: #92400e;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.dashboard-overdue-badge[data-severity="high"]     { background: rgba(208, 90, 6, 0.16); color: #7c2d12; }
+.dashboard-overdue-badge[data-severity="critical"] { background: rgba(180, 35, 24, 0.16); color: #7f1d1d; }
+.dashboard-overdue-row span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.dashboard-overdue-meta strong { color: #92400e; }
+.dashboard-overdue-row[data-severity="critical"] .dashboard-overdue-meta strong { color: #7f1d1d; }
+
+/* Customers */
+.dashboard-customer-row { align-items: center; gap: 14px; }
+.dashboard-customer-rank {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fde7b6, #f5f0e2);
+  color: #7c5a11;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  box-shadow: inset 0 -2px 0 rgba(124, 90, 17, 0.12);
+}
+.dashboard-customer-row:nth-child(1) .dashboard-customer-rank {
+  background: linear-gradient(135deg, #ffd57a, #f8b500);
+  color: #5a3a00;
+}
+.dashboard-customer-main { min-width: 0; flex: 1; }
+.dashboard-customer-main p { margin-top: 4px; }
+.dashboard-customer-main span {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+/* Payments */
+.dashboard-payment-row span { color: var(--muted); font-size: 0.8rem; }
+.dashboard-payment-meta small {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* Notifications */
+.dashboard-notification-row {
+  align-items: flex-start;
+  gap: 12px;
+}
+.dashboard-notification-row .read-dot {
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+/* Responsive breakpoints */
+@media (max-width: 1280px) {
+  .dashboard-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 980px) {
+  .dashboard-insights-hero,
+  .dashboard-insights-grid {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-insights-hero { padding: 24px; }
+  .dashboard-hero-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .dashboard-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 720px) {
+  .dashboard-insights-hero { padding: 22px; border-radius: 20px; }
+  .dashboard-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .dashboard-summary-card { padding: 14px; border-radius: 14px; }
+  .dashboard-summary-card strong { font-size: 1.25rem; }
+  .dashboard-hero-stats { grid-template-columns: 1fr; }
+  .dashboard-quick-actions { padding: 6px; }
+  .dashboard-quick-actions .primary-button,
+  .dashboard-quick-actions .secondary-button { flex: 1; min-width: 140px; }
+}
+@media (max-width: 560px) {
+  .dashboard-activity-row,
+  .dashboard-overdue-row,
+  .dashboard-customer-row,
+  .dashboard-payment-row,
+  .dashboard-notification-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .dashboard-activity-meta,
+  .dashboard-overdue-meta,
+  .dashboard-customer-meta,
+  .dashboard-payment-meta {
+    justify-items: start;
+    text-align: left;
+  }
+  .dashboard-activity-meta {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+}
+@media (max-width: 420px) {
+  .dashboard-summary-grid { grid-template-columns: 1fr; }
+}
+/* === end Module 23B =============================================== */

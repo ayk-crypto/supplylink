@@ -9,11 +9,20 @@ import { useAppSettings } from "../system/settingsContext.js";
 import { formatDateWith, formatMoneyWith } from "../system/settingsFormat.js";
 import { useDashboardData } from "./useDashboardData.js";
 
-function SummaryCard({ accent, detail, label, value }) {
+function SummaryCard({ accent, detail, icon, label, tone, value }) {
   return (
-    <article className="dashboard-summary-card">
-      <span className="dashboard-summary-label">{label}</span>
-      <strong style={{ "--dashboard-accent": accent }}>{value}</strong>
+    <article
+      className="dashboard-summary-card"
+      data-tone={tone || "neutral"}
+      style={accent ? { "--dashboard-accent": accent } : undefined}
+    >
+      <div className="dashboard-summary-head">
+        <span className="dashboard-summary-icon" aria-hidden="true">
+          {icon || "•"}
+        </span>
+        <span className="dashboard-summary-label">{label}</span>
+      </div>
+      <strong>{value}</strong>
       <small>{detail}</small>
     </article>
   );
@@ -63,9 +72,15 @@ function ActivityFeed({ formatDate, formatMoney, items, navigate }) {
   return (
     <div className="dashboard-activity-feed">
       {items.map((item) => (
-        <article className="dashboard-activity-row" key={`${item.type}-${item.id}`}>
+        <article
+          className="dashboard-activity-row"
+          data-type={item.type}
+          key={`${item.type}-${item.id}`}
+        >
           <div className="dashboard-activity-main">
-            <span className="dashboard-type-chip">{activityTypeLabel(item.type)}</span>
+            <span className="dashboard-type-chip" data-type={item.type}>
+              {activityTypeLabel(item.type)}
+            </span>
             <div>
               <strong>{item.label}</strong>
               <p>{item.customer?.label || "No customer linked"}</p>
@@ -103,30 +118,44 @@ function OverdueInvoices({ formatDate, formatMoney, items, navigate }) {
 
   return (
     <div className="dashboard-overdue-list">
-      {items.map((invoice) => (
-        <article className="dashboard-overdue-row" key={invoice.id}>
-          <div>
-            <strong>{invoice.label}</strong>
-            <p>{invoice.customer?.label || "No customer"}</p>
-            <span>
-              Due {formatDate(invoice.dueDate)} · {invoice.daysOverdue} day
-              {invoice.daysOverdue === 1 ? "" : "s"} overdue
-            </span>
-          </div>
-          <div className="dashboard-overdue-meta">
-            <strong>{formatMoney(invoice.balanceDue)}</strong>
-            {typeof navigate === "function" ? (
-              <button
-                className="link-button"
-                onClick={() => navigate(`/invoices/${invoice.id}`)}
-                type="button"
-              >
-                Review
-              </button>
-            ) : null}
-          </div>
-        </article>
-      ))}
+      {items.map((invoice) => {
+        const severity =
+          invoice.daysOverdue >= 30
+            ? "critical"
+            : invoice.daysOverdue >= 14
+              ? "high"
+              : "warning";
+        return (
+          <article
+            className="dashboard-overdue-row"
+            data-severity={severity}
+            key={invoice.id}
+          >
+            <div>
+              <div className="dashboard-overdue-title">
+                <strong>{invoice.label}</strong>
+                <span className="dashboard-overdue-badge" data-severity={severity}>
+                  {invoice.daysOverdue} day{invoice.daysOverdue === 1 ? "" : "s"} overdue
+                </span>
+              </div>
+              <p>{invoice.customer?.label || "No customer"}</p>
+              <span>Due {formatDate(invoice.dueDate)}</span>
+            </div>
+            <div className="dashboard-overdue-meta">
+              <strong>{formatMoney(invoice.balanceDue)}</strong>
+              {typeof navigate === "function" ? (
+                <button
+                  className="link-button"
+                  onClick={() => navigate(`/invoices/${invoice.id}`)}
+                  type="button"
+                >
+                  Review
+                </button>
+              ) : null}
+            </div>
+          </article>
+        );
+      })}
     </div>
   );
 }
@@ -327,37 +356,43 @@ function DashboardScreen({ navigate }) {
 
       <section className="dashboard-summary-grid">
         <SummaryCard
-          accent="#1d7a46"
+          tone="success"
+          icon="↑"
           detail="Total revenue collected"
-          label="Revenue Collected"
+          label="Revenue collected"
           value={formatMoney(summary.revenueCollected || 0)}
         />
         <SummaryCard
-          accent="#b35c1e"
+          tone="warning"
+          icon="!"
           detail="Unpaid issued invoice balance"
-          label="Outstanding Receivables"
+          label="Outstanding receivables"
           value={formatMoney(summary.outstandingReceivables || 0)}
         />
         <SummaryCard
-          accent="#2557b7"
+          tone="info"
+          icon="◉"
           detail="Linked customers"
           label="Customers"
           value={String(summary.totalCustomers || 0)}
         />
         <SummaryCard
-          accent="#6d4ec2"
+          tone="violet"
+          icon="✎"
           detail="Quotations created"
           label="Quotations"
           value={String(summary.totalQuotations || 0)}
         />
         <SummaryCard
-          accent="#0f6b72"
+          tone="teal"
+          icon="◆"
           detail="Orders across all statuses"
           label="Orders"
           value={String(summary.totalOrders || 0)}
         />
         <SummaryCard
-          accent="#9e315b"
+          tone="rose"
+          icon="₹"
           detail="Invoices issued so far"
           label="Invoices"
           value={String(summary.totalInvoices || 0)}
