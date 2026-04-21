@@ -2,6 +2,16 @@ import { z } from "zod";
 
 const uuidParam = z.string().uuid();
 const jsonRecordSchema = z.record(z.string(), z.unknown());
+const optionalSkuSchema = z.preprocess(
+  (value) => {
+    if (typeof value === "string" && value.trim() === "") {
+      return undefined;
+    }
+
+    return value;
+  },
+  z.string().trim().min(1).max(100).optional()
+);
 
 const categoryIdParamsSchema = z.object({
   categoryId: uuidParam
@@ -52,7 +62,7 @@ const categoryUpdateBodySchema = z.object(categoryShape).refine((value) => Objec
 });
 
 const productBaseShape = {
-  sku: z.string().trim().min(1).max(100).optional(),
+  sku: optionalSkuSchema,
   name: z.string().trim().min(2).max(200).optional(),
   description: z.string().trim().max(5000).nullable().optional(),
   categoryId: uuidParam.nullable().optional(),
@@ -70,7 +80,6 @@ const rejectConflictingPriceFields = (value) =>
 const productCreateBodySchema = z
   .object({
     ...productBaseShape,
-    sku: z.string().trim().min(1).max(100),
     name: z.string().trim().min(2).max(200)
   })
   .refine(rejectConflictingPriceFields, {

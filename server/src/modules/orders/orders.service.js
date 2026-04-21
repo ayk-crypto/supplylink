@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import AppError from "../../core/errors/AppError.js";
+import { calculateDocumentPricing, toCents, toMoney, toNumber } from "../shared/pricing.js";
 import {
   createOrderWithItems,
   findCustomerRelationshipForVendor,
@@ -81,18 +82,6 @@ function toColumnPayload(input = {}, fieldMap) {
   return payload;
 }
 
-function toNumber(value) {
-  return Number(value || 0);
-}
-
-function toMoney(cents) {
-  return Number((cents / 100).toFixed(2));
-}
-
-function toCents(value) {
-  return Math.round(toNumber(value) * 100);
-}
-
 function calculateLineItem(input, product, index) {
   const quantity = toNumber(input.quantity);
   const unitPrice = Object.prototype.hasOwnProperty.call(input, "unitPrice")
@@ -139,15 +128,6 @@ function calculateLineItem(input, product, index) {
   };
 }
 
-function calculateTotals(items) {
-  return {
-    subtotal: toMoney(items.reduce((total, item) => total + item.subtotalCents, 0)),
-    discount_total: toMoney(items.reduce((total, item) => total + item.discountCents, 0)),
-    tax_total: toMoney(items.reduce((total, item) => total + item.taxCents, 0)),
-    grand_total: toMoney(items.reduce((total, item) => total + item.lineTotalCents, 0))
-  };
-}
-
 function generateOrderNumber() {
   const date = new Date().toISOString().slice(0, 10).replaceAll("-", "");
   const suffix = randomUUID().slice(0, 8).toUpperCase();
@@ -180,8 +160,14 @@ function mapOrder(row) {
     orderDate: row.order_date,
     requestedDeliveryDate: row.delivery_date,
     deliveryDate: row.delivery_date,
+    discountType: row.discount_type,
+    discountValue: Number(row.discount_value || 0),
+    discountAmount: Number(row.discount_amount || 0),
     subtotal: row.subtotal,
     discountTotal: row.discount_total,
+    taxEnabled: row.tax_enabled,
+    taxRate: Number(row.tax_rate || 0),
+    taxAmount: Number(row.tax_amount || 0),
     taxTotal: row.tax_total,
     grandTotal: row.grand_total,
     notes: row.notes,
@@ -392,7 +378,11 @@ async function resolveOrderCreationSource(vendorId, payload) {
       customerId: payload.customerId,
       relationship: await assertCustomerLinkedToVendor(vendorId, payload.customerId),
       items: payload.items,
-      quotation: null
+      quotation: null,
+      discountType: payload.discountType ?? null,
+      discountValue: payload.discountValue ?? 0,
+      taxEnabled: payload.taxEnabled ?? false,
+      taxRate: payload.taxRate ?? 0
     };
   }
 
@@ -441,7 +431,11 @@ async function resolveOrderCreationSource(vendorId, payload) {
     customerId: quotation.customer_id,
     relationship,
     items: quotationItems,
-    quotation
+    quotation,
+    discountType: payload.discountType ?? quotation.discount_type ?? null,
+    discountValue: payload.discountValue ?? Number(quotation.discount_value || 0),
+    taxEnabled: payload.taxEnabled ?? Boolean(quotation.tax_enabled),
+    taxRate: payload.taxRate ?? Number(quotation.tax_rate || 0)
   };
 }
 
@@ -534,7 +528,13 @@ async function getOrderDetail(vendorId, orderId) {
 async function createOrder(vendorId, payload, actor) {
   const source = await resolveOrderCreationSource(vendorId, payload);
   const items = await buildOrderItems(vendorId, source.items);
-  const totals = calculateTotals(items);
+  const pricing = calculateDocumentPricing({
+    items,
+    discountType: source.discountType,
+    discountValue: source.discountValue,
+    taxEnabled: source.taxEnabled,
+    taxRate: source.taxRate
+  });
   const status = payload.status || "draft";
 
   if (status === "confirmed") {
@@ -551,9 +551,18 @@ async function createOrder(vendorId, payload, actor) {
       status,
       order_date: payload.orderDate || null,
       delivery_date: payload.requestedDeliveryDate || payload.deliveryDate || null,
+      discount_type: pricing.discountType,
+      discount_value: pricing.discountValue,
+      discount_amount: pricing.discountAmount,
+      tax_enabled: pricing.taxEnabled,
+      tax_rate: pricing.taxRate,
+      tax_amount: pricing.taxAmount,
       notes: payload.notes || source.quotation?.notes || null,
       created_by: actor.userId,
-      ...totals
+      subtotal: pricing.subtotal,
+      discount_total: pricing.discountTotal,
+      tax_total: pricing.taxTotal,
+      grand_total: pricing.grandTotal
     },
     items
   });

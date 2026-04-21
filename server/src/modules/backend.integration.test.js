@@ -370,7 +370,6 @@ if (!testDatabaseUrl) {
             phone: "+1-555-0200"
           },
           relationship: {
-            accountCode: `INT-${suffix}`.slice(0, 80),
             status: "active",
             creditLimit: 1000
           }
@@ -378,6 +377,20 @@ if (!testDatabaseUrl) {
         expectedStatus: 201
       });
       state.customer = customer.payload.data.customer;
+      assert.match(customer.payload.data.relationship.accountCode, /^CUST-\d{4,}$/);
+
+      const updatedCustomer = await api.patch(`/customers/${state.customer.id}`, {
+        token: state.vendorA.token,
+        body: {
+          relationship: {
+            accountCode: `acct-${suffix}`.slice(0, 80)
+          }
+        }
+      });
+      assert.equal(
+        updatedCustomer.payload.data.relationship.accountCode,
+        `ACCT-${suffix}`.slice(0, 80).toUpperCase()
+      );
 
       const category = await api.post("/categories", {
         token: state.vendorA.token,
@@ -392,7 +405,6 @@ if (!testDatabaseUrl) {
       const product = await api.post("/products", {
         token: state.vendorA.token,
         body: {
-          sku: `INT-${suffix}`.slice(0, 90),
           name: "Integration Product",
           categoryId: state.category.id,
           unitPrice: 10,
@@ -401,7 +413,18 @@ if (!testDatabaseUrl) {
         expectedStatus: 201
       });
       state.product = product.payload.data;
+      assert.match(state.product.sku, /^SKU-\d{4,}$/);
       assert.equal(Number(state.product.stockQuantity), 0);
+
+      const manualSku = `int-${suffix}`.slice(0, 90);
+      const updatedProduct = await api.patch(`/products/${state.product.id}`, {
+        token: state.vendorA.token,
+        body: {
+          sku: manualSku
+        }
+      });
+      state.product = updatedProduct.payload.data;
+      assert.equal(state.product.sku, manualSku.toUpperCase());
 
       const stockedProduct = await api.post("/inventory/adjust", {
         token: state.vendorA.token,
@@ -453,6 +476,10 @@ if (!testDatabaseUrl) {
         body: {
           customerId: state.customer.id,
           status: "sent",
+          discountType: "percent",
+          discountValue: 10,
+          taxEnabled: true,
+          taxRate: 15,
           notes: "Integration quote",
           items: [
             {
@@ -465,7 +492,16 @@ if (!testDatabaseUrl) {
         expectedStatus: 201
       });
       state.quotation = quotation.payload.data;
-      assert.equal(Number(state.quotation.grandTotal), 20);
+      assert.equal(state.quotation.discountType, "percent");
+      assert.equal(Number(state.quotation.discountValue), 10);
+      assert.equal(Number(state.quotation.discountAmount), 2);
+      assert.equal(state.quotation.taxEnabled, true);
+      assert.equal(Number(state.quotation.taxRate), 15);
+      assert.equal(Number(state.quotation.taxAmount), 2.7);
+      assert.equal(Number(state.quotation.subtotal), 20);
+      assert.equal(Number(state.quotation.discountTotal), 2);
+      assert.equal(Number(state.quotation.taxTotal), 2.7);
+      assert.equal(Number(state.quotation.grandTotal), 20.7);
 
       const acceptedQuotation = await api.post(`/quotations/${state.quotation.id}/accept`, {
         token: state.vendorA.token
@@ -480,6 +516,11 @@ if (!testDatabaseUrl) {
       state.order = order.payload.data;
       assert.equal(state.order.quotationId, state.quotation.id);
       assert.equal(state.order.status, "confirmed");
+      assert.equal(state.order.discountType, "percent");
+      assert.equal(Number(state.order.discountAmount), 2);
+      assert.equal(state.order.taxEnabled, true);
+      assert.equal(Number(state.order.taxAmount), 2.7);
+      assert.equal(Number(state.order.grandTotal), 20.7);
 
       const productAfterOrder = await api.get(`/inventory/products/${state.product.id}`, {
         token: state.vendorA.token
@@ -512,7 +553,11 @@ if (!testDatabaseUrl) {
       });
       state.invoice = invoice.payload.data;
       assert.equal(state.invoice.status, "issued");
-      assert.equal(Number(state.invoice.balanceDue), 20);
+      assert.equal(state.invoice.discountType, "percent");
+      assert.equal(Number(state.invoice.discountAmount), 2);
+      assert.equal(state.invoice.taxEnabled, true);
+      assert.equal(Number(state.invoice.taxAmount), 2.7);
+      assert.equal(Number(state.invoice.balanceDue), 20.7);
 
       const partialPayment = await api.post("/payments", {
         token: state.vendorA.token,
@@ -532,7 +577,7 @@ if (!testDatabaseUrl) {
         token: state.vendorA.token
       });
       assert.equal(partiallyPaidInvoice.payload.data.status, "partially_paid");
-      assert.equal(Number(partiallyPaidInvoice.payload.data.balanceDue), 15);
+      assert.equal(Number(partiallyPaidInvoice.payload.data.balanceDue), 15.7);
 
       await api.post("/payments", {
         token: state.vendorA.token,
@@ -551,7 +596,7 @@ if (!testDatabaseUrl) {
         body: {
           customerId: state.customer.id,
           invoiceId: state.invoice.id,
-          amount: 15,
+          amount: 15.7,
           paymentMethod: "bank_transfer",
           referenceNumber: `FULL-${suffix}`.slice(0, 100)
         },
@@ -1057,6 +1102,19 @@ if (!testDatabaseUrl) {
       });
       assert.equal(voidInvoice.payload.data.status, "void");
       assert.equal(Number(voidInvoice.payload.data.balanceDue), 0);
+
+      const replacementInvoice = await api.post(`/orders/${state.order.id}/create-invoice`, {
+        token: state.vendorA.token,
+        expectedStatus: 201
+      });
+      assert.equal(replacementInvoice.payload.data.orderId, state.order.id);
+      assert.equal(replacementInvoice.payload.data.status, "issued");
+      assert.equal(Number(replacementInvoice.payload.data.grandTotal), Number(state.order.grandTotal));
+
+      await api.post(`/orders/${state.order.id}/create-invoice`, {
+        token: state.vendorA.token,
+        expectedStatus: 409
+      });
     });
 
     await t.test("route intelligence supports assignment, unassignment, summaries, and eligibility rules", async () => {

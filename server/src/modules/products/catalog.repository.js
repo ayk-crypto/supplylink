@@ -262,6 +262,25 @@ async function createProductForVendor(vendorId, payload) {
   return result.rows[0] || null;
 }
 
+async function getNextVendorProductSku(vendorId) {
+  const result = await query(
+    `SELECT COALESCE(
+       MAX(
+         CASE
+           WHEN sku ~ '^SKU-[0-9]+$' THEN substring(sku FROM '[0-9]+$')::int
+           ELSE NULL
+         END
+       ),
+       0
+     ) + 1 AS next_sku
+     FROM products
+     WHERE vendor_id = $1`,
+    [vendorId]
+  );
+
+  return Number(result.rows[0]?.next_sku || 1);
+}
+
 async function updateProductForVendor(vendorId, productId, updates) {
   const entries = Object.entries(updates).filter(([, value]) => value !== undefined);
 
@@ -296,6 +315,7 @@ export {
   createProductForVendor,
   findCategoryForVendor,
   findProductForVendor,
+  getNextVendorProductSku,
   listCategoriesForVendor,
   listProductsForVendor,
   updateCategoryForVendor,

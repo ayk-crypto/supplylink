@@ -1,0 +1,31 @@
+CREATE UNIQUE INDEX IF NOT EXISTS uq_vendor_customer_relationships_account_code
+ON vendor_customer_relationships (vendor_id, lower(account_code))
+WHERE account_code IS NOT NULL;
+
+ALTER TABLE quotations
+ADD COLUMN IF NOT EXISTS discount_type VARCHAR(20) CHECK (discount_type IN ('flat', 'percent')),
+ADD COLUMN IF NOT EXISTS discount_value NUMERIC(14, 2) NOT NULL DEFAULT 0,
+ADD COLUMN IF NOT EXISTS discount_amount NUMERIC(14, 2) NOT NULL DEFAULT 0,
+ADD COLUMN IF NOT EXISTS tax_enabled BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN IF NOT EXISTS tax_rate NUMERIC(7, 4) NOT NULL DEFAULT 0,
+ADD COLUMN IF NOT EXISTS tax_amount NUMERIC(14, 2) NOT NULL DEFAULT 0;
+
+ALTER TABLE orders
+ADD COLUMN IF NOT EXISTS discount_type VARCHAR(20) CHECK (discount_type IN ('flat', 'percent')),
+ADD COLUMN IF NOT EXISTS discount_value NUMERIC(14, 2) NOT NULL DEFAULT 0,
+ADD COLUMN IF NOT EXISTS discount_amount NUMERIC(14, 2) NOT NULL DEFAULT 0,
+ADD COLUMN IF NOT EXISTS tax_enabled BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN IF NOT EXISTS tax_rate NUMERIC(7, 4) NOT NULL DEFAULT 0,
+ADD COLUMN IF NOT EXISTS tax_amount NUMERIC(14, 2) NOT NULL DEFAULT 0;
+
+ALTER TABLE invoices
+ADD COLUMN IF NOT EXISTS discount_type VARCHAR(20) CHECK (discount_type IN ('flat', 'percent')),
+ADD COLUMN IF NOT EXISTS discount_value NUMERIC(14, 2) NOT NULL DEFAULT 0,
+ADD COLUMN IF NOT EXISTS discount_amount NUMERIC(14, 2) NOT NULL DEFAULT 0,
+ADD COLUMN IF NOT EXISTS tax_enabled BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN IF NOT EXISTS tax_rate NUMERIC(7, 4) NOT NULL DEFAULT 0,
+ADD COLUMN IF NOT EXISTS tax_amount NUMERIC(14, 2) NOT NULL DEFAULT 0;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_invoices_vendor_order_active
+ON invoices (vendor_id, order_id)
+WHERE order_id IS NOT NULL AND status <> 'void';

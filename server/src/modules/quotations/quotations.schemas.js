@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { applyDiscountTaxRefinements, discountTaxFields } from "../shared/adjustmentSchemas.js";
 
 const uuidParam = z.string().uuid();
 const jsonRecordSchema = z.record(z.string(), z.unknown());
@@ -65,15 +66,18 @@ const quotationItemSchema = z
     }
   );
 
-const quotationCreateBodySchema = z.object({
-  customerId: uuidParam,
-  quoteNumber: z.string().trim().min(1).max(100).optional(),
-  issueDate: z.string().trim().date().nullable().optional(),
-  expiryDate: z.string().trim().date().nullable().optional(),
-  status: quotationCreateStatusEnum.optional(),
-  notes: z.string().trim().max(5000).nullable().optional(),
-  items: z.array(quotationItemSchema).min(1).max(200)
-});
+const quotationCreateBodySchema = applyDiscountTaxRefinements(
+  z.object({
+    customerId: uuidParam,
+    quoteNumber: z.string().trim().min(1).max(100).optional(),
+    issueDate: z.string().trim().date().nullable().optional(),
+    expiryDate: z.string().trim().date().nullable().optional(),
+    status: quotationCreateStatusEnum.optional(),
+    notes: z.string().trim().max(5000).nullable().optional(),
+    items: z.array(quotationItemSchema).min(1).max(200),
+    ...discountTaxFields
+  })
+);
 
 const quotationUpdateBodySchema = z
   .object({

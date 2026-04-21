@@ -10,7 +10,13 @@ const INVOICE_SELECT = `invoice.id,
                         invoice.issue_date,
                         invoice.due_date,
                         invoice.subtotal,
+                        invoice.discount_type,
+                        invoice.discount_value,
+                        invoice.discount_amount,
                         invoice.discount_total,
+                        invoice.tax_enabled,
+                        invoice.tax_rate,
+                        invoice.tax_amount,
                         invoice.tax_total,
                         invoice.grand_total,
                         invoice.balance_due,
@@ -37,7 +43,13 @@ const INVOICE_RETURNING = `id,
                            issue_date,
                            due_date,
                            subtotal,
+                           discount_type,
+                           discount_value,
+                           discount_amount,
                            discount_total,
+                           tax_enabled,
+                           tax_rate,
+                           tax_amount,
                            tax_total,
                            grand_total,
                            balance_due,
@@ -255,6 +267,16 @@ async function findOrderForVendor(vendorId, orderId, client = { query }) {
             status,
             order_date,
             delivery_date,
+            subtotal,
+            discount_type,
+            discount_value,
+            discount_amount,
+            discount_total,
+            tax_enabled,
+            tax_rate,
+            tax_amount,
+            tax_total,
+            grand_total,
             notes
      FROM orders
      WHERE vendor_id = $1
@@ -264,6 +286,20 @@ async function findOrderForVendor(vendorId, orderId, client = { query }) {
   );
 
   return result.rows[0] || null;
+}
+
+async function hasActiveInvoiceForOrder(vendorId, orderId, client = { query }) {
+  const result = await client.query(
+    `SELECT 1
+     FROM invoices
+     WHERE vendor_id = $1
+       AND order_id = $2
+       AND status <> 'void'
+     LIMIT 1`,
+    [vendorId, orderId]
+  );
+
+  return result.rowCount > 0;
 }
 
 async function listOrderItemsForInvoice(vendorId, orderId, client = { query }) {
@@ -299,14 +335,20 @@ async function createInvoiceWithItems({ invoice, items }) {
          issue_date,
          due_date,
          subtotal,
+         discount_type,
+         discount_value,
+         discount_amount,
          discount_total,
+         tax_enabled,
+         tax_rate,
+         tax_amount,
          tax_total,
          grand_total,
          balance_due,
          notes,
          created_by
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
        RETURNING ${INVOICE_RETURNING}`,
       [
         invoice.vendor_id,
@@ -318,7 +360,13 @@ async function createInvoiceWithItems({ invoice, items }) {
         invoice.issue_date,
         invoice.due_date,
         invoice.subtotal,
+        invoice.discount_type,
+        invoice.discount_value,
+        invoice.discount_amount,
         invoice.discount_total,
+        invoice.tax_enabled,
+        invoice.tax_rate,
+        invoice.tax_amount,
         invoice.tax_total,
         invoice.grand_total,
         invoice.balance_due,
@@ -439,6 +487,7 @@ export {
   findCustomerRelationshipForVendor,
   findInvoiceForVendor,
   findOrderForVendor,
+  hasActiveInvoiceForOrder,
   listInvoiceItemsForVendor,
   listInvoicesForVendor,
   listOrderItemsForInvoice,

@@ -4,6 +4,7 @@ import {
   createProductForVendor,
   findCategoryForVendor,
   findProductForVendor,
+  getNextVendorProductSku,
   listCategoriesForVendor,
   listProductsForVendor,
   updateCategoryForVendor,
@@ -94,6 +95,26 @@ function mapProduct(row) {
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
+}
+
+function normalizeSku(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim().toUpperCase();
+  return normalized || null;
+}
+
+async function ensureSku(vendorId, payload) {
+  const normalized = normalizeSku(payload.sku);
+
+  if (normalized) {
+    return normalized;
+  }
+
+  const nextSku = await getNextVendorProductSku(vendorId);
+  return `SKU-${String(nextSku).padStart(4, "0")}`;
 }
 
 function assertCategoryFound(row, categoryId) {
@@ -265,7 +286,16 @@ async function getProductDetail(vendorId, productId) {
 async function createProduct(vendorId, payload) {
   await assertCategoryBelongsToVendor(vendorId, payload.categoryId);
 
-  const product = await createProductForVendor(vendorId, toColumnPayload(payload, PRODUCT_FIELDS));
+  const product = await createProductForVendor(
+    vendorId,
+    toColumnPayload(
+      {
+        ...payload,
+        sku: await ensureSku(vendorId, payload)
+      },
+      PRODUCT_FIELDS
+    )
+  );
   const productWithCategory = await findProductForVendor(vendorId, product.id);
 
   return mapProduct(productWithCategory);
@@ -283,7 +313,13 @@ async function updateProduct(vendorId, productId, payload) {
   const product = await updateProductForVendor(
     vendorId,
     productId,
-    toColumnPayload(payload, PRODUCT_FIELDS)
+    toColumnPayload(
+      {
+        ...payload,
+        sku: Object.prototype.hasOwnProperty.call(payload, "sku") ? normalizeSku(payload.sku) : undefined
+      },
+      PRODUCT_FIELDS
+    )
   );
 
   assertProductFound(product, productId);

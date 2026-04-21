@@ -7,6 +7,16 @@ const customerIdParamsSchema = z.object({
 const customerStatusEnum = z.enum(["active", "inactive", "blocked"]);
 
 const jsonRecordSchema = z.record(z.string(), z.unknown());
+const optionalNullableCodeSchema = z.preprocess(
+  (value) => {
+    if (typeof value === "string" && value.trim() === "") {
+      return null;
+    }
+
+    return value;
+  },
+  z.string().trim().min(1).max(100).nullable().optional()
+);
 
 const paginationQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
@@ -35,7 +45,7 @@ const customerCreateBodySchema = z
     }),
     relationship: z
       .object({
-        accountCode: z.string().trim().min(1).max(100).nullable().optional(),
+        accountCode: optionalNullableCodeSchema,
         status: customerStatusEnum.optional(),
         creditLimit: z.coerce.number().min(0).optional(),
         priceListCode: z.string().trim().min(1).max(100).nullable().optional(),
@@ -55,7 +65,7 @@ const customerUpdateBodySchema = z
     customer: z.object(customerMasterShape).optional(),
     relationship: z
       .object({
-        accountCode: z.string().trim().min(1).max(100).nullable().optional(),
+        accountCode: optionalNullableCodeSchema,
         status: customerStatusEnum.optional(),
         creditLimit: z.coerce.number().min(0).optional(),
         priceListCode: z.string().trim().min(1).max(100).nullable().optional(),

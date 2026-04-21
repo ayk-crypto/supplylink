@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import AppError from "../../core/errors/AppError.js";
+import { calculateDocumentPricing, toCents, toMoney, toNumber } from "../shared/pricing.js";
 import {
   createQuotationWithItems,
   findCustomerRelationshipForVendor,
@@ -62,18 +63,6 @@ function toColumnPayload(input = {}, fieldMap) {
   return payload;
 }
 
-function toNumber(value) {
-  return Number(value || 0);
-}
-
-function toMoney(cents) {
-  return Number((cents / 100).toFixed(2));
-}
-
-function toCents(value) {
-  return Math.round(toNumber(value) * 100);
-}
-
 function calculateLineItem(input, product, index) {
   const quantity = toNumber(input.quantity);
   const unitPrice = Object.prototype.hasOwnProperty.call(input, "unitPrice")
@@ -120,15 +109,6 @@ function calculateLineItem(input, product, index) {
   };
 }
 
-function calculateTotals(items) {
-  return {
-    subtotal: toMoney(items.reduce((total, item) => total + item.subtotalCents, 0)),
-    discount_total: toMoney(items.reduce((total, item) => total + item.discountCents, 0)),
-    tax_total: toMoney(items.reduce((total, item) => total + item.taxCents, 0)),
-    grand_total: toMoney(items.reduce((total, item) => total + item.lineTotalCents, 0))
-  };
-}
-
 function generateQuoteNumber() {
   const date = new Date().toISOString().slice(0, 10).replaceAll("-", "");
   const suffix = randomUUID().slice(0, 8).toUpperCase();
@@ -159,8 +139,14 @@ function mapQuotation(row) {
     status: row.status,
     issueDate: row.issue_date,
     expiryDate: row.expiry_date,
+    discountType: row.discount_type,
+    discountValue: Number(row.discount_value || 0),
+    discountAmount: Number(row.discount_amount || 0),
     subtotal: row.subtotal,
     discountTotal: row.discount_total,
+    taxEnabled: row.tax_enabled,
+    taxRate: Number(row.tax_rate || 0),
+    taxAmount: Number(row.tax_amount || 0),
     taxTotal: row.tax_total,
     grandTotal: row.grand_total,
     notes: row.notes,
@@ -376,7 +362,13 @@ async function getQuotationDetail(vendorId, quotationId) {
 async function createQuotation(vendorId, payload, actor) {
   const relationship = await assertCustomerLinkedToVendor(vendorId, payload.customerId);
   const items = await buildQuotationItems(vendorId, payload.items);
-  const totals = calculateTotals(items);
+  const pricing = calculateDocumentPricing({
+    items,
+    discountType: payload.discountType,
+    discountValue: payload.discountValue,
+    taxEnabled: payload.taxEnabled,
+    taxRate: payload.taxRate
+  });
   const quotation = await createQuotationWithItems({
     quotation: {
       vendor_id: vendorId,
@@ -386,9 +378,18 @@ async function createQuotation(vendorId, payload, actor) {
       status: payload.status || "draft",
       issue_date: payload.issueDate || null,
       expiry_date: payload.expiryDate || null,
+      discount_type: pricing.discountType,
+      discount_value: pricing.discountValue,
+      discount_amount: pricing.discountAmount,
+      tax_enabled: pricing.taxEnabled,
+      tax_rate: pricing.taxRate,
+      tax_amount: pricing.taxAmount,
       notes: payload.notes || null,
       created_by: actor.userId,
-      ...totals
+      subtotal: pricing.subtotal,
+      discount_total: pricing.discountTotal,
+      tax_total: pricing.taxTotal,
+      grand_total: pricing.grandTotal
     },
     items
   });

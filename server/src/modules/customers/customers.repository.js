@@ -224,6 +224,25 @@ async function createVendorCustomerRelationship({ vendorId, customerId, relation
   return result.rows[0] || null;
 }
 
+async function getNextVendorAccountCode(vendorId, client = { query }) {
+  const result = await client.query(
+    `SELECT COALESCE(
+       MAX(
+         CASE
+           WHEN account_code ~ '^CUST-[0-9]+$' THEN substring(account_code FROM '[0-9]+$')::int
+           ELSE NULL
+         END
+       ),
+       0
+     ) + 1 AS next_code
+     FROM vendor_customer_relationships
+     WHERE vendor_id = $1`,
+    [vendorId]
+  );
+
+  return Number(result.rows[0]?.next_code || 1);
+}
+
 async function createCustomerAndRelationship({ vendorId, customer, relationship }) {
   return withTransaction(async (client) => {
     const existingCustomer = await findCustomerMasterByIdentity(
@@ -333,6 +352,7 @@ async function updateCustomerForVendor({ vendorId, customerId, customerUpdates, 
 export {
   createCustomerAndRelationship,
   findCustomerForVendor,
+  getNextVendorAccountCode,
   listCustomersForVendor,
   updateCustomerForVendor
 };

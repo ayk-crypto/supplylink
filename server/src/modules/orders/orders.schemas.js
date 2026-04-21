@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { applyDiscountTaxRefinements, discountTaxFields } from "../shared/adjustmentSchemas.js";
 
 const uuidParam = z.string().uuid();
 const jsonRecordSchema = z.record(z.string(), z.unknown());
@@ -63,7 +64,8 @@ const orderItemSchema = z
     }
   );
 
-const orderCreateBodySchema = z
+const orderCreateBodySchema = applyDiscountTaxRefinements(
+  z
   .object({
     customerId: uuidParam.optional(),
     quotationId: uuidParam.optional(),
@@ -73,7 +75,8 @@ const orderCreateBodySchema = z
     deliveryDate: z.string().trim().date().nullable().optional(),
     status: orderCreateStatusEnum.optional(),
     notes: z.string().trim().max(5000).nullable().optional(),
-    items: z.array(orderItemSchema).min(1).max(200).optional()
+    items: z.array(orderItemSchema).min(1).max(200).optional(),
+    ...discountTaxFields
   })
   .refine((value) => Boolean(value.customerId || value.quotationId), {
     message: "Either customerId or quotationId is required",
@@ -92,7 +95,8 @@ const orderCreateBodySchema = z
     {
       message: "Use either requestedDeliveryDate or deliveryDate, not both"
     }
-  );
+  )
+);
 
 const orderUpdateBodySchema = z
   .object({

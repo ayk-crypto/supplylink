@@ -1,10 +1,12 @@
 import { randomUUID } from "crypto";
 import AppError from "../../core/errors/AppError.js";
+import { calculateDocumentPricing, toCents, toMoney, toNumber } from "../shared/pricing.js";
 import {
   createInvoiceWithItems,
   findCustomerRelationshipForVendor,
   findInvoiceForVendor,
   findOrderForVendor,
+  hasActiveInvoiceForOrder,
   listInvoiceItemsForVendor,
   listInvoicesForVendor,
   listOrderItemsForInvoice,
@@ -54,18 +56,6 @@ function toColumnPayload(input = {}, fieldMap) {
   });
 
   return payload;
-}
-
-function toNumber(value) {
-  return Number(value || 0);
-}
-
-function toMoney(cents) {
-  return Number((cents / 100).toFixed(2));
-}
-
-function toCents(value) {
-  return Math.round(toNumber(value) * 100);
 }
 
 function calculateBalanceDue(status, grandTotal) {
@@ -122,15 +112,6 @@ function calculateLineItem(input, product, index) {
   };
 }
 
-function calculateTotals(items) {
-  return {
-    subtotal: toMoney(items.reduce((total, item) => total + item.subtotalCents, 0)),
-    discount_total: toMoney(items.reduce((total, item) => total + item.discountCents, 0)),
-    tax_total: toMoney(items.reduce((total, item) => total + item.taxCents, 0)),
-    grand_total: toMoney(items.reduce((total, item) => total + item.lineTotalCents, 0))
-  };
-}
-
 function generateInvoiceNumber() {
   const date = new Date().toISOString().slice(0, 10).replaceAll("-", "");
   const suffix = randomUUID().slice(0, 8).toUpperCase();
@@ -162,8 +143,14 @@ function mapInvoice(row) {
     status: row.status,
     issueDate: row.issue_date,
     dueDate: row.due_date,
+    discountType: row.discount_type,
+    discountValue: Number(row.discount_value || 0),
+    discountAmount: Number(row.discount_amount || 0),
     subtotal: row.subtotal,
     discountTotal: row.discount_total,
+    taxEnabled: row.tax_enabled,
+    taxRate: Number(row.tax_rate || 0),
+    taxAmount: Number(row.tax_amount || 0),
     taxTotal: row.tax_total,
     grandTotal: row.grand_total,
     balanceDue: row.balance_due,
@@ -377,7 +364,11 @@ async function resolveInvoiceCreationSource(vendorId, payload) {
       customerId: payload.customerId,
       relationship: await assertCustomerLinkedToVendor(vendorId, payload.customerId),
       items: payload.items,
-      order: null
+      order: null,
+      discountType: payload.discountType ?? null,
+      discountValue: payload.discountValue ?? 0,
+      taxEnabled: payload.taxEnabled ?? false,
+      taxRate: payload.taxRate ?? 0
     };
   }
 
@@ -426,7 +417,11 @@ async function resolveInvoiceCreationSource(vendorId, payload) {
     customerId: order.customer_id,
     relationship,
     items: orderItems,
-    order
+    order,
+    discountType: payload.discountType ?? order.discount_type ?? null,
+    discountValue: payload.discountValue ?? Number(order.discount_value || 0),
+    taxEnabled: payload.taxEnabled ?? Boolean(order.tax_enabled),
+    taxRate: payload.taxRate ?? Number(order.tax_rate || 0)
   };
 }
 
@@ -446,14 +441,9 @@ function assertOrderInvoiceable(order) {
 }
 
 async function assertNoExistingInvoiceForOrder(vendorId, orderId) {
-  const existing = await listInvoicesForVendor({
-    vendorId,
-    orderId,
-    limit: 1,
-    offset: 0
-  });
+  const hasActiveInvoice = await hasActiveInvoiceForOrder(vendorId, orderId);
 
-  if (existing.total > 0) {
+  if (hasActiveInvoice) {
     throw new AppError("An invoice already exists for this order", {
       statusCode: 409,
       code: "INVOICE_ALREADY_EXISTS_FOR_ORDER",
@@ -523,7 +513,13 @@ async function getInvoiceDetail(vendorId, invoiceId) {
 async function createInvoice(vendorId, payload, actor) {
   const source = await resolveInvoiceCreationSource(vendorId, payload);
   const items = await buildInvoiceItems(vendorId, source.items);
-  const totals = calculateTotals(items);
+  const pricing = calculateDocumentPricing({
+    items,
+    discountType: source.discountType,
+    discountValue: source.discountValue,
+    taxEnabled: source.taxEnabled,
+    taxRate: source.taxRate
+  });
   const status = payload.status || "draft";
   const invoice = await createInvoiceWithItems({
     invoice: {
@@ -535,10 +531,19 @@ async function createInvoice(vendorId, payload, actor) {
       status,
       issue_date: payload.issueDate || null,
       due_date: payload.dueDate || null,
+      discount_type: pricing.discountType,
+      discount_value: pricing.discountValue,
+      discount_amount: pricing.discountAmount,
+      tax_enabled: pricing.taxEnabled,
+      tax_rate: pricing.taxRate,
+      tax_amount: pricing.taxAmount,
       notes: payload.notes || source.order?.notes || null,
-      balance_due: calculateBalanceDue(status, totals.grand_total),
+      balance_due: calculateBalanceDue(status, pricing.grandTotal),
       created_by: actor.userId,
-      ...totals
+      subtotal: pricing.subtotal,
+      discount_total: pricing.discountTotal,
+      tax_total: pricing.taxTotal,
+      grand_total: pricing.grandTotal
     },
     items
   });

@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { customerCreateBodySchema, customerUpdateBodySchema } from "./customers/customers.schemas.js";
 import { attachmentQuerySchema } from "./files/files.schemas.js";
 import { invoiceCreateBodySchema, invoiceUpdateBodySchema } from "./invoices/invoices.schemas.js";
 import { notificationQuerySchema } from "./notifications/notifications.schemas.js";
 import { orderCreateBodySchema, orderUpdateBodySchema } from "./orders/orders.schemas.js";
+import { productCreateBodySchema, productUpdateBodySchema } from "./products/catalog.schemas.js";
 import {
   quotationCreateBodySchema,
   quotationUpdateBodySchema
@@ -53,6 +55,50 @@ test("invoice creation rejects paid invoices", () => {
   });
 
   assert.equal(result.success, false);
+});
+
+test("customer creation accepts blank account code for auto-generation", () => {
+  const result = customerCreateBodySchema.safeParse({
+    customer: {
+      fullName: "Auto Code Customer",
+      email: "auto@example.com"
+    },
+    relationship: {
+      accountCode: "   "
+    }
+  });
+
+  assert.equal(result.success, true);
+  assert.equal(result.data.relationship.accountCode, null);
+});
+
+test("customer update allows manual account code override", () => {
+  const result = customerUpdateBodySchema.safeParse({
+    relationship: {
+      accountCode: "cust-0099"
+    }
+  });
+
+  assert.equal(result.success, true);
+});
+
+test("product creation accepts blank sku for auto-generation", () => {
+  const result = productCreateBodySchema.safeParse({
+    sku: "   ",
+    name: "Auto SKU Product",
+    unitPrice: 10
+  });
+
+  assert.equal(result.success, true);
+  assert.equal(result.data.sku, undefined);
+});
+
+test("product update allows manual sku override", () => {
+  const result = productUpdateBodySchema.safeParse({
+    sku: "manual-001"
+  });
+
+  assert.equal(result.success, true);
 });
 
 test("generic quotation patch rejects status and item lifecycle changes", () => {
@@ -114,6 +160,66 @@ test("route stop order assignment params require valid UUIDs", () => {
 
   assert.equal(valid.success, true);
   assert.equal(invalid.success, false);
+});
+
+test("document creation schemas accept additive discount and tax fields", () => {
+  const quotationResult = quotationCreateBodySchema.safeParse({
+    customerId: CUSTOMER_ID,
+    items: [lineItem],
+    discountType: "percent",
+    discountValue: 10,
+    taxEnabled: true,
+    taxRate: 15
+  });
+  const orderResult = orderCreateBodySchema.safeParse({
+    customerId: CUSTOMER_ID,
+    items: [lineItem],
+    discountType: "flat",
+    discountValue: 5,
+    taxEnabled: true,
+    taxRate: 5
+  });
+  const invoiceResult = invoiceCreateBodySchema.safeParse({
+    customerId: CUSTOMER_ID,
+    items: [lineItem],
+    discountType: "flat",
+    discountValue: 2,
+    taxEnabled: true,
+    taxRate: 12.5
+  });
+
+  assert.equal(quotationResult.success, true);
+  assert.equal(orderResult.success, true);
+  assert.equal(invoiceResult.success, true);
+});
+
+test("document creation schemas reject invalid discount and tax combinations", () => {
+  const percentTooHigh = quotationCreateBodySchema.safeParse({
+    customerId: CUSTOMER_ID,
+    items: [lineItem],
+    discountType: "percent",
+    discountValue: 110
+  });
+  const missingDiscountType = orderCreateBodySchema.safeParse({
+    customerId: CUSTOMER_ID,
+    items: [lineItem],
+    discountValue: 5
+  });
+  const missingTaxRate = invoiceCreateBodySchema.safeParse({
+    customerId: CUSTOMER_ID,
+    items: [lineItem],
+    taxEnabled: true
+  });
+  const taxWithoutEnable = invoiceCreateBodySchema.safeParse({
+    customerId: CUSTOMER_ID,
+    items: [lineItem],
+    taxRate: 5
+  });
+
+  assert.equal(percentTooHigh.success, false);
+  assert.equal(missingDiscountType.success, false);
+  assert.equal(missingTaxRate.success, false);
+  assert.equal(taxWithoutEnable.success, false);
 });
 
 test("notification unreadOnly query parsing handles false safely", () => {

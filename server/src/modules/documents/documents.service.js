@@ -52,8 +52,14 @@ function mapItemTable(items) {
 
 function buildTotalsBlock(record) {
   return {
+    discountType: record.discountType || null,
+    discountValue: toAmount(record.discountValue),
+    discountAmount: toAmount(record.discountAmount),
     subtotal: toAmount(record.subtotal),
     discountTotal: toAmount(record.discountTotal),
+    taxEnabled: Boolean(record.taxEnabled),
+    taxRate: toAmount(record.taxRate),
+    taxAmount: toAmount(record.taxAmount),
     taxTotal: toAmount(record.taxTotal),
     grandTotal: toAmount(record.grandTotal)
   };

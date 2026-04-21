@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { applyDiscountTaxRefinements, discountTaxFields } from "../shared/adjustmentSchemas.js";
 
 const uuidParam = z.string().uuid();
 const jsonRecordSchema = z.record(z.string(), z.unknown());
@@ -69,7 +70,8 @@ const invoiceItemSchema = z
     }
   );
 
-const invoiceCreateBodySchema = z
+const invoiceCreateBodySchema = applyDiscountTaxRefinements(
+  z
   .object({
     customerId: uuidParam.optional(),
     orderId: uuidParam.optional(),
@@ -78,7 +80,8 @@ const invoiceCreateBodySchema = z
     dueDate: z.string().trim().date().nullable().optional(),
     status: invoiceCreateStatusEnum.optional(),
     notes: z.string().trim().max(5000).nullable().optional(),
-    items: z.array(invoiceItemSchema).min(1).max(200).optional()
+    items: z.array(invoiceItemSchema).min(1).max(200).optional(),
+    ...discountTaxFields
   })
   .refine((value) => Boolean(value.customerId || value.orderId), {
     message: "Either customerId or orderId is required",
@@ -87,7 +90,8 @@ const invoiceCreateBodySchema = z
   .refine((value) => Boolean(value.orderId || value.items), {
     message: "items are required for direct invoice creation",
     path: ["items"]
-  });
+  })
+);
 
 const invoiceUpdateBodySchema = z
   .object({

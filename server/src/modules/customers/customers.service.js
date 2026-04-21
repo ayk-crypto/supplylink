@@ -2,6 +2,7 @@ import AppError from "../../core/errors/AppError.js";
 import {
   createCustomerAndRelationship,
   findCustomerForVendor,
+  getNextVendorAccountCode,
   listCustomersForVendor,
   updateCustomerForVendor
 } from "./customers.repository.js";
@@ -84,6 +85,26 @@ function mapCustomerWithRelationship(row) {
   };
 }
 
+function normalizeAccountCode(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim().toUpperCase();
+  return normalized || null;
+}
+
+async function ensureAccountCode(vendorId, relationship = {}) {
+  const normalized = normalizeAccountCode(relationship.accountCode);
+
+  if (normalized) {
+    return normalized;
+  }
+
+  const nextCode = await getNextVendorAccountCode(vendorId);
+  return `CUST-${String(nextCode).padStart(4, "0")}`;
+}
+
 function assertCustomerFound(row, customerId) {
   if (!row) {
     throw new AppError("Customer not found for this vendor", {
@@ -135,10 +156,15 @@ async function getCustomerDetail(vendorId, customerId) {
 }
 
 async function createCustomerForVendor(vendorId, payload) {
+  const relationship = {
+    ...(payload.relationship || {}),
+    accountCode: await ensureAccountCode(vendorId, payload.relationship || {})
+  };
+
   const result = await createCustomerAndRelationship({
     vendorId,
     customer: toColumnPayload(payload.customer, CUSTOMER_CREATE_FIELDS),
-    relationship: toColumnPayload(payload.relationship || {}, RELATIONSHIP_FIELDS)
+    relationship: toColumnPayload(relationship, RELATIONSHIP_FIELDS)
   });
 
   if (result.relationshipAlreadyExists) {
@@ -171,7 +197,15 @@ async function updateCustomerForCurrentVendor(vendorId, customerId, payload) {
     vendorId,
     customerId,
     customerUpdates: toColumnPayload(payload.customer || {}, CUSTOMER_UPDATE_FIELDS),
-    relationshipUpdates: toColumnPayload(payload.relationship || {}, RELATIONSHIP_FIELDS)
+    relationshipUpdates: toColumnPayload(
+      {
+        ...(payload.relationship || {}),
+        accountCode: Object.prototype.hasOwnProperty.call(payload.relationship || {}, "accountCode")
+          ? normalizeAccountCode(payload.relationship.accountCode)
+          : undefined
+      },
+      RELATIONSHIP_FIELDS
+    )
   });
 
   assertCustomerFound(row, customerId);
