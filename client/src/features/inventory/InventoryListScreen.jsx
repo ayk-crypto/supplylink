@@ -11,6 +11,7 @@ import { listInventoryProducts } from "../../services/inventoryApi.js";
 import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
 import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
+import StatusPill from "../../components/ui/StatusPill.jsx";
 import StockAdjustForm from "./StockAdjustForm.jsx";
 import { formatQuantity, stockLabel, stockTone } from "./inventoryUtils.js";
 import { useAppSettings } from "../system/settingsContext.js";
@@ -62,7 +63,7 @@ function InventoryListScreen({ navigate }) {
   return (
     <div className="resource-page">
       <PageHeader
-        description="Track on-hand quantities, flag low or negative stock, and apply manual adjustments."
+        description="See what's in stock at a glance — spot low or negative balances and make quick adjustments."
         eyebrow="Inventory"
         title="Stock overview"
       />
@@ -128,9 +129,7 @@ function InventoryListScreen({ navigate }) {
                       {product.sku} · {product.category?.name || "No category"}
                     </span>
                   </div>
-                  <span className={`status-pill status-${product.status}`}>
-                    {product.status}
-                  </span>
+                  <StatusPill kind="product" status={product.status} />
                 </header>
                 <dl className="inventory-card-meta">
                   <div>

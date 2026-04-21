@@ -11,6 +11,9 @@ import {
 } from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage } from "../master-data/resourceUtils.js";
+import { useAppSettings } from "../system/settingsContext.js";
+import { formatDateWith } from "../system/settingsFormat.js";
+import StatusPill from "../../components/ui/StatusPill.jsx";
 import {
   getCustomerLabel,
   getEntryCredit,
@@ -44,6 +47,7 @@ function isWithinDateRange(entry, dateFrom, dateTo) {
 }
 
 function CustomerLedgerScreen({ id, navigate }) {
+  const { settings } = useAppSettings();
   const { showToast } = useToast();
   const [customer, setCustomer] = useState(null);
   const [statement, setStatement] = useState(null);
@@ -190,7 +194,7 @@ function CustomerLedgerScreen({ id, navigate }) {
             </button>
           </div>
         }
-        description="Statement-style receivables history with debit, credit, and running balance."
+        description="A running statement of every debit, credit, and the balance owed."
         eyebrow="Customer statement"
         title={getCustomerLabel(displayCustomer)}
       />
@@ -272,12 +276,12 @@ function CustomerLedgerScreen({ id, navigate }) {
             </div>
             {filteredEntries.map((entry) => (
               <article className="resource-row statement-grid" key={entry.id}>
-                <span>{entry.entryDate}</span>
+                <span>{formatDateWith(settings, entry.entryDate)}</span>
                 <div>
                   <strong>{getLedgerReference(entry)}</strong>
                   <span>{entry.notes || "No notes"}</span>
                 </div>
-                <span className="status-pill">{entry.sourceType}</span>
+                <StatusPill kind="audit" status={entry.sourceType} />
                 <span>{getEntryDebit(entry) ? toMoney(getEntryDebit(entry)) : "-"}</span>
                 <span>{getEntryCredit(entry) ? toMoney(getEntryCredit(entry)) : "-"}</span>
                 <span>{toMoney(entry.runningBalance)}</span>

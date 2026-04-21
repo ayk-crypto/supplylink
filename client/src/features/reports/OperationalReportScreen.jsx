@@ -21,7 +21,8 @@ import {
 import { useToast } from "../feedback/toastContext.js";
 import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
 import { useAppSettings } from "../system/settingsContext.js";
-import { getDefaultPageSize } from "../system/settingsFormat.js";
+import { formatDateWith, getDefaultPageSize } from "../system/settingsFormat.js";
+import StatusPill from "../../components/ui/StatusPill.jsx";
 import DateRangePresetChips from "./DateRangePresetChips.jsx";
 import {
   cleanReportParams,
@@ -137,7 +138,7 @@ function ReportFilters({ customers, filters, kind, onApplyDateRange, onChange, o
   );
 }
 
-function InvoiceRows({ items, navigate }) {
+function InvoiceRows({ items, navigate, settings }) {
   return (
     <TableScroll>
     <div className="resource-table">
@@ -156,10 +157,10 @@ function InvoiceRows({ items, navigate }) {
             {invoice.invoiceNumber}
           </button>
           <span>{formatCustomer(invoice.customer)}</span>
-          <span className="status-pill">{invoice.status}</span>
+          <StatusPill kind="invoice" status={invoice.status} />
           <div>
-            <strong>{invoice.issueDate || "No issue date"}</strong>
-            <span>{invoice.dueDate || "No due date"}</span>
+            <strong>{invoice.issueDate ? formatDateWith(settings, invoice.issueDate) : "No issue date"}</strong>
+            <span>{invoice.dueDate ? formatDateWith(settings, invoice.dueDate) : "No due date"}</span>
           </div>
           <span>{toMoney(invoice.grandTotal)}</span>
           <span>{toMoney(getPaidFromInvoice(invoice))}</span>
@@ -171,7 +172,7 @@ function InvoiceRows({ items, navigate }) {
   );
 }
 
-function PaymentRows({ items }) {
+function PaymentRows({ items, settings }) {
   return (
     <TableScroll>
     <div className="resource-table">
@@ -185,7 +186,7 @@ function PaymentRows({ items }) {
       </div>
       {items.map((payment) => (
         <article className="resource-row report-payment-grid" key={payment.id}>
-          <span>{payment.paymentDate || payment.createdAt}</span>
+          <span>{formatDateWith(settings, payment.paymentDate || payment.createdAt)}</span>
           <span>{formatCustomer(payment.customer)}</span>
           <span>{payment.invoice?.invoiceNumber || "On account"}</span>
           <span>{toMoney(payment.amount)}</span>
@@ -201,7 +202,7 @@ function PaymentRows({ items }) {
   );
 }
 
-function OrderRows({ items, navigate }) {
+function OrderRows({ items, navigate, settings }) {
   return (
     <TableScroll>
     <div className="resource-table">
@@ -218,10 +219,10 @@ function OrderRows({ items, navigate }) {
             {order.orderNumber}
           </button>
           <span>{formatCustomer(order.customer)}</span>
-          <span className="status-pill">{order.status}</span>
+          <StatusPill kind="order" status={order.status} />
           <div>
-            <strong>{order.orderDate || order.createdAt}</strong>
-            <span>{order.deliveryDate || "No delivery date"}</span>
+            <strong>{formatDateWith(settings, order.orderDate || order.createdAt)}</strong>
+            <span>{order.deliveryDate ? formatDateWith(settings, order.deliveryDate) : "No delivery date"}</span>
           </div>
           <span>{toMoney(order.grandTotal)}</span>
         </article>
@@ -486,9 +487,9 @@ function OperationalReportScreen({ kind, navigate }) {
       {isLoading ? <LoadingState>Loading {kind} report…</LoadingState> : null}
       {!isLoading && !items.length ? <EmptyState>No report rows match the current filters.</EmptyState> : null}
 
-      {items.length && kind === "invoices" ? <InvoiceRows items={items} navigate={navigate} /> : null}
-      {items.length && kind === "payments" ? <PaymentRows items={items} /> : null}
-      {items.length && kind === "orders" ? <OrderRows items={items} navigate={navigate} /> : null}
+      {items.length && kind === "invoices" ? <InvoiceRows items={items} navigate={navigate} settings={settings} /> : null}
+      {items.length && kind === "payments" ? <PaymentRows items={items} settings={settings} /> : null}
+      {items.length && kind === "orders" ? <OrderRows items={items} navigate={navigate} settings={settings} /> : null}
 
       <Pagination pagination={data?.pagination} onPageChange={setPage} />
     </div>

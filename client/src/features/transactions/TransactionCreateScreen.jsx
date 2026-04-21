@@ -165,7 +165,7 @@ function TransactionCreateScreen({ kind, navigate }) {
             Back to list
           </button>
         }
-        description="Select a customer, add product lines, and let the backend calculate final totals."
+        description="Pick a customer, add the line items, and we'll calculate the totals for you."
         eyebrow={kind}
         title={config.title}
       />

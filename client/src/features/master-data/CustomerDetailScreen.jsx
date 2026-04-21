@@ -16,7 +16,8 @@ import { getCustomerLedger } from "../../services/ledgerApi.js";
 import { listPaymentReport } from "../../services/reportApi.js";
 import { getEntityAuditHistory } from "../../services/auditApi.js";
 import { useAppSettings } from "../system/settingsContext.js";
-import { formatDateTimeWith } from "../system/settingsFormat.js";
+import { formatDateTimeWith, formatDateWith } from "../system/settingsFormat.js";
+import StatusPill from "../../components/ui/StatusPill.jsx";
 import {
   actorDisplayLabel,
   eventLabelOf,
@@ -97,19 +98,19 @@ function OverviewTiles({ invoiceSummary, ledgerSummary }) {
         <strong>{invoiceSummary.totalCount ?? "—"}</strong>
         <small>
           {invoiceSummary.totalCount
-            ? `${invoiceSummary.sampledCount} sampled for totals`
+            ? `Showing the most recent ${invoiceSummary.sampledCount}`
             : "No invoices yet"}
         </small>
       </article>
       <article className="metric-tile">
-        <span>Outstanding (sample)</span>
+        <span>Outstanding</span>
         <strong>{toMoney(invoiceSummary.outstanding || 0)}</strong>
-        <small>Across the latest invoices loaded</small>
+        <small>Across the recent invoices shown</small>
       </article>
       <article className="metric-tile">
-        <span>Invoiced (sample)</span>
+        <span>Invoiced</span>
         <strong>{toMoney(invoiceSummary.grandTotal || 0)}</strong>
-        <small>Across the latest invoices loaded</small>
+        <small>Across the recent invoices shown</small>
       </article>
       <article className="metric-tile">
         <span>Ledger ending balance</span>
@@ -312,7 +313,15 @@ function CustomerDetailScreen({ id, navigate }) {
         <DetailField label="Email" value={customer.email} />
         <DetailField label="Phone" value={customer.phone} />
         <DetailField label="Account code" value={relationship?.accountCode} />
-        <DetailField label="Relationship status" value={relationship?.status} />
+        <div className="detail-field">
+          <span>Relationship status</span>
+          <strong>
+            <StatusPill
+              kind="relationship"
+              status={relationship?.status || "active"}
+            />
+          </strong>
+        </div>
       </section>
       {relationship?.notes ? (
         <p className="surface-message">{relationship.notes}</p>
@@ -402,10 +411,10 @@ function CustomerDetailScreen({ id, navigate }) {
                   {order.orderNumber || order.id}
                 </button>
                 <span>{customer.fullName}</span>
-                <span className="status-pill">{order.status}</span>
+                <StatusPill kind="order" status={order.status} />
                 <div>
-                  <strong>{order.orderDate || order.createdAt || "—"}</strong>
-                  <span>{order.deliveryDate || "No delivery date"}</span>
+                  <strong>{formatDateWith(settings, order.orderDate || order.createdAt)}</strong>
+                  <span>{order.deliveryDate ? formatDateWith(settings, order.deliveryDate) : "No delivery date"}</span>
                 </div>
                 <span>{toMoney(order.grandTotal)}</span>
               </article>
@@ -457,10 +466,10 @@ function CustomerDetailScreen({ id, navigate }) {
                   {quotation.quoteNumber || quotation.id}
                 </button>
                 <span>{customer.fullName}</span>
-                <span className="status-pill">{quotation.status}</span>
+                <StatusPill kind="quotation" status={quotation.status} />
                 <div>
-                  <strong>{quotation.issueDate || quotation.createdAt || "—"}</strong>
-                  <span>{quotation.expiryDate || "No expiry"}</span>
+                  <strong>{formatDateWith(settings, quotation.issueDate || quotation.createdAt)}</strong>
+                  <span>{quotation.expiryDate ? formatDateWith(settings, quotation.expiryDate) : "No expiry"}</span>
                 </div>
                 <span>{toMoney(quotation.grandTotal)}</span>
               </article>
@@ -517,10 +526,10 @@ function CustomerDetailScreen({ id, navigate }) {
                     {invoice.invoiceNumber || invoice.id}
                   </button>
                   <span>{customer.fullName}</span>
-                  <span className="status-pill">{invoice.status}</span>
+                  <StatusPill kind="invoice" status={invoice.status} />
                   <div>
-                    <strong>{invoice.issueDate || "No issue date"}</strong>
-                    <span>{invoice.dueDate || "No due date"}</span>
+                    <strong>{invoice.issueDate ? formatDateWith(settings, invoice.issueDate) : "No issue date"}</strong>
+                    <span>{invoice.dueDate ? formatDateWith(settings, invoice.dueDate) : "No due date"}</span>
                   </div>
                   <span>{toMoney(invoice.grandTotal)}</span>
                   <span>{toMoney(paid)}</span>
@@ -568,7 +577,7 @@ function CustomerDetailScreen({ id, navigate }) {
             </div>
             {recentPayments.map((payment) => (
               <article className="resource-row report-payment-grid" key={payment.id}>
-                <span>{payment.paymentDate || payment.createdAt}</span>
+                <span>{formatDateWith(settings, payment.paymentDate || payment.createdAt)}</span>
                 <span>{customer.fullName}</span>
                 <span>{payment.invoice?.invoiceNumber || "On account"}</span>
                 <span>{toMoney(payment.amount)}</span>

@@ -18,6 +18,7 @@ import {
   TableScroll,
   Toolbar
 } from "../../components/ui/ResourceScreens.jsx";
+import StatusPill from "../../components/ui/StatusPill.jsx";
 import CustomerForm from "./CustomerForm.jsx";
 import { getApiErrorMessage } from "./resourceUtils.js";
 import { useResourceDirectory } from "./useResourceDirectory.js";
@@ -94,7 +95,7 @@ function CustomersScreen({ navigate }) {
             New customer
           </button>
         }
-        description="Manage vendor-linked customer records and relationship details."
+        description="Your customer book — search contacts, check status, and jump into any account."
         eyebrow="Customers"
         title="Customer directory"
       />
@@ -161,7 +162,7 @@ function CustomersScreen({ navigate }) {
               </div>
               <span>{record.customer.email || "No email"}</span>
               <span>{record.customer.phone || "No phone"}</span>
-              <span className="status-pill">{record.relationship?.status || "active"}</span>
+              <StatusPill kind="relationship" status={record.relationship?.status || "active"} />
               <div className="button-row">
                 <button
                   className="secondary-button compact"

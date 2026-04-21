@@ -1257,3 +1257,73 @@ Verification
 - `npm run lint`: clean.
 - `npm run build`: 417.98 kB JS / 113.79 kB gzipped, 55.43 kB CSS /
   10.32 kB gzipped.
+
+
+## Module 20AP — Frontend polish: status pills, copy & date formatting
+
+Module 20AP is a non-functional polish pass across the existing
+screens. There are no backend changes and no new endpoints — only
+shared UI primitives, color, copy, and consistent date formatting.
+
+What changed
+- New shared component `client/src/components/ui/StatusPill.jsx`
+  renders human-readable status labels with a color tone modifier
+  (`tone-success`, `tone-info`, `tone-warning`, `tone-danger`,
+  `tone-neutral`, `tone-accent`). Tone is resolved per-domain via a
+  catalog covering `relationship`, `product`, `order`, `quotation`,
+  `invoice`, `route`, `stop`, `template`, and `audit` source kinds.
+  Unknown statuses fall back to a neutral, title-cased label.
+- New CSS tokens added to the light theme (`--warning`,
+  `--warning-soft`, `--info`, `--info-soft`, `--danger-soft`) so the
+  new tone variants render correctly in both themes.
+- Status pill rollout: every previously raw `<span class="status-pill">`
+  call site now uses the shared `StatusPill` so a draft order, a
+  paid invoice, an overdue receivable, a completed route stop, and
+  an inactive template each get a distinct, recognisable color
+  instead of all rendering with the same accent chip.
+- Copy pass on page subtitles and metric tile detail lines:
+  - Customers, Categories, Products, Inventory, Invoices, Orders,
+    Quotations, Customer statements, and the dashboard hero now use
+    benefit-led, plain-English descriptions rather than internal
+    jargon ("vendor-linked", "vendor-scoped", "server-calculated",
+    "Confirmed workflow volume", etc.).
+  - The Customer Detail overview tiles drop the "(sample)" /
+    "sampled for totals" wording in favour of "Showing the most
+    recent N" and "Across the recent invoices shown".
+- Date consistency: list rows and detail panels that previously
+  rendered raw ISO date strings (`order.orderDate`,
+  `invoice.issueDate`, `payment.paymentDate`, `entry.entryDate`,
+  `quotation.expiryDate`, etc.) now go through `formatDateWith` so
+  they respect the user's preferred date format from settings.
+  Affected screens: invoices list, orders/quotations list, customer
+  detail (orders / quotations / invoices / payments), transaction
+  detail, customer ledger, customer statements report, and the
+  invoices / payments / orders operational reports.
+
+Files touched (frontend only)
+- New: `client/src/components/ui/StatusPill.jsx`
+- `client/src/styles/index.css` — light-theme color tokens and
+  `.status-pill.tone-*` modifiers.
+- Master data: `CustomersScreen.jsx`, `CustomerDetailScreen.jsx`,
+  `CategoriesScreen.jsx`, `ProductsScreen.jsx`.
+- Inventory: `InventoryListScreen.jsx`, `InventoryDetailScreen.jsx`.
+- Transactions: `TransactionListScreens.jsx`,
+  `TransactionDetailScreen.jsx`, `TransactionCreateScreen.jsx`.
+- Invoices: `InvoiceListScreen.jsx`.
+- Routes: `RoutesListScreen.jsx`, `RouteDetailScreen.jsx`,
+  `RouteTemplatesListScreen.jsx`.
+- Reports & ledger: `OperationalReportScreen.jsx`,
+  `StatementsReportScreen.jsx`, `CustomerLedgerScreen.jsx`.
+- Dashboard: `DashboardScreen.jsx`.
+
+Out of scope
+- No service / API contract changes; no new backend fields.
+- No data migrations or schema changes.
+- No layout or navigation changes — only color, copy, and date
+  formatting.
+
+Verification
+- `npm run lint`: clean.
+- `npm run build`: 421.07 kB JS / 114.65 kB gzipped, 55.99 kB CSS /
+  10.40 kB gzipped (≈ +3 kB JS / +0.6 kB CSS for the new pill
+  catalog, color tokens, and additional formatter usages).

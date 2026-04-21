@@ -16,6 +16,11 @@
   --accent-strong: #075f4b;
   --accent-soft: #dff2ea;
   --danger: #b42318;
+  --danger-soft: #fdecea;
+  --warning: #b9701b;
+  --warning-soft: #fdf1de;
+  --info: #1f5dab;
+  --info-soft: #e3edfa;
   --shadow: 0 16px 34px rgba(31, 38, 33, 0.08);
   --shadow-soft: 0 8px 22px rgba(31, 38, 33, 0.06);
 }
@@ -2225,6 +2230,36 @@ body {
   letter-spacing: 0.02em;
   text-transform: uppercase;
   border-radius: 999px;
+}
+
+.status-pill.tone-success {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+}
+
+.status-pill.tone-info {
+  color: var(--info);
+  background: var(--info-soft);
+}
+
+.status-pill.tone-warning {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.status-pill.tone-danger {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.status-pill.tone-neutral {
+  color: var(--muted);
+  background: var(--surface-strong);
+}
+
+.status-pill.tone-accent {
+  color: var(--surface);
+  background: var(--accent);
 }
 
 /* --- Pagination ----------------------------------------------- */

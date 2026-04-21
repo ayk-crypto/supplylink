@@ -19,6 +19,7 @@ import {
   TableScroll,
   Toolbar
 } from "../../components/ui/ResourceScreens.jsx";
+import StatusPill from "../../components/ui/StatusPill.jsx";
 import { cleanOptional, cleanRequired, getApiErrorMessage, toMoney } from "./resourceUtils.js";
 import { useResourceDirectory } from "./useResourceDirectory.js";
 
@@ -309,7 +310,7 @@ function ProductsScreen() {
             New product
           </button>
         }
-        description="Maintain sellable catalog items, SKUs, prices, categories, and product status."
+        description="Your sellable catalog — names, SKUs, pricing, categories, and availability all in one place."
         eyebrow="Products"
         title="Product catalog"
       />
@@ -381,7 +382,7 @@ function ProductsScreen() {
               <span>{product.sku}</span>
               <span>{product.category?.name || "No category"}</span>
               <span>{toMoney(product.unitPrice)}</span>
-              <span className="status-pill">{product.status}</span>
+              <StatusPill kind="product" status={product.status} />
               <button
                 className="secondary-button compact"
                 onClick={() => setEditingProduct(product)}

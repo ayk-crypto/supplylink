@@ -23,6 +23,7 @@ import {
 import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
 import { useAppSettings } from "../system/settingsContext.js";
 import { getDefaultPageSize } from "../system/settingsFormat.js";
+import StatusPill from "../../components/ui/StatusPill.jsx";
 import {
   WEEKDAY_OPTIONS,
   formatRecurrenceSummary,
@@ -352,9 +353,11 @@ function RouteTemplatesListScreen({ navigate }) {
                   <span>{template.notes ? template.notes : "No notes"}</span>
                 </div>
                 <span>{formatRecurrenceSummary(template)}</span>
-                <span className="status-pill">
-                  {formatTemplateStatus(template.isActive)}
-                </span>
+                <StatusPill
+                  kind="template"
+                  status={template.isActive ? "active" : "inactive"}
+                  label={formatTemplateStatus(template.isActive)}
+                />
                 <span>{template.vehicleLabel || "No vehicle"}</span>
                 <span>{template.stopCount ?? 0}</span>
                 <button

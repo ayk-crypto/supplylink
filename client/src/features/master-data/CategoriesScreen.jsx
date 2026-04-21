@@ -231,7 +231,7 @@ function CategoriesScreen() {
             New category
           </button>
         }
-        description="Organize the product catalog into simple vendor-scoped groups."
+        description="Group products into categories so they're easier to browse, filter, and report on."
         eyebrow="Categories"
         title="Catalog categories"
       />

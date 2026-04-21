@@ -18,6 +18,7 @@ import { cleanOptional, cleanRequired, getApiErrorMessage } from "../master-data
 import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
 import { useAppSettings } from "../system/settingsContext.js";
 import { getDefaultPageSize } from "../system/settingsFormat.js";
+import StatusPill from "../../components/ui/StatusPill.jsx";
 import {
   ROUTE_STATUSES,
   formatRouteDate,
@@ -279,7 +280,7 @@ function RoutesListScreen({ navigate }) {
                   <span>{route.driver?.fullName || "No driver assigned"}</span>
                 </div>
                 <span>{formatRouteDate(route.routeDate)}</span>
-                <span className="status-pill">{formatRouteStatus(route.status)}</span>
+                <StatusPill kind="route" status={route.status} label={formatRouteStatus(route.status)} />
                 <span>{route.vehicleLabel || "No vehicle"}</span>
                 <button
                   className="secondary-button compact"

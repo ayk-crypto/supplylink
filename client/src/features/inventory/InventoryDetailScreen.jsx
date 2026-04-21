@@ -15,6 +15,7 @@ import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
 import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
 import { useAppSettings } from "../system/settingsContext.js";
 import { formatDateTimeWith, getDefaultPageSize } from "../system/settingsFormat.js";
+import StatusPill from "../../components/ui/StatusPill.jsx";
 import StockAdjustForm from "./StockAdjustForm.jsx";
 import {
   formatQuantity,
@@ -163,7 +164,7 @@ function InventoryDetailScreen({ id, navigate }) {
               <p className="eyebrow">Product summary</p>
               <h3>{product.name}</h3>
             </div>
-            <span className="status-pill">{product.status}</span>
+            <StatusPill kind="product" status={product.status} />
           </header>
 
           <div className="detail-grid">

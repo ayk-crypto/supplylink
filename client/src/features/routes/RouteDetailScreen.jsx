@@ -19,6 +19,7 @@ import {
   TableScroll
 } from "../../components/ui/ResourceScreens.jsx";
 import AttachmentsPanel from "../attachments/AttachmentsPanel.jsx";
+import StatusPill from "../../components/ui/StatusPill.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import { cleanOptional, getApiErrorMessage } from "../master-data/resourceUtils.js";
 import { useAppSettings } from "../system/settingsContext.js";
@@ -606,7 +607,7 @@ function RouteDetailScreen({ id, navigate }) {
                         <strong>{formatStopCustomer(stop)}</strong>
                         <span>{stop.notes || "No notes"}</span>
                       </div>
-                      <span className="status-pill">{formatStopStatus(stop.status)}</span>
+                      <StatusPill kind="stop" status={stop.status} label={formatStopStatus(stop.status)} />
                       <span>{formatDateTime(stop.plannedArrivalAt) || "—"}</span>
                       <span>{ordersLabel}</span>
                       <div className="stop-actions">

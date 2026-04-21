@@ -17,7 +17,8 @@ import AttachmentsPanel from "../attachments/AttachmentsPanel.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
 import { useAppSettings } from "../system/settingsContext.js";
-import { confirmDestructive } from "../system/settingsFormat.js";
+import { confirmDestructive, formatDateWith } from "../system/settingsFormat.js";
+import StatusPill from "../../components/ui/StatusPill.jsx";
 import { formatCustomer } from "./transactionUtils.js";
 
 const QUOTATION_ACTIONS = [
@@ -271,10 +272,24 @@ function TransactionDetailScreen({ id, kind, navigate }) {
       />
 
       <section className="detail-grid">
-        <DetailField label="Status" value={detail.status} />
+        <div className="detail-field">
+          <span>Status</span>
+          <strong>
+            <StatusPill
+              kind={kind === "orders" ? "order" : "quotation"}
+              status={detail.status}
+            />
+          </strong>
+        </div>
         <DetailField label="Customer" value={formatCustomer(detail.customer)} />
-        <DetailField label="Date" value={detail.orderDate || detail.issueDate} />
-        <DetailField label="Due / delivery" value={detail.deliveryDate || detail.expiryDate} />
+        <DetailField
+          label="Date"
+          value={formatDateWith(settings, detail.orderDate || detail.issueDate)}
+        />
+        <DetailField
+          label="Due / delivery"
+          value={formatDateWith(settings, detail.deliveryDate || detail.expiryDate)}
+        />
         <DetailField label="Subtotal" value={toMoney(detail.subtotal)} />
         <DetailField label="Grand total" value={toMoney(detail.grandTotal)} />
       </section>

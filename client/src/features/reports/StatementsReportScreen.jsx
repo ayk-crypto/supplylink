@@ -12,6 +12,9 @@ import {
   TableScroll
 } from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
+import { useAppSettings } from "../system/settingsContext.js";
+import { formatDateWith } from "../system/settingsFormat.js";
+import StatusPill from "../../components/ui/StatusPill.jsx";
 import DateRangePresetChips from "./DateRangePresetChips.jsx";
 import {
   formatCustomer,
@@ -21,6 +24,7 @@ import {
 
 function StatementsReportScreen({ navigate }) {
   const { showToast } = useToast();
+  const { settings } = useAppSettings();
   const [customers, setCustomers] = useState([]);
   const [form, setForm] = useState({
     customerId: "",
@@ -146,7 +150,7 @@ function StatementsReportScreen({ navigate }) {
             Back to reports
           </button>
         }
-        description="Preview and export customer statement reports."
+        description="Pull a customer statement for any date range — preview on screen or export to CSV."
         eyebrow="Reports"
         title="Customer statements"
       />
@@ -239,12 +243,12 @@ function StatementsReportScreen({ navigate }) {
                 </div>
                 {statement.items.map((entry) => (
                   <article className="resource-row statement-grid" key={entry.id}>
-                    <span>{entry.entryDate}</span>
+                    <span>{formatDateWith(settings, entry.entryDate)}</span>
                     <div>
                       <strong>{entry.invoice?.invoiceNumber || entry.payment?.referenceNumber || entry.id}</strong>
                       <span>{entry.notes || "No notes"}</span>
                     </div>
-                    <span className="status-pill">{entry.sourceType}</span>
+                    <StatusPill kind="audit" status={entry.sourceType} />
                     <span>{entry.entryType === "debit" ? toMoney(entry.amount) : "-"}</span>
                     <span>{entry.entryType === "credit" ? toMoney(entry.amount) : "-"}</span>
                     <span>{toMoney(entry.runningBalance)}</span>

@@ -1,4 +1,5 @@
 import { EmptyState, ErrorState, LoadingSkeleton, SectionHeader } from "../../components/ui/ResourceScreens.jsx";
+import StatusPill from "../../components/ui/StatusPill.jsx";
 import { useAppSettings } from "../system/settingsContext.js";
 import { formatMoneyWith } from "../system/settingsFormat.js";
 import { useDashboardData } from "./useDashboardData.js";
@@ -82,7 +83,7 @@ function RecordList({ emptyLabel, formatMoney, items, kind }) {
             <span>{item.customer?.label || "No customer"}</span>
           </div>
           <div>
-            <span className="status-pill">{item.status}</span>
+            <StatusPill kind={kind === "invoice" ? "invoice" : "order"} status={item.status} />
             <small>
               {kind === "invoice"
                 ? formatMoney(item.balanceDue)
@@ -193,8 +194,8 @@ function DashboardScreen({ navigate }) {
           <p className="eyebrow">Dashboard</p>
           <h2>Today&apos;s operating picture</h2>
           <p>
-            Keep an eye on sales flow, receivables, fulfillment, and team updates from one
-            workspace.
+            See sales activity, money owed, deliveries in motion, and team updates — all in one
+            place.
           </p>
         </div>
         <div className="receivables-card">
@@ -223,13 +224,13 @@ function DashboardScreen({ navigate }) {
 
       <section className="metric-strip">
         <MetricCard
-          detail="Customers linked to this vendor"
+          detail="Active customers in your book"
           glyph="customers"
           label="Customers"
           value={dashboard.metrics.totalCustomers}
         />
         <MetricCard
-          detail="Confirmed workflow volume"
+          detail="Orders in flight, including drafts"
           glyph="orders"
           label="Orders"
           value={dashboard.metrics.totalOrders}

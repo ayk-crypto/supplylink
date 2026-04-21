@@ -17,12 +17,13 @@ import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
 import { formatCustomer } from "./transactionUtils.js";
 import { useAppSettings } from "../system/settingsContext.js";
-import { getDefaultPageSize } from "../system/settingsFormat.js";
+import { formatDateWith, getDefaultPageSize } from "../system/settingsFormat.js";
+import StatusPill from "../../components/ui/StatusPill.jsx";
 
 const configs = {
   orders: {
     createPath: "/orders/new",
-    description: "Track customer orders from draft through fulfillment.",
+    description: "Follow every customer order from first draft to delivered — at a glance.",
     empty: "No orders found.",
     filteredEmpty: "No orders match the current filters.",
     list: listOrders,
@@ -33,7 +34,7 @@ const configs = {
   },
   quotations: {
     createPath: "/quotations/new",
-    description: "Prepare customer quotations with product lines and server-calculated totals.",
+    description: "Build and send customer quotes — totals are calculated for you as you add lines.",
     empty: "No quotations found.",
     filteredEmpty: "No quotations match the current filters.",
     list: listQuotations,
@@ -233,10 +234,10 @@ function TransactionListScreen({ kind, navigate }) {
                     onClick={() => navigate(`/${kind}/${item.id}`)}
                   />
                 </strong>
-                <span>{item.orderDate || item.issueDate || item.createdAt || "No date"}</span>
+                <span>{formatDateWith(settings, item.orderDate || item.issueDate || item.createdAt)}</span>
               </div>
               <span>{formatCustomer(item.customer)}</span>
-              <span className="status-pill">{item.status}</span>
+              <StatusPill kind={kind === "orders" ? "order" : "quotation"} status={item.status} />
               <span>{toMoney(item.grandTotal)}</span>
               <button
                 className="secondary-button compact"

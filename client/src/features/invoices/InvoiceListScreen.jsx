@@ -17,7 +17,8 @@ import { useResourceDirectory } from "../master-data/useResourceDirectory.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
 import { formatCustomer } from "../transactions/transactionUtils.js";
 import { useAppSettings } from "../system/settingsContext.js";
-import { getDefaultPageSize } from "../system/settingsFormat.js";
+import { formatDateWith, getDefaultPageSize } from "../system/settingsFormat.js";
+import StatusPill from "../../components/ui/StatusPill.jsx";
 
 const invoiceStatuses = ["draft", "issued", "partially_paid", "paid", "void"];
 
@@ -118,7 +119,7 @@ function InvoiceListScreen({ navigate }) {
             Create invoice
           </button>
         }
-        description="Review issued, partially paid, paid, draft, and void invoices."
+        description="See every invoice and its balance — filter by customer, status, or search to find what you need."
         eyebrow="Invoices"
         title="Invoices"
       />
@@ -210,10 +211,10 @@ function InvoiceListScreen({ navigate }) {
                     onClick={() => navigate(`/invoices/${invoice.id}`)}
                   />
                 </strong>
-                <span>{invoice.issueDate || invoice.createdAt || "No issue date"}</span>
+                <span>{formatDateWith(settings, invoice.issueDate || invoice.createdAt)}</span>
               </div>
               <span>{formatCustomer(invoice.customer)}</span>
-              <span className="status-pill">{invoice.status}</span>
+              <StatusPill kind="invoice" status={invoice.status} />
               <span>{toMoney(invoice.grandTotal)}</span>
               <span>{toMoney(invoice.balanceDue)}</span>
               <button
