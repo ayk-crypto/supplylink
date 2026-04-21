@@ -3589,10 +3589,11 @@ canvas {
   cursor: pointer;
   padding: 0;
   font: inherit;
-  text-decoration: underline;
+  text-decoration: none;
 }
 .link-button:hover {
   opacity: 0.85;
+  text-decoration: underline;
 }
 @media (max-width: 640px) {
   .audit-card-head {
@@ -4111,3 +4112,40 @@ a:hover {
   text-decoration: underline;
 }
 /* === end Module 20AP-Fix ========================================== */
+
+/* Module 20AP-Fix2: dashboard record gap, pill alignment, link-button */
+
+.record-row > div:first-child {
+  min-width: 0;
+}
+
+.record-row > div:first-child strong {
+  display: block;
+  font-weight: 700;
+}
+
+.record-row > div:first-child span {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.resource-row > .status-pill {
+  justify-self: start;
+}
+
+.resource-table-head .actions-col {
+  text-align: right;
+  justify-self: end;
+}
+
+.link-button {
+  text-decoration: none;
+}
+.link-button:hover,
+.link-button:focus-visible {
+  text-decoration: underline;
+}
+/* === end Module 20AP-Fix2 ========================================= */
