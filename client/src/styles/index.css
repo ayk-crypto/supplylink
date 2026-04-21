@@ -4085,3 +4085,29 @@ button.attachment-badge:focus-visible {
   overflow-x: auto;
 }
 /* === end Module 20AN ============================================== */
+
+/* Module 20AP-Fix: Link underline cleanup ========================== */
+
+a {
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.resource-row a,
+.dashboard-card a,
+.metric-card a,
+.table-row a,
+.attachment-badge a {
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.resource-row a:hover,
+.dashboard-card a:hover,
+.metric-card a:hover {
+  text-decoration: underline;
+}
+/* === end Module 20AP-Fix ========================================== */
