@@ -46,6 +46,10 @@ function mapShareSummary(row) {
   };
 }
 
+function isMissingDocumentSharesTableError(error) {
+  return error?.code === "42P01";
+}
+
 function assertShareFound(row) {
   if (!row) {
     throw new AppError("Shared document not found", {
@@ -62,54 +66,93 @@ function assertShareFound(row) {
 }
 
 async function getDocumentShareSummary(vendorId, documentType, documentId) {
-  const share =
-    documentType === "quotation"
-      ? await findActiveQuotationShareForVendor(vendorId, documentId)
-      : await findActiveInvoiceShareForVendor(vendorId, documentId);
+  try {
+    const share =
+      documentType === "quotation"
+        ? await findActiveQuotationShareForVendor(vendorId, documentId)
+        : await findActiveInvoiceShareForVendor(vendorId, documentId);
 
-  return mapShareSummary(share);
+    return mapShareSummary(share);
+  } catch (error) {
+    if (isMissingDocumentSharesTableError(error)) {
+      return null;
+    }
+
+    throw error;
+  }
+}
+
+function documentSharingUnavailableError() {
+  return new AppError("Document sharing is temporarily unavailable until the latest migration is applied", {
+    statusCode: 503,
+    code: "DOCUMENT_SHARING_MIGRATION_REQUIRED",
+    details: [
+      {
+        path: "document_shares",
+        message: "Apply migration 019_document_shares.sql to enable send/share links"
+      }
+    ]
+  });
 }
 
 async function ensureDocumentShare(vendorId, documentType, documentId, actor = {}) {
-  const detail =
-    documentType === "quotation"
-      ? await getQuotationDetail(vendorId, documentId)
-      : await getInvoiceDetail(vendorId, documentId);
-  const existing =
-    documentType === "quotation"
-      ? await findActiveQuotationShareForVendor(vendorId, documentId)
-      : await findActiveInvoiceShareForVendor(vendorId, documentId);
-  const share = existing
-    ? await touchDocumentShareSent(existing.id)
-    : await createDocumentShare({
-        vendorId,
+  try {
+    const detail =
+      documentType === "quotation"
+        ? await getQuotationDetail(vendorId, documentId)
+        : await getInvoiceDetail(vendorId, documentId);
+    const existing =
+      documentType === "quotation"
+        ? await findActiveQuotationShareForVendor(vendorId, documentId)
+        : await findActiveInvoiceShareForVendor(vendorId, documentId);
+    const share = existing
+      ? await touchDocumentShareSent(existing.id)
+      : await createDocumentShare({
+          vendorId,
+          documentType,
+          quotationId: documentType === "quotation" ? documentId : null,
+          invoiceId: documentType === "invoice" ? documentId : null,
+          publicToken: generatePublicToken(),
+          createdBy: actor.userId || null
+        });
+
+    await recordAuditEvent({
+      vendorId,
+      actor,
+      entityType: documentType,
+      entityId: documentId,
+      eventType: `${documentType}.shared`,
+      eventLabel: `${documentType === "quotation" ? "Quotation" : "Invoice"} ${documentType === "quotation" ? detail.quoteNumber : detail.invoiceNumber} share link was generated.`,
+      metadata: {
         documentType,
-        quotationId: documentType === "quotation" ? documentId : null,
-        invoiceId: documentType === "invoice" ? documentId : null,
-        publicToken: generatePublicToken(),
-        createdBy: actor.userId || null
-      });
+        documentId,
+        publicUrl: buildShareUrl(share.public_token),
+        sentAt: share.sent_at
+      }
+    });
 
-  await recordAuditEvent({
-    vendorId,
-    actor,
-    entityType: documentType,
-    entityId: documentId,
-    eventType: `${documentType}.shared`,
-    eventLabel: `${documentType === "quotation" ? "Quotation" : "Invoice"} ${documentType === "quotation" ? detail.quoteNumber : detail.invoiceNumber} share link was generated.`,
-    metadata: {
-      documentType,
-      documentId,
-      publicUrl: buildShareUrl(share.public_token),
-      sentAt: share.sent_at
+    return mapShareSummary(share);
+  } catch (error) {
+    if (isMissingDocumentSharesTableError(error)) {
+      throw documentSharingUnavailableError();
     }
-  });
 
-  return mapShareSummary(share);
+    throw error;
+  }
 }
 
 async function getPublicSharedDocument(token) {
-  const share = await findActiveDocumentShareByToken(token);
+  let share;
+
+  try {
+    share = await findActiveDocumentShareByToken(token);
+  } catch (error) {
+    if (isMissingDocumentSharesTableError(error)) {
+      throw documentSharingUnavailableError();
+    }
+
+    throw error;
+  }
 
   assertShareFound(share);
 
@@ -126,7 +169,17 @@ async function getPublicSharedDocument(token) {
 }
 
 async function getPublicSharedDocumentPdf(token) {
-  const share = await findActiveDocumentShareByToken(token);
+  let share;
+
+  try {
+    share = await findActiveDocumentShareByToken(token);
+  } catch (error) {
+    if (isMissingDocumentSharesTableError(error)) {
+      throw documentSharingUnavailableError();
+    }
+
+    throw error;
+  }
 
   assertShareFound(share);
 

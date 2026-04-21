@@ -1,4 +1,4 @@
-CREATE TABLE document_shares (
+CREATE TABLE IF NOT EXISTS document_shares (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   vendor_id UUID NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
   document_type TEXT NOT NULL CHECK (document_type IN ('quotation', 'invoice')),
@@ -23,13 +23,40 @@ CREATE TABLE document_shares (
   )
 );
 
-CREATE UNIQUE INDEX document_shares_active_quotation_unique_idx
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'document_shares_single_document_check'
+  ) THEN
+    ALTER TABLE document_shares
+      ADD CONSTRAINT document_shares_single_document_check CHECK (
+        ((quotation_id IS NOT NULL)::int + (invoice_id IS NOT NULL)::int) = 1
+      );
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'document_shares_type_match_check'
+  ) THEN
+    ALTER TABLE document_shares
+      ADD CONSTRAINT document_shares_type_match_check CHECK (
+        (document_type = 'quotation' AND quotation_id IS NOT NULL AND invoice_id IS NULL)
+        OR
+        (document_type = 'invoice' AND invoice_id IS NOT NULL AND quotation_id IS NULL)
+      );
+  END IF;
+END $$;
+
+CREATE UNIQUE INDEX IF NOT EXISTS document_shares_active_quotation_unique_idx
   ON document_shares (quotation_id)
   WHERE quotation_id IS NOT NULL AND revoked_at IS NULL;
 
-CREATE UNIQUE INDEX document_shares_active_invoice_unique_idx
+CREATE UNIQUE INDEX IF NOT EXISTS document_shares_active_invoice_unique_idx
   ON document_shares (invoice_id)
   WHERE invoice_id IS NOT NULL AND revoked_at IS NULL;
 
-CREATE INDEX document_shares_vendor_document_idx
+CREATE INDEX IF NOT EXISTS document_shares_vendor_document_idx
   ON document_shares (vendor_id, document_type, created_at DESC);
