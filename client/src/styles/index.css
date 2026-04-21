@@ -3882,6 +3882,63 @@ canvas {
   min-width: 100%;
 }
 
+.document-preview-backdrop {
+  padding: 20px;
+  align-items: stretch;
+}
+
+.document-preview-shell {
+  width: min(1180px, 100%);
+  margin: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: min(92vh, 920px);
+}
+
+.document-preview-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+  background:
+    linear-gradient(135deg, rgba(15, 123, 99, 0.08), transparent 45%),
+    var(--surface);
+}
+
+.document-preview-toolbar strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.document-preview-toolbar span {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.document-preview-frame {
+  width: 100%;
+  height: 100%;
+  min-height: 70vh;
+  border: 0;
+  background: #eef4f0;
+}
+
+.document-preview-loading {
+  display: grid;
+  place-items: center;
+  min-height: 70vh;
+  color: var(--muted);
+  font-weight: 600;
+  background: linear-gradient(180deg, #f4f8f5 0%, #edf4ef 100%);
+}
+
 .section-heading {
   display: flex;
   align-items: flex-start;
@@ -4041,6 +4098,20 @@ button.attachment-badge:focus-visible {
 @media (max-width: 720px) {
   .form-panel {
     padding: 18px;
+  }
+
+  .document-preview-backdrop {
+    padding: 10px;
+  }
+
+  .document-preview-shell {
+    min-height: calc(100vh - 20px);
+    border-radius: 16px;
+  }
+
+  .document-preview-toolbar {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .form-panel-heading {

@@ -2,6 +2,7 @@ import AppError from "../../core/errors/AppError.js";
 import { findVendorById } from "../vendors/vendors.repository.js";
 import { getQuotationDetail } from "../quotations/quotations.service.js";
 import { getInvoiceDetail } from "../invoices/invoices.service.js";
+import { getTenantSettings } from "../settings/settings.service.js";
 
 const DOCUMENT_RENDER_VERSION = "2026-04-print-v1";
 
@@ -19,6 +20,40 @@ function mapVendorBlock(vendor) {
     contactPhone: vendor.contact_phone,
     currencyCode: vendor.currency_code,
     timezone: vendor.timezone
+  };
+}
+
+function mapBrandingBlock(settings = {}) {
+  const company = settings.company || {};
+  const currency = settings.currency || {};
+  const preferences = settings.preferences || {};
+  const invoice = settings.invoice || {};
+
+  return {
+    company: {
+      displayName: company.displayName || "",
+      legalName: company.legalName || "",
+      email: company.email || "",
+      phone: company.phone || "",
+      taxId: company.taxId || "",
+      addressLine1: company.addressLine1 || "",
+      addressLine2: company.addressLine2 || "",
+      logoUrl: company.logoUrl || company.logo?.downloadUrl || "",
+      logo: company.logo || null,
+      primaryBrandColor: company.primaryBrandColor || ""
+    },
+    formatting: {
+      currencyCode: currency.code || "USD",
+      decimals: Number(currency.decimals || 2),
+      thousandsSeparator: currency.thousandsSeparator || ",",
+      dateFormat: preferences.dateFormat || "YYYY-MM-DD"
+    },
+    defaults: {
+      invoicePrefix: invoice.prefix || "",
+      invoiceSuffix: invoice.suffix || "",
+      invoiceDefaultDueDays: Number(invoice.defaultDueDays || 0),
+      termsAndNotes: invoice.defaultNotes || ""
+    }
   };
 }
 
@@ -65,7 +100,18 @@ function buildTotalsBlock(record) {
   };
 }
 
-function buildDocumentEnvelope({ documentType, documentNumber, vendor, customer, header, items, totals, notes }) {
+function buildDocumentEnvelope({
+  documentType,
+  documentNumber,
+  vendor,
+  branding,
+  customer,
+  header,
+  items,
+  totals,
+  notes,
+  terms
+}) {
   return {
     documentType,
     renderVersion: DOCUMENT_RENDER_VERSION,
@@ -81,11 +127,13 @@ function buildDocumentEnvelope({ documentType, documentNumber, vendor, customer,
     sections: {
       header,
       vendor: mapVendorBlock(vendor),
+      branding,
       customer: mapCustomerBlock(customer),
       items,
       totals,
       footer: {
-        notes: notes || null
+        notes: notes || null,
+        terms: terms || null
       }
     }
   };
@@ -105,15 +153,19 @@ async function getVendorForDocument(vendorId) {
 }
 
 async function buildQuotationPrintDocument(vendorId, quotationId) {
-  const [vendor, quotation] = await Promise.all([
+  const [vendor, tenantSettings, quotation] = await Promise.all([
     getVendorForDocument(vendorId),
+    getTenantSettings(vendorId),
     getQuotationDetail(vendorId, quotationId)
   ]);
+
+  const branding = mapBrandingBlock(tenantSettings.settings);
 
   return buildDocumentEnvelope({
     documentType: "quotation",
     documentNumber: quotation.quoteNumber,
     vendor,
+    branding,
     customer: quotation.customer,
     header: {
       id: quotation.id,
@@ -128,20 +180,25 @@ async function buildQuotationPrintDocument(vendorId, quotationId) {
     },
     items: mapItemTable(quotation.items),
     totals: buildTotalsBlock(quotation),
-    notes: quotation.notes
+    notes: quotation.notes,
+    terms: branding.defaults.termsAndNotes
   });
 }
 
 async function buildInvoicePrintDocument(vendorId, invoiceId) {
-  const [vendor, invoice] = await Promise.all([
+  const [vendor, tenantSettings, invoice] = await Promise.all([
     getVendorForDocument(vendorId),
+    getTenantSettings(vendorId),
     getInvoiceDetail(vendorId, invoiceId)
   ]);
+
+  const branding = mapBrandingBlock(tenantSettings.settings);
 
   return buildDocumentEnvelope({
     documentType: "invoice",
     documentNumber: invoice.invoiceNumber,
     vendor,
+    branding,
     customer: invoice.customer,
     header: {
       id: invoice.id,
@@ -161,7 +218,8 @@ async function buildInvoicePrintDocument(vendorId, invoiceId) {
       ...buildTotalsBlock(invoice),
       balanceDue: toAmount(invoice.balanceDue)
     },
-    notes: invoice.notes
+    notes: invoice.notes,
+    terms: branding.defaults.termsAndNotes
   });
 }
 

@@ -37,6 +37,10 @@ async function convertQuotationToOrder(quotationId) {
   });
 }
 
+async function getQuotationPrintDocument(quotationId, options = {}) {
+  return request(`/quotations/${quotationId}/print`, options);
+}
+
 async function transitionQuotation(quotationId, action) {
   return request(`/quotations/${quotationId}/${action}`, {
     method: "POST"
@@ -54,6 +58,7 @@ export {
   createOrder,
   createQuotation,
   getOrder,
+  getQuotationPrintDocument,
   getQuotation,
   listOrders,
   listQuotations,

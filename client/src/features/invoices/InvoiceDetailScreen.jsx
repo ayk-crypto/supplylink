@@ -27,126 +27,13 @@ import {
   confirmDestructive,
   formatDateTimeWith,
   formatDateWith,
-  getBrandColor,
-  getLogoUrl
+  formatMoneyWith
 } from "../system/settingsFormat.js";
 import { formatCustomer } from "../transactions/transactionUtils.js";
+import DocumentPreviewModal from "../documents/DocumentPreviewModal.jsx";
+import { downloadDocumentHtml, openDocumentPrintWindow } from "../documents/documentUtils.js";
 
 const paymentMethods = ["cash", "card", "bank_transfer", "check", "other"];
-
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-function buildInvoicePrintHtml(document, branding = {}) {
-  const sections = document.sections || {};
-  const vendor = sections.vendor || {};
-  const customer = sections.customer || {};
-  const header = sections.header || {};
-  const totals = sections.totals || {};
-  const items = sections.items || [];
-  const logoUrl = branding.logoUrl || "";
-  const brandColor = branding.brandColor || "#1f2621";
-  const accentBorder = branding.brandColor || "#dbe4dd";
-
-  return `<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>${escapeHtml(document.title || "Invoice")}</title>
-    <style>
-      body { margin: 0; padding: 32px; color: #1f2621; font-family: Inter, Arial, sans-serif; }
-      header { display: flex; justify-content: space-between; gap: 24px; border-bottom: 3px solid ${escapeHtml(accentBorder)}; padding-bottom: 20px; }
-      .vendor-block { display: flex; gap: 16px; align-items: flex-start; }
-      .vendor-logo { max-width: 120px; max-height: 80px; object-fit: contain; }
-      h1 { margin: 0 0 8px; font-size: 28px; color: ${escapeHtml(brandColor)}; }
-      h2 { margin: 0 0 8px; font-size: 16px; }
-      p { margin: 3px 0; color: #647067; }
-      section { margin-top: 24px; }
-      .blocks { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-      table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-      th, td { padding: 10px; border-bottom: 1px solid #dbe4dd; text-align: left; }
-      th { color: #647067; font-size: 12px; text-transform: uppercase; }
-      .totals { margin-left: auto; width: min(320px, 100%); }
-      .totals div { display: flex; justify-content: space-between; padding: 6px 0; }
-      .grand { font-weight: 700; border-top: 2px solid ${escapeHtml(accentBorder)}; margin-top: 6px; padding-top: 10px; }
-      @media print { body { padding: 20px; } button { display: none; } }
-    </style>
-  </head>
-  <body>
-    <button onclick="window.print()">Print</button>
-    <header>
-      <div>
-        <h1>${escapeHtml(document.title || "Invoice")}</h1>
-        <p>Status: ${escapeHtml(header.status)}</p>
-        <p>Issue date: ${escapeHtml(branding.issueDateLabel || header.issueDate || "Not set")}</p>
-        <p>Due date: ${escapeHtml(branding.dueDateLabel || header.dueDate || "Not set")}</p>
-      </div>
-      <div class="vendor-block">
-        ${
-          logoUrl
-            ? `<img class="vendor-logo" alt="" src="${escapeHtml(logoUrl)}" />`
-            : ""
-        }
-        <div>
-          <h2>${escapeHtml(vendor.displayName || vendor.legalName || "Vendor")}</h2>
-          <p>${escapeHtml(vendor.email || vendor.contactEmail || "")}</p>
-          <p>${escapeHtml(vendor.phone || vendor.contactPhone || "")}</p>
-        </div>
-      </div>
-    </header>
-    <section class="blocks">
-      <div>
-        <h2>Bill to</h2>
-        <p>${escapeHtml(customer.companyName || customer.fullName || "Customer")}</p>
-        <p>${escapeHtml(customer.email || "")}</p>
-        <p>${escapeHtml(customer.phone || "")}</p>
-      </div>
-      <div>
-        <h2>Summary</h2>
-        <p>Invoice number: ${escapeHtml(header.invoiceNumber)}</p>
-        <p>Order: ${escapeHtml(header.order?.orderNumber || "Not linked")}</p>
-      </div>
-    </section>
-    <section>
-      <h2>Items</h2>
-      <table>
-        <thead>
-          <tr><th>Item</th><th>Qty</th><th>Unit price</th><th>Total</th></tr>
-        </thead>
-        <tbody>
-          ${items
-            .map(
-              (item) => `<tr>
-                <td>${escapeHtml(item.productName || item.description || item.sku)}</td>
-                <td>${escapeHtml(item.quantity)}</td>
-                <td>${escapeHtml(toMoney(item.unitPrice))}</td>
-                <td>${escapeHtml(toMoney(item.lineTotal))}</td>
-              </tr>`
-            )
-            .join("")}
-        </tbody>
-      </table>
-    </section>
-    <section class="totals">
-      <div><span>Subtotal</span><strong>${escapeHtml(toMoney(totals.subtotal))}</strong></div>
-      <div><span>Tax</span><strong>${escapeHtml(toMoney(totals.taxTotal))}</strong></div>
-      <div><span>Discount</span><strong>${escapeHtml(toMoney(totals.discountTotal))}</strong></div>
-      <div class="grand"><span>Total</span><strong>${escapeHtml(toMoney(totals.grandTotal))}</strong></div>
-      <div><span>Balance due</span><strong>${escapeHtml(toMoney(totals.balanceDue))}</strong></div>
-    </section>
-    <section>
-      <h2>Notes</h2>
-      <p>${escapeHtml(sections.footer?.notes || "No notes.")}</p>
-    </section>
-  </body>
-</html>`;
-}
 
 function DetailField({ label, value }) {
   return (
@@ -315,6 +202,7 @@ function InvoiceDetailScreen({ id, navigate }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isPrinting, setIsPrinting] = useState(false);
   const [pendingAction, setPendingAction] = useState("");
+  const [previewDocument, setPreviewDocument] = useState(null);
 
   async function runLifecycleAction(spec) {
     if (!invoice || pendingAction) {
@@ -418,54 +306,67 @@ function InvoiceDetailScreen({ id, navigate }) {
 
   const paidAmount = Number(invoice.grandTotal || 0) - Number(invoice.balanceDue || 0);
 
-  async function openPrintView() {
-    const printWindow = window.open("", "_blank");
-
-    if (!printWindow) {
-      showToast({
-        message: "Allow popups for this site to open the printable invoice view.",
-        title: "Print view blocked",
-        tone: "error"
-      });
-      return;
-    }
-
-    printWindow.document.write("<p>Loading printable invoice...</p>");
+  async function loadInvoiceDocument() {
     setIsPrinting(true);
 
     try {
       const response = await getInvoicePrintDocument(invoice.id);
-      const printHeader = response.data?.sections?.header || {};
-      const html = buildInvoicePrintHtml(response.data, {
-        brandColor: getBrandColor(settings),
-        logoUrl: getLogoUrl(settings),
-        issueDateLabel: printHeader.issueDate
-          ? formatDateWith(settings, printHeader.issueDate)
-          : "",
-        dueDateLabel: printHeader.dueDate
-          ? formatDateWith(settings, printHeader.dueDate)
-          : ""
-      });
+      return response.data;
+    } finally {
+      setIsPrinting(false);
+    }
+  }
 
-      printWindow.document.open();
-      printWindow.document.write(html);
-      printWindow.document.close();
-
+  async function openInvoicePreview() {
+    try {
+      const document = await loadInvoiceDocument();
+      setPreviewDocument(document);
+    } catch (requestError) {
       showToast({
-        message: "Printable invoice view opened. Use the browser print dialog to save as PDF.",
+        message: getApiErrorMessage(requestError, "Invoice preview could not be loaded."),
+        title: "Preview unavailable",
+        tone: "error"
+      });
+    }
+  }
+
+  async function openPrintView() {
+    try {
+      const document = previewDocument || (await loadInvoiceDocument());
+      if (!previewDocument) {
+        setPreviewDocument(document);
+      }
+      openDocumentPrintWindow(document, settings);
+      showToast({
+        message: "Printable invoice view opened.",
         title: "Print view ready"
       });
     } catch (requestError) {
-      const message = getApiErrorMessage(requestError, "Printable invoice could not be loaded.");
-
-      printWindow.close();
       showToast({
-        message,
+        message: getApiErrorMessage(requestError, "Printable invoice could not be loaded."),
         title: "Print failed",
         tone: "error"
       });
-    } finally {
-      setIsPrinting(false);
+    }
+  }
+
+  async function downloadInvoiceDocument() {
+    try {
+      const document = previewDocument || (await loadInvoiceDocument());
+      if (!previewDocument) {
+        setPreviewDocument(document);
+      }
+      downloadDocumentHtml(document, settings);
+      showToast({
+        message: "Invoice document downloaded as HTML.",
+        title: "Download started"
+      });
+    } catch (requestError) {
+      showToast({
+        message: getApiErrorMessage(requestError, "Invoice document could not be downloaded."),
+        title: "Download failed",
+        tone: "error"
+      });
     }
   }
 
@@ -494,8 +395,14 @@ function InvoiceDetailScreen({ id, navigate }) {
                 </button>
               );
             })}
+            <button className="secondary-button" onClick={openInvoicePreview} type="button">
+              {isPrinting ? "Preparing..." : "Preview"}
+            </button>
+            <button className="secondary-button" onClick={downloadInvoiceDocument} type="button">
+              Download
+            </button>
             <button className="secondary-button" onClick={openPrintView} type="button">
-              {isPrinting ? "Preparing..." : "Print / Download"}
+              {isPrinting ? "Preparing..." : "Print"}
             </button>
             <button
               className="secondary-button"
@@ -549,7 +456,7 @@ function InvoiceDetailScreen({ id, navigate }) {
         />
         <DetailField label="Grand total" value={toMoney(invoice.grandTotal)} />
         <DetailField label="Paid" value={toMoney(paidAmount)} />
-        <DetailField label="Outstanding" value={toMoney(invoice.balanceDue)} />
+        <DetailField label="Outstanding" value={formatMoneyWith(settings, invoice.balanceDue)} />
       </section>
 
       <section className="transaction-panel">
@@ -624,6 +531,17 @@ function InvoiceDetailScreen({ id, navigate }) {
           <EmptyState>No payments recorded for this invoice yet.</EmptyState>
         )}
       </section>
+
+      {previewDocument ? (
+        <DocumentPreviewModal
+          document={previewDocument}
+          isLoading={isPrinting}
+          onClose={() => setPreviewDocument(null)}
+          onDownload={downloadInvoiceDocument}
+          onPrint={openPrintView}
+          settings={settings}
+        />
+      ) : null}
     </div>
   );
 }

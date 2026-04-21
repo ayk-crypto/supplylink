@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   convertQuotationToOrder,
   getOrder,
+  getQuotationPrintDocument,
   getQuotation,
   transitionOrder,
   transitionQuotation
@@ -20,6 +21,8 @@ import { useAppSettings } from "../system/settingsContext.js";
 import { confirmDestructive, formatDateWith } from "../system/settingsFormat.js";
 import StatusPill from "../../components/ui/StatusPill.jsx";
 import { formatCustomer } from "./transactionUtils.js";
+import DocumentPreviewModal from "../documents/DocumentPreviewModal.jsx";
+import { downloadDocumentHtml, openDocumentPrintWindow } from "../documents/documentUtils.js";
 
 const QUOTATION_ACTIONS = [
   { action: "send", label: "Send", from: ["draft"], successTitle: "Quotation sent", successMessage: "Quotation marked as sent." },
@@ -77,6 +80,8 @@ function TransactionDetailScreen({ id, kind, navigate }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isConverting, setIsConverting] = useState(false);
   const [pendingAction, setPendingAction] = useState("");
+  const [previewDocument, setPreviewDocument] = useState(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
   async function runLifecycleAction(spec) {
     if (!detail || pendingAction) {
@@ -144,6 +149,70 @@ function TransactionDetailScreen({ id, kind, navigate }) {
       });
     } finally {
       setIsConverting(false);
+    }
+  }
+
+  async function loadQuotationDocument() {
+    setIsPreviewLoading(true);
+
+    try {
+      const response = await getQuotationPrintDocument(id);
+      return response.data;
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  }
+
+  async function openQuotationPreview() {
+    try {
+      const document = await loadQuotationDocument();
+      setPreviewDocument(document);
+    } catch (requestError) {
+      showToast({
+        message: getApiErrorMessage(requestError, "Quotation preview could not be loaded."),
+        title: "Preview unavailable",
+        tone: "error"
+      });
+    }
+  }
+
+  async function handleQuotationPrint() {
+    try {
+      const document = previewDocument || (await loadQuotationDocument());
+      if (!previewDocument) {
+        setPreviewDocument(document);
+      }
+      openDocumentPrintWindow(document, settings);
+      showToast({
+        message: "Printable quotation view opened.",
+        title: "Print view ready"
+      });
+    } catch (requestError) {
+      showToast({
+        message: getApiErrorMessage(requestError, "Printable quotation could not be loaded."),
+        title: "Print failed",
+        tone: "error"
+      });
+    }
+  }
+
+  async function handleQuotationDownload() {
+    try {
+      const document = previewDocument || (await loadQuotationDocument());
+      if (!previewDocument) {
+        setPreviewDocument(document);
+      }
+      downloadDocumentHtml(document, settings);
+      showToast({
+        message: "Quotation document downloaded as HTML.",
+        title: "Download started"
+      });
+    } catch (requestError) {
+      showToast({
+        message: getApiErrorMessage(requestError, "Quotation document could not be downloaded."),
+        title: "Download failed",
+        tone: "error"
+      });
     }
   }
 
@@ -234,6 +303,34 @@ function TransactionDetailScreen({ id, kind, navigate }) {
               >
                 Create invoice
               </button>
+            ) : null}
+            {kind === "quotations" ? (
+              <>
+                <button
+                  className="secondary-button"
+                  disabled={isPreviewLoading}
+                  onClick={openQuotationPreview}
+                  type="button"
+                >
+                  {isPreviewLoading ? "Preparing..." : "Preview"}
+                </button>
+                <button
+                  className="secondary-button"
+                  disabled={isPreviewLoading}
+                  onClick={handleQuotationDownload}
+                  type="button"
+                >
+                  Download
+                </button>
+                <button
+                  className="secondary-button"
+                  disabled={isPreviewLoading}
+                  onClick={handleQuotationPrint}
+                  type="button"
+                >
+                  Print
+                </button>
+              </>
             ) : null}
             {kind === "quotations" ? (
               <button
@@ -357,6 +454,17 @@ function TransactionDetailScreen({ id, kind, navigate }) {
       </section>
 
       <AttachmentsPanel entityType={kind} entityId={detail.id} />
+
+      {kind === "quotations" && previewDocument ? (
+        <DocumentPreviewModal
+          document={previewDocument}
+          isLoading={isPreviewLoading}
+          onClose={() => setPreviewDocument(null)}
+          onDownload={handleQuotationDownload}
+          onPrint={handleQuotationPrint}
+          settings={settings}
+        />
+      ) : null}
     </div>
   );
 }
