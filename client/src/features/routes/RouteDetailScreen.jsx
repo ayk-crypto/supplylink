@@ -518,26 +518,26 @@ function RouteDetailScreen({ id, navigate }) {
       </section>
 
       <section className="metric-strip">
-        <div className="metric-card">
+        <article className="metric-tile">
           <span>Total stops</span>
           <strong>{routeSummary.stopCount}</strong>
-        </div>
-        <div className="metric-card">
+        </article>
+        <article className="metric-tile">
           <span>Assigned orders</span>
           <strong>{routeSummary.assignedOrderCount}</strong>
-        </div>
-        <div className="metric-card">
+        </article>
+        <article className="metric-tile">
           <span>Assigned order value</span>
           <strong>{formatMoney(routeSummary.assignedOrderValueTotal)}</strong>
-        </div>
-        <div className="metric-card">
+        </article>
+        <article className="metric-tile">
           <span>Coverage</span>
           <strong>
             {routeSummary.stopCount
               ? `${routeSummary.assignedOrderCount} / ${routeSummary.stopCount} stops`
               : "No stops"}
           </strong>
-        </div>
+        </article>
       </section>
 
       <section className="transaction-panel">
