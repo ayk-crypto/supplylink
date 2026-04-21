@@ -11,10 +11,42 @@ import {
   buildDocumentHtml
 } from "./documentUtils.js";
 
+function getPublicShareErrorState(requestError) {
+  const code = requestError?.payload?.code;
+
+  switch (code) {
+    case "DOCUMENT_SHARE_REVOKED":
+      return {
+        title: "This secure link was revoked",
+        message: "The sender disabled this share link. Ask them for a fresh link."
+      };
+    case "DOCUMENT_SHARE_EXPIRED":
+      return {
+        title: "This secure link has expired",
+        message: "The sender can regenerate a new secure link for this document."
+      };
+    case "DOCUMENT_SHARE_RATE_LIMITED":
+      return {
+        title: "Too many attempts",
+        message: "Please wait a minute, then try opening this secure link again."
+      };
+    case "DOCUMENT_SHARE_NOT_FOUND":
+      return {
+        title: "This secure link is invalid",
+        message: "Double-check the URL or ask the sender to copy the latest link again."
+      };
+    default:
+      return {
+        title: "This shared document is unavailable",
+        message: getApiErrorMessage(requestError, "Shared document could not be loaded.")
+      };
+  }
+}
+
 function PublicDocumentScreen({ token }) {
   const [documentPayload, setDocumentPayload] = useState(null);
   const [share, setShare] = useState(null);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -24,7 +56,7 @@ function PublicDocumentScreen({ token }) {
 
     async function loadDocument() {
       setIsLoading(true);
-      setError("");
+      setError(null);
 
       try {
         const response = await getSharedDocument(token, { signal: controller.signal });
@@ -40,7 +72,7 @@ function PublicDocumentScreen({ token }) {
           return;
         }
 
-        setError(getApiErrorMessage(requestError, "Shared document could not be loaded."));
+        setError(getPublicShareErrorState(requestError));
       } finally {
         if (active) {
           setIsLoading(false);
@@ -74,7 +106,10 @@ function PublicDocumentScreen({ token }) {
         getDownloadFilename(response.headers?.contentDisposition, "document.pdf")
       );
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, "PDF could not be downloaded."));
+      setError({
+        title: "PDF unavailable",
+        message: getApiErrorMessage(requestError, "PDF could not be downloaded.")
+      });
     } finally {
       setIsDownloading(false);
     }
@@ -103,8 +138,8 @@ function PublicDocumentScreen({ token }) {
     return (
       <main className="public-document-page">
         <section className="public-document-empty">
-          <strong>This shared document is unavailable</strong>
-          <p>{error}</p>
+          <strong>{error.title}</strong>
+          <p>{error.message}</p>
         </section>
       </main>
     );

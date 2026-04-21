@@ -15,7 +15,9 @@ import {
   list,
   pdf,
   print,
+  regenerateShare,
   reject,
+  revokeShare,
   send,
   share,
   update
@@ -71,6 +73,8 @@ function quotationShareAction(handler) {
 }
 
 quotationsRoutes.post("/:quotationId/send", ...quotationAction(send));
+quotationsRoutes.post("/:quotationId/share/revoke", ...quotationShareAction(revokeShare));
+quotationsRoutes.post("/:quotationId/share/regenerate", ...quotationShareAction(regenerateShare));
 quotationsRoutes.post(
   "/:quotationId/email",
   authenticate,

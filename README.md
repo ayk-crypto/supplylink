@@ -32,6 +32,8 @@ management endpoints for platform and vendor-level administration.
 
    If you want to enable quotation/invoice email sending locally, also configure SMTP values in
    `server\.env.development` such as `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT`, and `EMAIL_FROM_ADDRESS`.
+   If SMTP is not configured, document email actions stay optional and the UI falls back to secure
+   share-link guidance instead of breaking the document workflow.
 
 3. Apply migrations and seed a demo dataset:
 
@@ -758,6 +760,27 @@ It is a consistent document envelope with `header`, `vendor`, `customer`,
 screens and future PDF generation. The endpoints use the same tenant-isolated
 read permissions as quotation and invoice detail views, and future generated
 PDFs can be attached through the Module 16 attachment foundation.
+
+## Document Share Hardening
+
+Document share links for quotations and invoices now support active, revoked,
+and expired states. Apply `server/src/database/migrations/020_document_share_hardening.sql`
+after the original `019_document_shares.sql` migration so `expires_at`,
+`revoked_by`, and the supporting index exist in every environment.
+
+Vendor users can keep using the existing share endpoints plus these additive
+actions:
+
+- `POST /api/v1/quotations/:quotationId/share/revoke`
+- `POST /api/v1/quotations/:quotationId/share/regenerate`
+- `POST /api/v1/invoices/:invoiceId/share/revoke`
+- `POST /api/v1/invoices/:invoiceId/share/regenerate`
+
+Public share routes now reject invalid, revoked, expired, and rate-limited
+access safely with friendly API errors instead of leaking internal failures.
+The frontend share modal surfaces view metadata, expiry state, revoke, and
+regenerate actions. If SMTP is not configured, the email flow degrades
+gracefully by guiding users to copy the secure link manually.
 
 ## Frontend Integration Helpers
 

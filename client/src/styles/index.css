@@ -4697,7 +4697,66 @@ a:hover {
   background: #1d7a46 !important;
 }
 .document-share-actions {
-  justify-content: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.document-share-status-row {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(15, 123, 99, 0.04), rgba(15, 35, 28, 0.02));
+}
+.document-share-status {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.document-share-status span {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.document-share-status strong {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 32px;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+.document-share-status.status-active strong {
+  color: #186b3c;
+  background: rgba(29, 122, 70, 0.12);
+}
+.document-share-status.status-revoked strong {
+  color: #8f1f2d;
+  background: rgba(159, 43, 43, 0.12);
+}
+.document-share-status.status-expired strong,
+.document-share-status.status-missing strong {
+  color: #92400e;
+  background: rgba(217, 119, 6, 0.12);
+}
+.document-email-fallback {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+  border-top: 1px solid rgba(180, 35, 24, 0.12);
+  padding-top: 10px;
+}
+.document-email-fallback .secondary-button {
+  justify-self: start;
 }
 .document-share-meta {
   display: grid;
@@ -4810,8 +4869,20 @@ a:hover {
   text-align: center;
   padding: 32px;
 }
+.public-document-empty strong {
+  color: var(--ink);
+  font-size: 1.1rem;
+}
+.public-document-empty p {
+  max-width: 38rem;
+  margin: 0;
+  color: var(--muted);
+}
 
 @media (max-width: 720px) {
+  .document-share-status-row {
+    flex-direction: column;
+  }
   .document-share-meta {
     grid-template-columns: 1fr;
   }

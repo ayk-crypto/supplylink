@@ -6,8 +6,10 @@ function DocumentEmailModal({
   defaultSubject = "",
   documentLabel = "document",
   error = "",
+  fallbackShareHint = "",
   isLoading = false,
   onClose,
+  onCopyShareLink,
   onSubmit
 }) {
   const [recipientEmail, setRecipientEmail] = useState(customerEmail);
@@ -68,7 +70,7 @@ function DocumentEmailModal({
         <div className="document-share-header">
           <div className="document-share-header-main">
             <span className="document-share-icon" aria-hidden="true">
-              ✉
+              @
             </span>
             <div>
               <strong id="document-email-title">Send {documentLabel} by email</strong>
@@ -85,7 +87,7 @@ function DocumentEmailModal({
             ref={closeButtonRef}
             type="button"
           >
-            ×
+            x
           </button>
         </div>
 
@@ -104,7 +106,7 @@ function DocumentEmailModal({
               value={recipientEmail}
             />
             <small className="document-share-help">
-              We use this address as the “To:” for the message.
+              We use this address as the "To:" for the message.
             </small>
           </div>
 
@@ -141,6 +143,16 @@ function DocumentEmailModal({
           <div className="form-error" role="alert">
             <strong>Email failed</strong>
             <span>{error}</span>
+            {fallbackShareHint ? (
+              <div className="document-email-fallback">
+                <span>{fallbackShareHint}</span>
+                {onCopyShareLink ? (
+                  <button className="secondary-button" onClick={onCopyShareLink} type="button">
+                    Copy secure link
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         ) : null}
 
@@ -149,7 +161,7 @@ function DocumentEmailModal({
             Cancel
           </button>
           <button className="primary-button" disabled={isLoading} type="submit">
-            {isLoading ? "Sending…" : "Send email"}
+            {isLoading ? "Sending..." : "Send email"}
           </button>
         </div>
       </form>

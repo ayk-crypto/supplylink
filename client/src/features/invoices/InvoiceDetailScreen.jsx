@@ -7,7 +7,11 @@ import {
   listPayments,
   transitionInvoice
 } from "../../services/invoiceApi.js";
-import { shareInvoice } from "../../services/documentShareApi.js";
+import {
+  regenerateInvoiceShare,
+  revokeInvoiceShare,
+  shareInvoice
+} from "../../services/documentShareApi.js";
 import { sendInvoiceEmail } from "../../services/documentEmailApi.js";
 
 const INVOICE_ACTIONS = [
@@ -210,6 +214,7 @@ function InvoiceDetailScreen({ id, navigate }) {
   const [shareDetails, setShareDetails] = useState(null);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isShareLoading, setIsShareLoading] = useState(false);
+  const [isShareMutating, setIsShareMutating] = useState(false);
   const [isEmailOpen, setIsEmailOpen] = useState(false);
   const [isEmailSending, setIsEmailSending] = useState(false);
   const [emailError, setEmailError] = useState("");
@@ -452,7 +457,11 @@ function InvoiceDetailScreen({ id, navigate }) {
         tone: "success"
       });
     } catch (requestError) {
-      const message = getApiErrorMessage(requestError, "Invoice email could not be sent.");
+      const code = requestError?.payload?.code;
+      const message =
+        code === "EMAIL_NOT_CONFIGURED"
+          ? "Email sending is not configured for this workspace yet."
+          : getApiErrorMessage(requestError, "Invoice email could not be sent.");
       setEmailError(message);
     } finally {
       setIsEmailSending(false);
@@ -460,12 +469,21 @@ function InvoiceDetailScreen({ id, navigate }) {
   }
 
   async function copyShareLink() {
-    if (!shareDetails?.publicUrl) {
-      return;
-    }
-
     try {
-      await copyTextToClipboard(shareDetails.publicUrl);
+      let nextShare = shareDetails;
+
+      if (!nextShare?.publicUrl || !nextShare?.isActive) {
+        const response = await shareInvoice(invoice.id);
+        nextShare = response.data;
+        setShareDetails(nextShare);
+        setInvoice((current) => (current ? { ...current, sharing: nextShare } : current));
+      }
+
+      if (!nextShare?.publicUrl) {
+        return;
+      }
+
+      await copyTextToClipboard(nextShare.publicUrl);
       showToast({
         message: "Secure share link copied.",
         title: "Link copied"
@@ -481,11 +499,63 @@ function InvoiceDetailScreen({ id, navigate }) {
   }
 
   function openSharedPreview() {
-    if (!shareDetails?.publicUrl) {
+    if (!shareDetails?.publicUrl || !shareDetails?.isActive) {
       return;
     }
 
     window.open(shareDetails.publicUrl, "_blank", "noopener,noreferrer");
+  }
+
+  async function handleRevokeShare() {
+    if (!shareDetails?.isActive || isShareMutating) {
+      return;
+    }
+
+    setIsShareMutating(true);
+
+    try {
+      const response = await revokeInvoiceShare(invoice.id);
+      setShareDetails(response.data);
+      setInvoice((current) => (current ? { ...current, sharing: response.data } : current));
+      showToast({
+        message: "The secure invoice link is no longer active.",
+        title: "Link revoked"
+      });
+    } catch (requestError) {
+      showToast({
+        message: getApiErrorMessage(requestError, "Share link could not be revoked."),
+        title: "Revoke failed",
+        tone: "error"
+      });
+    } finally {
+      setIsShareMutating(false);
+    }
+  }
+
+  async function handleRegenerateShare() {
+    if (isShareMutating) {
+      return;
+    }
+
+    setIsShareMutating(true);
+
+    try {
+      const response = await regenerateInvoiceShare(invoice.id);
+      setShareDetails(response.data);
+      setInvoice((current) => (current ? { ...current, sharing: response.data } : current));
+      showToast({
+        message: "A new secure invoice link is ready to share.",
+        title: "Link regenerated"
+      });
+    } catch (requestError) {
+      showToast({
+        message: getApiErrorMessage(requestError, "Share link could not be regenerated."),
+        title: "Regenerate failed",
+        tone: "error"
+      });
+    } finally {
+      setIsShareMutating(false);
+    }
   }
 
   const balanceDueAmount = Number(invoice.balanceDue || 0);
@@ -724,9 +794,12 @@ function InvoiceDetailScreen({ id, navigate }) {
       {isShareOpen ? (
         <DocumentShareModal
           isLoading={isShareLoading}
+          isMutating={isShareMutating}
           onClose={() => setIsShareOpen(false)}
           onCopy={copyShareLink}
           onOpen={openSharedPreview}
+          onRegenerate={handleRegenerateShare}
+          onRevoke={handleRevokeShare}
           share={shareDetails}
         />
       ) : null}
@@ -738,6 +811,11 @@ function InvoiceDetailScreen({ id, navigate }) {
           defaultSubject={getDefaultEmailSubject()}
           documentLabel="invoice"
           error={emailError}
+          fallbackShareHint={
+            emailError === "Email sending is not configured for this workspace yet."
+              ? "Copy the secure link instead and send it manually."
+              : ""
+          }
           isLoading={isEmailSending}
           onClose={() => {
             if (!isEmailSending) {
@@ -745,6 +823,7 @@ function InvoiceDetailScreen({ id, navigate }) {
               setEmailError("");
             }
           }}
+          onCopyShareLink={copyShareLink}
           onSubmit={submitEmail}
         />
       ) : null}

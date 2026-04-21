@@ -13,6 +13,8 @@ import {
   list,
   pdf,
   print,
+  regenerateShare,
+  revokeShare,
   share,
   update,
   voidInvoice
@@ -81,6 +83,11 @@ invoicesRoutes.post(
   asyncHandler(email)
 );
 invoicesRoutes.post("/:invoiceId/share", ...invoiceShareAction(share));
+invoicesRoutes.post("/:invoiceId/share/revoke", ...invoiceShareAction(revokeShare));
+invoicesRoutes.post(
+  "/:invoiceId/share/regenerate",
+  ...invoiceShareAction(regenerateShare)
+);
 invoicesRoutes.post("/:invoiceId/void", ...invoiceAction(voidInvoice));
 
 invoicesRoutes.get(

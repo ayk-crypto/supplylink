@@ -8,7 +8,11 @@ import {
   transitionOrder,
   transitionQuotation
 } from "../../services/transactionApi.js";
-import { shareQuotation } from "../../services/documentShareApi.js";
+import {
+  regenerateQuotationShare,
+  revokeQuotationShare,
+  shareQuotation
+} from "../../services/documentShareApi.js";
 import { sendQuotationEmail } from "../../services/documentEmailApi.js";
 import {
   EmptyState,
@@ -88,6 +92,7 @@ function TransactionDetailScreen({ id, kind, navigate }) {
   const [shareDetails, setShareDetails] = useState(null);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isShareLoading, setIsShareLoading] = useState(false);
+  const [isShareMutating, setIsShareMutating] = useState(false);
   const [isEmailOpen, setIsEmailOpen] = useState(false);
   const [isEmailSending, setIsEmailSending] = useState(false);
   const [emailError, setEmailError] = useState("");
@@ -254,12 +259,21 @@ function TransactionDetailScreen({ id, kind, navigate }) {
   }
 
   async function copyShareLink() {
-    if (!shareDetails?.publicUrl) {
-      return;
-    }
-
     try {
-      await copyTextToClipboard(shareDetails.publicUrl);
+      let nextShare = shareDetails;
+
+      if (!nextShare?.publicUrl || !nextShare?.isActive) {
+        const response = await shareQuotation(id);
+        nextShare = response.data;
+        setShareDetails(nextShare);
+        setDetail((current) => (current ? { ...current, sharing: nextShare } : current));
+      }
+
+      if (!nextShare?.publicUrl) {
+        return;
+      }
+
+      await copyTextToClipboard(nextShare.publicUrl);
       showToast({
         message: "Secure share link copied.",
         title: "Link copied"
@@ -275,7 +289,7 @@ function TransactionDetailScreen({ id, kind, navigate }) {
   }
 
   function openSharedPreview() {
-    if (!shareDetails?.publicUrl) {
+    if (!shareDetails?.publicUrl || !shareDetails?.isActive) {
       return;
     }
 
@@ -333,9 +347,66 @@ function TransactionDetailScreen({ id, kind, navigate }) {
         tone: "success"
       });
     } catch (requestError) {
-      setEmailError(getApiErrorMessage(requestError, "Quotation email could not be sent."));
+      const code = requestError?.payload?.code;
+      setEmailError(
+        code === "EMAIL_NOT_CONFIGURED"
+          ? "Email sending is not configured for this workspace yet."
+          : getApiErrorMessage(requestError, "Quotation email could not be sent.")
+      );
     } finally {
       setIsEmailSending(false);
+    }
+  }
+
+  async function handleRevokeShare() {
+    if (kind !== "quotations" || !shareDetails?.isActive || isShareMutating) {
+      return;
+    }
+
+    setIsShareMutating(true);
+
+    try {
+      const response = await revokeQuotationShare(id);
+      setShareDetails(response.data);
+      setDetail((current) => (current ? { ...current, sharing: response.data } : current));
+      showToast({
+        message: "The secure quotation link is no longer active.",
+        title: "Link revoked"
+      });
+    } catch (requestError) {
+      showToast({
+        message: getApiErrorMessage(requestError, "Share link could not be revoked."),
+        title: "Revoke failed",
+        tone: "error"
+      });
+    } finally {
+      setIsShareMutating(false);
+    }
+  }
+
+  async function handleRegenerateShare() {
+    if (kind !== "quotations" || isShareMutating) {
+      return;
+    }
+
+    setIsShareMutating(true);
+
+    try {
+      const response = await regenerateQuotationShare(id);
+      setShareDetails(response.data);
+      setDetail((current) => (current ? { ...current, sharing: response.data } : current));
+      showToast({
+        message: "A new secure quotation link is ready to share.",
+        title: "Link regenerated"
+      });
+    } catch (requestError) {
+      showToast({
+        message: getApiErrorMessage(requestError, "Share link could not be regenerated."),
+        title: "Regenerate failed",
+        tone: "error"
+      });
+    } finally {
+      setIsShareMutating(false);
     }
   }
 
@@ -629,9 +700,12 @@ function TransactionDetailScreen({ id, kind, navigate }) {
       {kind === "quotations" && isShareOpen ? (
         <DocumentShareModal
           isLoading={isShareLoading}
+          isMutating={isShareMutating}
           onClose={() => setIsShareOpen(false)}
           onCopy={copyShareLink}
           onOpen={openSharedPreview}
+          onRegenerate={handleRegenerateShare}
+          onRevoke={handleRevokeShare}
           share={shareDetails}
         />
       ) : null}
@@ -643,6 +717,11 @@ function TransactionDetailScreen({ id, kind, navigate }) {
           defaultSubject={getDefaultEmailSubject()}
           documentLabel="quotation"
           error={emailError}
+          fallbackShareHint={
+            emailError === "Email sending is not configured for this workspace yet."
+              ? "Copy the secure link instead and send it manually."
+              : ""
+          }
           isLoading={isEmailSending}
           onClose={() => {
             if (!isEmailSending) {
@@ -650,6 +729,7 @@ function TransactionDetailScreen({ id, kind, navigate }) {
               setEmailError("");
             }
           }}
+          onCopyShareLink={copyShareLink}
           onSubmit={submitEmail}
         />
       ) : null}

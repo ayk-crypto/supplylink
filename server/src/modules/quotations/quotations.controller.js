@@ -15,7 +15,9 @@ import {
 } from "../documents/documents.email.service.js";
 import {
   ensureDocumentShare,
-  getDocumentShareSummary
+  getDocumentShareSummary,
+  regenerateDocumentShare,
+  revokeActiveDocumentShare
 } from "../documents/documents.share.service.js";
 import { convertQuotationToOrder } from "../orders/orders.service.js";
 
@@ -91,6 +93,42 @@ async function share(request, response) {
 
   sendSuccess(response, {
     message: "Quotation share link ready",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId
+    }
+  });
+}
+
+async function revokeShare(request, response) {
+  const result = await revokeActiveDocumentShare(
+    request.access.vendorId,
+    "quotation",
+    request.params.quotationId,
+    request.auth
+  );
+
+  sendSuccess(response, {
+    message: "Quotation share link revoked",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId
+    }
+  });
+}
+
+async function regenerateShare(request, response) {
+  const result = await regenerateDocumentShare(
+    request.access.vendorId,
+    "quotation",
+    request.params.quotationId,
+    request.auth
+  );
+
+  sendSuccess(response, {
+    message: "Quotation share link regenerated",
     data: result,
     meta: {
       requestId: request.context.requestId,
@@ -212,7 +250,9 @@ export {
   list,
   pdf,
   print,
+  regenerateShare,
   reject,
+  revokeShare,
   send,
   share,
   update

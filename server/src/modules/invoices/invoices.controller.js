@@ -15,7 +15,9 @@ import {
 } from "../documents/documents.email.service.js";
 import {
   ensureDocumentShare,
-  getDocumentShareSummary
+  getDocumentShareSummary,
+  regenerateDocumentShare,
+  revokeActiveDocumentShare
 } from "../documents/documents.share.service.js";
 
 async function list(request, response) {
@@ -84,6 +86,42 @@ async function share(request, response) {
 
   sendSuccess(response, {
     message: "Invoice share link ready",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId
+    }
+  });
+}
+
+async function revokeShare(request, response) {
+  const result = await revokeActiveDocumentShare(
+    request.access.vendorId,
+    "invoice",
+    request.params.invoiceId,
+    request.auth
+  );
+
+  sendSuccess(response, {
+    message: "Invoice share link revoked",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId
+    }
+  });
+}
+
+async function regenerateShare(request, response) {
+  const result = await regenerateDocumentShare(
+    request.access.vendorId,
+    "invoice",
+    request.params.invoiceId,
+    request.auth
+  );
+
+  sendSuccess(response, {
+    message: "Invoice share link regenerated",
     data: result,
     meta: {
       requestId: request.context.requestId,
@@ -168,4 +206,17 @@ async function voidInvoice(request, response) {
   return transition("void", request, response);
 }
 
-export { create, email, getById, issue, list, pdf, print, share, update, voidInvoice };
+export {
+  create,
+  email,
+  getById,
+  issue,
+  list,
+  pdf,
+  print,
+  regenerateShare,
+  revokeShare,
+  share,
+  update,
+  voidInvoice
+};
