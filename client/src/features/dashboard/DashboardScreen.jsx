@@ -1,94 +1,200 @@
-import { EmptyState, ErrorState, LoadingSkeleton, SectionHeader } from "../../components/ui/ResourceScreens.jsx";
+import {
+  EmptyState,
+  ErrorState,
+  LoadingSkeleton,
+  SectionHeader
+} from "../../components/ui/ResourceScreens.jsx";
 import StatusPill from "../../components/ui/StatusPill.jsx";
 import { useAppSettings } from "../system/settingsContext.js";
-import { formatMoneyWith } from "../system/settingsFormat.js";
+import { formatDateWith, formatMoneyWith } from "../system/settingsFormat.js";
 import { useDashboardData } from "./useDashboardData.js";
 
-function MetricIcon({ glyph }) {
-  const paths = {
-    customers: (
-      <>
-        <circle cx="9" cy="8" r="3.2" />
-        <path d="M3.5 18c.7-2.6 2.9-4.2 5.5-4.2s4.8 1.6 5.5 4.2" />
-        <circle cx="16.5" cy="9" r="2.4" />
-        <path d="M14.5 14.5c2.5 0 4.4 1.4 5 3.5" />
-      </>
-    ),
-    orders: (
-      <>
-        <path d="M4 6h13l-1.4 8.4a2 2 0 0 1-2 1.6H8a2 2 0 0 1-2-1.6L4 6Z" />
-        <path d="M4 6 3 3H1.5" />
-        <circle cx="9" cy="20" r="1.4" />
-        <circle cx="15" cy="20" r="1.4" />
-      </>
-    ),
-    invoices: (
-      <>
-        <path d="M6 3h9l3 3v15H6Z" />
-        <path d="M9 9h6M9 13h6M9 17h4" />
-      </>
-    ),
-    routes: (
-      <>
-        <path d="M5 19c3-1 4-4 4-7s-1-6-4-7" />
-        <path d="M19 5c-3 1-4 4-4 7s1 6 4 7" />
-        <circle cx="5" cy="19" r="1.4" />
-        <circle cx="19" cy="5" r="1.4" />
-      </>
-    )
-  };
-
+function SummaryCard({ accent, detail, label, value }) {
   return (
-    <span aria-hidden="true" className="metric-icon">
-      <svg
-        fill="none"
-        height="18"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.6"
-        viewBox="0 0 22 22"
-        width="18"
-      >
-        {paths[glyph] || null}
-      </svg>
-    </span>
-  );
-}
-
-function MetricCard({ detail, glyph, label, value }) {
-  return (
-    <article className="metric-tile">
-      <div className="metric-tile-head">
-        <span>{label}</span>
-        <MetricIcon glyph={glyph} />
-      </div>
-      <strong>{value}</strong>
+    <article className="dashboard-summary-card">
+      <span className="dashboard-summary-label">{label}</span>
+      <strong style={{ "--dashboard-accent": accent }}>{value}</strong>
       <small>{detail}</small>
     </article>
   );
 }
 
-function RecordList({ emptyLabel, formatMoney, items, kind }) {
+function HeroStat({ label, value }) {
+  return (
+    <div className="dashboard-hero-stat">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function activityTypeLabel(type) {
+  switch (type) {
+    case "quotation":
+      return "Quotation";
+    case "order":
+      return "Order";
+    case "invoice":
+      return "Invoice";
+    case "payment":
+      return "Payment";
+    default:
+      return "Record";
+  }
+}
+
+function DashboardStatus({ type, status }) {
+  if (type === "payment") {
+    return <span className="dashboard-inline-badge">Recorded</span>;
+  }
+
+  if (type === "quotation") {
+    return <StatusPill kind="quotation" status={status} />;
+  }
+
+  return <StatusPill kind={type === "invoice" ? "invoice" : "order"} status={status} />;
+}
+
+function ActivityFeed({ formatDate, formatMoney, items, navigate }) {
   if (!items?.length) {
-    return <EmptyState>{emptyLabel}</EmptyState>;
+    return <EmptyState>No recent commercial activity yet.</EmptyState>;
   }
 
   return (
-    <div className="record-list">
+    <div className="dashboard-activity-feed">
       {items.map((item) => (
-        <article className="record-row" key={item.id}>
-          <div>
-            <strong>{item.label}</strong>
-            <span>{item.customer?.label || "No customer"}</span>
+        <article className="dashboard-activity-row" key={`${item.type}-${item.id}`}>
+          <div className="dashboard-activity-main">
+            <span className="dashboard-type-chip">{activityTypeLabel(item.type)}</span>
+            <div>
+              <strong>{item.label}</strong>
+              <p>{item.customer?.label || "No customer linked"}</p>
+            </div>
           </div>
+          <div className="dashboard-activity-meta">
+            <DashboardStatus status={item.status} type={item.type} />
+            <strong>{formatMoney(item.amount || 0)}</strong>
+            <span>{formatDate(item.date)}</span>
+            {typeof navigate === "function" ? (
+              <button
+                className="link-button"
+                onClick={() => {
+                  if (item.type === "quotation") navigate(`/quotations/${item.id}`);
+                  if (item.type === "order") navigate(`/orders/${item.id}`);
+                  if (item.type === "invoice") navigate(`/invoices/${item.id}`);
+                  if (item.type === "payment") navigate("/reports/payments");
+                }}
+                type="button"
+              >
+                Open
+              </button>
+            ) : null}
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function OverdueInvoices({ formatDate, formatMoney, items, navigate }) {
+  if (!items?.length) {
+    return <EmptyState>No overdue invoices right now.</EmptyState>;
+  }
+
+  return (
+    <div className="dashboard-overdue-list">
+      {items.map((invoice) => (
+        <article className="dashboard-overdue-row" key={invoice.id}>
           <div>
-            <StatusPill kind={kind === "invoice" ? "invoice" : "order"} status={item.status} />
-            <small>
-              {kind === "invoice"
-                ? formatMoney(item.balanceDue)
-                : formatMoney(item.grandTotal)}
-            </small>
+            <strong>{invoice.label}</strong>
+            <p>{invoice.customer?.label || "No customer"}</p>
+            <span>
+              Due {formatDate(invoice.dueDate)} · {invoice.daysOverdue} day
+              {invoice.daysOverdue === 1 ? "" : "s"} overdue
+            </span>
+          </div>
+          <div className="dashboard-overdue-meta">
+            <strong>{formatMoney(invoice.balanceDue)}</strong>
+            {typeof navigate === "function" ? (
+              <button
+                className="link-button"
+                onClick={() => navigate(`/invoices/${invoice.id}`)}
+                type="button"
+              >
+                Review
+              </button>
+            ) : null}
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function TopCustomers({ formatDate, formatMoney, items, navigate }) {
+  if (!items?.length) {
+    return <EmptyState>No customer billing data yet.</EmptyState>;
+  }
+
+  return (
+    <div className="dashboard-customer-list">
+      {items.map((customer, index) => (
+        <article className="dashboard-customer-row" key={customer.id}>
+          <div className="dashboard-customer-rank">{index + 1}</div>
+          <div className="dashboard-customer-main">
+            <strong>{customer.label}</strong>
+            <p>{customer.secondaryText || `${customer.invoiceCount} invoices posted`}</p>
+            <span>
+              Collected {formatMoney(customer.collectedTotal)} · Outstanding{" "}
+              {formatMoney(customer.outstandingTotal)}
+            </span>
+            {customer.lastPaymentDate ? (
+              <span>Last payment {formatDate(customer.lastPaymentDate)}</span>
+            ) : (
+              <span>No payments recorded yet</span>
+            )}
+          </div>
+          <div className="dashboard-customer-meta">
+            <strong>{formatMoney(customer.billedTotal)}</strong>
+            <small>Billed total</small>
+            {typeof navigate === "function" ? (
+              <button
+                className="link-button"
+                onClick={() => navigate(`/customers/${customer.id}`)}
+                type="button"
+              >
+                Open
+              </button>
+            ) : null}
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function PaymentsList({ formatDate, formatMoney, items, navigate }) {
+  if (!items?.length) {
+    return <EmptyState>No payments have been recorded yet.</EmptyState>;
+  }
+
+  return (
+    <div className="dashboard-payment-list">
+      {items.map((payment) => (
+        <article className="dashboard-payment-row" key={payment.id}>
+          <div>
+            <strong>{payment.customer?.label || payment.label}</strong>
+            <p>{payment.invoice?.invoiceNumber ? `Invoice ${payment.invoice.invoiceNumber}` : "General payment"}</p>
+            <span>{formatDate(payment.paymentDate)}</span>
+          </div>
+          <div className="dashboard-payment-meta">
+            <strong>{formatMoney(payment.amount)}</strong>
+            <small>{payment.paymentMethod || "Payment"}</small>
+            {typeof navigate === "function" ? (
+              <button className="link-button" onClick={() => navigate("/reports/payments")} type="button">
+                View all
+              </button>
+            ) : null}
           </div>
         </article>
       ))}
@@ -102,9 +208,9 @@ function NotificationsList({ notifications }) {
   }
 
   return (
-    <div className="notification-list">
+    <div className="dashboard-notification-list">
       {notifications.latest.map((notification) => (
-        <article className="notification-row" key={notification.id}>
+        <article className="dashboard-notification-row" key={notification.id}>
           <span className={notification.isRead ? "read-dot read" : "read-dot"} />
           <div>
             <strong>{notification.title}</strong>
@@ -120,15 +226,16 @@ function QuickActions({ navigate }) {
   if (typeof navigate !== "function") {
     return null;
   }
+
   const actions = [
+    { label: "New quotation", path: "/quotations/new", tone: "primary" },
     { label: "New order", path: "/orders/new", tone: "primary" },
-    { label: "New invoice", path: "/invoices/new", tone: "primary" },
-    { label: "Adjust stock", path: "/inventory", tone: "secondary" },
-    { label: "View notifications", path: "/notifications", tone: "secondary" },
-    { label: "Audit history", path: "/audit", tone: "secondary" }
+    { label: "New invoice", path: "/invoices/new", tone: "secondary" },
+    { label: "Receivables report", path: "/reports/receivables", tone: "secondary" }
   ];
+
   return (
-    <section aria-label="Quick actions" className="quick-actions">
+    <section aria-label="Quick actions" className="quick-actions dashboard-quick-actions">
       {actions.map((action) => (
         <button
           className={`${action.tone}-button`}
@@ -154,16 +261,17 @@ function DashboardScreen({ navigate }) {
   } = useDashboardData();
   const { settings } = useAppSettings();
   const formatMoney = (value) => formatMoneyWith(settings, value);
+  const formatDate = (value) => formatDateWith(settings, value);
 
   if (isLoading) {
     return (
       <div className="dashboard-page">
-        <section className="dashboard-hero">
+        <section className="dashboard-insights-hero">
           <LoadingSkeleton label="Loading dashboard" rows={4} />
         </section>
-        <section className="metric-strip">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <article className="metric-tile" key={index}>
+        <section className="dashboard-summary-grid">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <article className="dashboard-summary-card" key={index}>
               <LoadingSkeleton rows={3} />
             </article>
           ))}
@@ -176,100 +284,104 @@ function DashboardScreen({ navigate }) {
     return <ErrorState message={error} />;
   }
 
-  const collectedRatio = (() => {
-    const invoiceTotal = Number(dashboard.receivables.invoiceTotal || 0);
-    const paymentTotal = Number(dashboard.receivables.paymentTotal || 0);
-
-    if (invoiceTotal <= 0) {
-      return null;
-    }
-
-    return Math.min(100, Math.round((paymentTotal / invoiceTotal) * 100));
-  })();
+  const summary = dashboard.summaryCards || {};
+  const topCustomers = dashboard.insights?.topCustomers || [];
+  const overdueInvoices = dashboard.insights?.overdueInvoices || [];
+  const recentPayments = dashboard.insights?.recentPayments || [];
 
   return (
-    <div className="dashboard-page">
-      <section className="dashboard-hero">
+    <div className="dashboard-page dashboard-insights-page">
+      <section className="dashboard-insights-hero">
         <div>
           <p className="eyebrow">Dashboard</p>
-          <h2>Today&apos;s operating picture</h2>
+          <h2>Business performance at a glance</h2>
           <p>
-            See sales activity, money owed, deliveries in motion, and team updates — all in one
-            place.
+            Track cash collected, unpaid invoices, customer momentum, and the latest sales activity
+            without leaving the home screen.
           </p>
         </div>
-        <div className="receivables-card">
-          <span>Outstanding receivables</span>
-          <strong>{formatMoney(dashboard.receivables.outstanding)}</strong>
-          <small>
-            {formatMoney(dashboard.receivables.paymentTotal)} received against{" "}
-            {formatMoney(dashboard.receivables.invoiceTotal)} invoiced
-          </small>
-          {collectedRatio !== null ? (
-            <div
-              aria-label={`${collectedRatio}% of invoiced amount collected`}
-              className="receivables-progress"
-              role="progressbar"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={collectedRatio}
-            >
-              <span style={{ width: `${collectedRatio}%` }} />
-            </div>
-          ) : null}
+        <div className="dashboard-hero-panel">
+          <div className="dashboard-hero-panel-head">
+            <span>{dashboard.vendor?.label || "Workspace"}</span>
+            <strong>{formatMoney(summary.revenueCollected || 0)}</strong>
+            <p>Revenue collected so far across recorded payments.</p>
+          </div>
+          <div className="dashboard-hero-stats">
+            <HeroStat
+              label="Outstanding receivables"
+              value={formatMoney(summary.outstandingReceivables || 0)}
+            />
+            <HeroStat
+              label="Overdue invoices"
+              value={String(dashboard.aggregates?.receivables?.overdueInvoiceCount || 0)}
+            />
+            <HeroStat
+              label="Open invoices"
+              value={String(dashboard.aggregates?.receivables?.openInvoiceCount || 0)}
+            />
+          </div>
         </div>
       </section>
 
       <QuickActions navigate={navigate} />
 
-      <section className="metric-strip">
-        <MetricCard
-          detail="Active customers in your book"
-          glyph="customers"
+      <section className="dashboard-summary-grid">
+        <SummaryCard
+          accent="#1d7a46"
+          detail="Total revenue collected"
+          label="Revenue Collected"
+          value={formatMoney(summary.revenueCollected || 0)}
+        />
+        <SummaryCard
+          accent="#b35c1e"
+          detail="Unpaid issued invoice balance"
+          label="Outstanding Receivables"
+          value={formatMoney(summary.outstandingReceivables || 0)}
+        />
+        <SummaryCard
+          accent="#2557b7"
+          detail="Linked customers"
           label="Customers"
-          value={dashboard.metrics.totalCustomers}
+          value={String(summary.totalCustomers || 0)}
         />
-        <MetricCard
-          detail="Orders in flight, including drafts"
-          glyph="orders"
+        <SummaryCard
+          accent="#6d4ec2"
+          detail="Quotations created"
+          label="Quotations"
+          value={String(summary.totalQuotations || 0)}
+        />
+        <SummaryCard
+          accent="#0f6b72"
+          detail="Orders across all statuses"
           label="Orders"
-          value={dashboard.metrics.totalOrders}
+          value={String(summary.totalOrders || 0)}
         />
-        <MetricCard
-          detail={formatMoney(dashboard.metrics.invoiceTotal)}
-          glyph="invoices"
+        <SummaryCard
+          accent="#9e315b"
+          detail="Invoices issued so far"
           label="Invoices"
-          value={dashboard.metrics.totalInvoices}
-        />
-        <MetricCard
-          detail="Routes planned and completed"
-          glyph="routes"
-          label="Routes"
-          value={dashboard.metrics.totalRoutes}
+          value={String(summary.totalInvoices || 0)}
         />
       </section>
 
-      <section className="dashboard-columns">
-        <div className="panel-block">
+      <section className="dashboard-insights-grid">
+        <div className="panel-block dashboard-wide-panel">
           <SectionHeader
             action={
               typeof navigate === "function" ? (
-                <button
-                  className="link-button"
-                  onClick={() => navigate("/orders")}
-                  type="button"
-                >
-                  Open orders
+                <button className="link-button" onClick={() => navigate("/reports")} type="button">
+                  Open reports
                 </button>
               ) : null
             }
-            title="Recent Orders"
+            hint="Quotations, orders, invoices, and payments"
+            title="Recent activity"
           />
-          <RecordList
-            emptyLabel="No recent orders."
+          <ActivityFeed
+            formatDate={formatDate}
             formatMoney={formatMoney}
-            items={dashboard.recent.orders}
-            kind="order"
+            items={dashboard.recent?.activity || []}
+            navigate={navigate}
           />
         </div>
 
@@ -279,24 +391,69 @@ function DashboardScreen({ navigate }) {
               typeof navigate === "function" ? (
                 <button
                   className="link-button"
-                  onClick={() => navigate("/invoices")}
+                  onClick={() => navigate("/reports/receivables")}
                   type="button"
                 >
-                  Open invoices
+                  Receivables
                 </button>
               ) : null
             }
-            title="Recent Invoices"
+            hint={`${overdueInvoices.length} shown`}
+            title="Overdue invoices"
           />
-          <RecordList
-            emptyLabel="No recent invoices."
+          <OverdueInvoices
+            formatDate={formatDate}
             formatMoney={formatMoney}
-            items={dashboard.recent.invoices}
-            kind="invoice"
+            items={overdueInvoices}
+            navigate={navigate}
           />
         </div>
 
-        <div className="panel-block notifications-panel">
+        <div className="panel-block">
+          <SectionHeader
+            action={
+              typeof navigate === "function" ? (
+                <button className="link-button" onClick={() => navigate("/customers")} type="button">
+                  Customers
+                </button>
+              ) : null
+            }
+            hint="Ranked by billed value"
+            title="Top customers"
+          />
+          <TopCustomers
+            formatDate={formatDate}
+            formatMoney={formatMoney}
+            items={topCustomers}
+            navigate={navigate}
+          />
+        </div>
+
+        <div className="panel-block">
+          <SectionHeader
+            action={
+              typeof navigate === "function" ? (
+                <button
+                  className="link-button"
+                  onClick={() => navigate("/reports/payments")}
+                  type="button"
+                >
+                  Payments
+                </button>
+              ) : null
+            }
+            hint={`${recentPayments.length} recent`}
+            title="Recent payments"
+          />
+          <PaymentsList
+            formatDate={formatDate}
+            formatMoney={formatMoney}
+            items={recentPayments}
+            navigate={navigate}
+          />
+        </div>
+
+        <div className="panel-block">
           <SectionHeader
             action={
               typeof navigate === "function" ? (

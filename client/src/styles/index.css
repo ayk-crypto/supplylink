@@ -4700,3 +4700,289 @@ a:hover {
     min-height: 72vh;
   }
 }
+
+/* Module 23: dashboard and business insights */
+.dashboard-insights-page {
+  gap: 22px;
+}
+
+.dashboard-insights-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.95fr);
+  gap: 18px;
+  padding: 28px;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top left, rgba(21, 127, 106, 0.16), transparent 28%),
+    linear-gradient(135deg, #15352d 0%, #1f5447 52%, #f4efe6 52%, #f8f4ec 100%);
+  color: #f4f8f5;
+  box-shadow: 0 24px 55px rgba(18, 44, 32, 0.14);
+}
+
+.dashboard-insights-hero .eyebrow,
+.dashboard-insights-hero p {
+  color: rgba(244, 248, 245, 0.82);
+}
+
+.dashboard-insights-hero h2 {
+  color: #fffdf8;
+  font-size: clamp(2rem, 3vw, 2.8rem);
+  max-width: 11ch;
+}
+
+.dashboard-hero-panel {
+  border-radius: 24px;
+  padding: 20px;
+  background: rgba(255, 251, 244, 0.92);
+  color: var(--ink);
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+
+.dashboard-hero-panel-head span,
+.dashboard-hero-stat span,
+.dashboard-summary-label,
+.dashboard-customer-meta small,
+.dashboard-activity-meta span,
+.dashboard-payment-meta small {
+  color: var(--muted);
+}
+
+.dashboard-hero-panel-head strong {
+  display: block;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  margin-top: 8px;
+  color: #17382f;
+}
+
+.dashboard-hero-panel-head p {
+  color: #4b665c;
+  margin-top: 8px;
+}
+
+.dashboard-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dashboard-hero-stat {
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(23, 56, 47, 0.06);
+  display: grid;
+  gap: 6px;
+}
+
+.dashboard-hero-stat strong {
+  color: #17382f;
+  font-size: 1.05rem;
+}
+
+.dashboard-quick-actions {
+  justify-content: flex-start;
+}
+
+.dashboard-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.dashboard-summary-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 247, 244, 0.98));
+  border: 1px solid rgba(18, 44, 32, 0.08);
+  border-radius: 22px;
+  padding: 18px;
+  box-shadow: 0 16px 34px rgba(19, 35, 28, 0.06);
+  display: grid;
+  gap: 8px;
+}
+
+.dashboard-summary-card strong {
+  font-size: 1.5rem;
+  color: var(--dashboard-accent, var(--ink));
+}
+
+.dashboard-summary-card small {
+  color: var(--muted);
+}
+
+.dashboard-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.dashboard-wide-panel {
+  grid-column: 1 / -1;
+}
+
+.dashboard-activity-feed,
+.dashboard-overdue-list,
+.dashboard-customer-list,
+.dashboard-payment-list,
+.dashboard-notification-list {
+  display: grid;
+  gap: 12px;
+}
+
+.dashboard-activity-row,
+.dashboard-overdue-row,
+.dashboard-customer-row,
+.dashboard-payment-row,
+.dashboard-notification-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 0;
+  border-top: 1px solid rgba(18, 44, 32, 0.08);
+}
+
+.dashboard-activity-row:first-child,
+.dashboard-overdue-row:first-child,
+.dashboard-customer-row:first-child,
+.dashboard-payment-row:first-child,
+.dashboard-notification-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.dashboard-activity-main,
+.dashboard-customer-row {
+  min-width: 0;
+}
+
+.dashboard-activity-main,
+.dashboard-payment-row > div:first-child,
+.dashboard-overdue-row > div:first-child {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.dashboard-activity-main p,
+.dashboard-overdue-row p,
+.dashboard-customer-main p,
+.dashboard-payment-row p,
+.dashboard-notification-row p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.dashboard-activity-main strong,
+.dashboard-overdue-row strong,
+.dashboard-customer-main strong,
+.dashboard-payment-row strong,
+.dashboard-notification-row strong {
+  color: var(--ink);
+}
+
+.dashboard-type-chip,
+.dashboard-inline-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 86px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(31, 84, 71, 0.08);
+  color: #1f5447;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dashboard-inline-badge {
+  min-width: 78px;
+}
+
+.dashboard-activity-meta,
+.dashboard-overdue-meta,
+.dashboard-customer-meta,
+.dashboard-payment-meta {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.dashboard-overdue-row span,
+.dashboard-customer-main span,
+.dashboard-payment-row span {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+.dashboard-customer-row {
+  align-items: stretch;
+}
+
+.dashboard-customer-rank {
+  width: 38px;
+  height: 38px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f0dfb8, #f5f0e2);
+  color: #7c5a11;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.dashboard-customer-main {
+  min-width: 0;
+  flex: 1;
+}
+
+@media (max-width: 1280px) {
+  .dashboard-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .dashboard-insights-hero,
+  .dashboard-insights-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-hero-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-insights-hero {
+    padding: 20px;
+  }
+
+  .dashboard-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-activity-row,
+  .dashboard-overdue-row,
+  .dashboard-customer-row,
+  .dashboard-payment-row,
+  .dashboard-notification-row {
+    flex-direction: column;
+  }
+
+  .dashboard-activity-meta,
+  .dashboard-overdue-meta,
+  .dashboard-customer-meta,
+  .dashboard-payment-meta {
+    justify-items: start;
+    text-align: left;
+  }
+}

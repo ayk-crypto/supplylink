@@ -1853,7 +1853,14 @@ if (!testDatabaseUrl) {
         token: state.vendorA.token
       });
       assert.equal(dashboard.payload.data.vendor.id, state.vendorA.vendor.id);
+      assert.equal(typeof dashboard.payload.data.summaryCards.revenueCollected, "number");
+      assert.equal(typeof dashboard.payload.data.summaryCards.outstandingReceivables, "number");
+      assert.ok(Array.isArray(dashboard.payload.data.recent.quotations));
       assert.ok(Array.isArray(dashboard.payload.data.recent.orders));
+      assert.ok(Array.isArray(dashboard.payload.data.recent.payments));
+      assert.ok(Array.isArray(dashboard.payload.data.recent.activity));
+      assert.ok(Array.isArray(dashboard.payload.data.insights.overdueInvoices));
+      assert.ok(Array.isArray(dashboard.payload.data.insights.topCustomers));
       assert.ok(Array.isArray(dashboard.payload.data.notifications.latest));
       assert.ok(dashboard.payload.data.aggregates.inventory.productCount >= 2);
       assert.ok(dashboard.payload.data.aggregates.inventory.lowStockProductCount >= 2);
@@ -1864,6 +1871,11 @@ if (!testDatabaseUrl) {
       assert.ok(dashboard.payload.data.aggregates.invoices.byStatus.paid >= 1);
       assert.ok(dashboard.payload.data.aggregates.invoices.byStatus.void >= 1);
       assert.ok(dashboard.payload.data.aggregates.receivables.openInvoiceCount >= 0);
+      assert.ok(
+        dashboard.payload.data.insights.topCustomers.some(
+          (customer) => Number(customer.billedTotal) >= 0 && Number(customer.collectedTotal) >= 0
+        )
+      );
 
       const vendorBDashboard = await api.get("/ui/dashboard", {
         token: state.vendorB.token
@@ -1872,6 +1884,8 @@ if (!testDatabaseUrl) {
       assert.equal(vendorBDashboard.payload.data.aggregates.inventory.productCount, 0);
       assert.equal(vendorBDashboard.payload.data.aggregates.orders.total, 0);
       assert.equal(vendorBDashboard.payload.data.aggregates.invoices.total, 0);
+      assert.equal(vendorBDashboard.payload.data.summaryCards.totalCustomers, 0);
+      assert.equal(vendorBDashboard.payload.data.insights.topCustomers.length, 0);
 
       const customerLookup = await api.get("/lookups/customers?limit=5", {
         token: state.vendorA.token
