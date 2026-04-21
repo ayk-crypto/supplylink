@@ -152,7 +152,7 @@ function StatementsReportScreen({ navigate }) {
         }
         description="Pull a customer statement for any date range — preview on screen or export to CSV."
         eyebrow="Reports"
-        title="Customer statements"
+        title="Customer Statements"
       />
 
       <form className="report-filter-panel" onSubmit={loadStatement}>

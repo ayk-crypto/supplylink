@@ -1,0 +1,118 @@
+Work only on the existing SupplyLink frontend.
+
+Do not change backend APIs.
+
+Goal:
+Fix text hierarchy, spacing, and table alignment issues across list screens and dashboard panels to improve readability and professional polish.
+
+---
+
+## 1) Entity ID + Customer Name Separation (HIGH PRIORITY)
+
+Across:
+- dashboard (recent orders, recent invoices)
+- order list
+- invoice list
+- any similar resource rows
+
+Fix:
+
+- Treat entity ID (order/invoice number) and customer name as separate elements
+- Add clear spacing (gap)
+- Apply hierarchy:
+  - ID = primary (bold)
+  - Customer name = secondary (lighter color, normal weight)
+
+Example expectation:
+ID visually distinct and readable first, customer name follows as context.
+
+Do not redesign layout — only improve hierarchy and spacing.
+
+---
+
+## 2) Page Title Capitalization
+
+Ensure all page titles use proper Title Case:
+- e.g. "Customer Directory" instead of "Customer directory"
+
+Apply consistently across all major pages.
+
+---
+
+## 3) Remove Default Underline from Clickable Names
+
+Across list rows (customers, orders, invoices, etc.):
+
+- Remove default underline from clickable text
+- Keep underline only on hover
+- Maintain clickable behavior
+
+---
+
+## 4) Customer Name Hierarchy
+
+Where customer name + company appears:
+
+- Customer name = bold / primary
+- Company name = smaller and muted
+
+Ensure clear visual hierarchy.
+
+---
+
+## 5) Table Column Alignment (CRITICAL)
+
+Fix incorrect column structure in list tables:
+
+- STATUS must be its own column
+- ACTIONS (View, Edit, etc.) must be a separate column
+
+Ensure:
+- STATUS header aligns with status pills
+- ACTIONS header aligns with action buttons
+- No mixing of status and buttons in the same column
+
+Apply consistently across:
+- customers
+- products
+- orders
+- invoices
+- routes
+- any similar tables
+
+---
+
+## 6) General Consistency
+
+Ensure:
+- consistent spacing between elements
+- proper alignment of headers and rows
+- no cramped or merged text
+- tables follow same structural pattern
+
+---
+
+## Constraints
+
+- no backend changes
+- no redesign
+- no new features
+- keep changes additive and safe
+- focus only on visual hierarchy, spacing, and alignment
+
+---
+
+## Verification
+
+- run client lint
+- run client build
+
+---
+
+## Deliverable
+
+1. Summary
+2. Files changed
+3. What hierarchy/spacing/alignment issues were fixed
+4. Screens impacted
+5. Verification results

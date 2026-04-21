@@ -65,7 +65,7 @@ function InventoryListScreen({ navigate }) {
       <PageHeader
         description="See what's in stock at a glance — spot low or negative balances and make quick adjustments."
         eyebrow="Inventory"
-        title="Stock overview"
+        title="Stock Overview"
       />
 
       <Toolbar onSubmit={submitSearch}>

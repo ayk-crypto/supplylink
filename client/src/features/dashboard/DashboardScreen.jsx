@@ -263,7 +263,7 @@ function DashboardScreen({ navigate }) {
                 </button>
               ) : null
             }
-            title="Recent orders"
+            title="Recent Orders"
           />
           <RecordList
             emptyLabel="No recent orders."
@@ -286,7 +286,7 @@ function DashboardScreen({ navigate }) {
                 </button>
               ) : null
             }
-            title="Recent invoices"
+            title="Recent Invoices"
           />
           <RecordList
             emptyLabel="No recent invoices."

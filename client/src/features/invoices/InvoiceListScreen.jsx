@@ -199,7 +199,7 @@ function InvoiceListScreen({ navigate }) {
             <span>Status</span>
             <span>Total</span>
             <span>Outstanding</span>
-            <span />
+            <span className="actions-col">Actions</span>
           </div>
           {items.map((invoice) => (
             <article className="resource-row invoice-grid" key={invoice.id}>

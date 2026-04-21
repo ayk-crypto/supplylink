@@ -159,7 +159,7 @@ function LedgerOverviewScreen({ navigate }) {
       <PageHeader
         description="Review customer receivables and open detailed customer statements."
         eyebrow="Ledger"
-        title="Customer receivables"
+        title="Customer Receivables"
       />
 
       <section className="metric-strip ledger-summary-strip">

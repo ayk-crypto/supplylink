@@ -97,7 +97,7 @@ function CustomersScreen({ navigate }) {
         }
         description="Your customer book — search contacts, check status, and jump into any account."
         eyebrow="Customers"
-        title="Customer directory"
+        title="Customer Directory"
       />
 
       <Toolbar onSubmit={submitSearch}>
@@ -140,7 +140,7 @@ function CustomersScreen({ navigate }) {
             <span>Email</span>
             <span>Phone</span>
             <span>Status</span>
-            <span />
+            <span className="actions-col">Actions</span>
           </div>
           {items.map((record) => (
             <article className="resource-row customer-grid" key={record.customer.id}>

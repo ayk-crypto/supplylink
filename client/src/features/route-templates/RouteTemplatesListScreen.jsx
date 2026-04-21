@@ -150,7 +150,7 @@ function TemplateForm({ onCancel, onSave }) {
       onCancel={onCancel}
       onSubmit={handleSubmit}
       submitLabel="Create template"
-      title="Create route template"
+      title="Create Route Template"
     >
       <Field error={fieldErrors.name} label="Template name">
         <input
@@ -278,7 +278,7 @@ function RouteTemplatesListScreen({ navigate }) {
         }
         description="Reusable recurring route plans. Generate a dated route from a template whenever you need to dispatch."
         eyebrow="Route templates"
-        title="Route templates"
+        title="Route Templates"
       />
 
       <Toolbar onSubmit={submitSearch}>

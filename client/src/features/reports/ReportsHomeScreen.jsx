@@ -87,11 +87,11 @@ function ReportsHomeScreen({ navigate }) {
       <PageHeader
         description="Operational and financial reports using the existing reporting endpoints."
         eyebrow="Reports"
-        title="Reports and exports"
+        title="Reports and Exports"
       />
 
       <SectionHeader
-        title="At a glance"
+        title="At a Glance"
         hint="Live totals across the reporting endpoints"
       />
 
@@ -123,7 +123,7 @@ function ReportsHomeScreen({ navigate }) {
         </section>
       ) : null}
 
-      <SectionHeader title="Open a report" hint={`${reportCards.length} reports available`} />
+      <SectionHeader title="Open a Report" hint={`${reportCards.length} reports available`} />
 
       <section className="report-card-grid">
         {reportCards.map((card) => (

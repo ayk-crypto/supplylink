@@ -92,7 +92,7 @@ function AuditScreen({ navigate }) {
       <PageHeader
         description="Track changes across the workspace. Filter by entity, event, or date range to investigate activity."
         eyebrow="Audit"
-        title="Activity history"
+        title="Activity History"
       />
 
       <Toolbar onSubmit={submitFilters}>

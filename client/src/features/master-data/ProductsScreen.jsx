@@ -312,7 +312,7 @@ function ProductsScreen() {
         }
         description="Your sellable catalog — names, SKUs, pricing, categories, and availability all in one place."
         eyebrow="Products"
-        title="Product catalog"
+        title="Product Catalog"
       />
 
       <Toolbar onSubmit={submitSearch}>
@@ -371,7 +371,7 @@ function ProductsScreen() {
             <span>Category</span>
             <span>Price</span>
             <span>Status</span>
-            <span />
+            <span className="actions-col">Actions</span>
           </div>
           {items.map((product) => (
             <article className="resource-row product-grid" key={product.id}>

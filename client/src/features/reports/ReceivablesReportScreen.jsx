@@ -148,7 +148,7 @@ function ReceivablesReportScreen({ navigate }) {
         }
         description="Customer receivables grouped from invoice report data."
         eyebrow="Reports"
-        title="Receivables report"
+        title="Receivables Report"
       />
 
       <section className="metric-strip reports-summary-strip">

@@ -55,7 +55,7 @@ function EntityAuditScreen({ entityType, entityId, navigate }) {
       <PageHeader
         description={`History for ${entityType} ${entityHeadline}.`}
         eyebrow="Audit"
-        title="Entity history"
+        title="Entity History"
         action={
           <div className="button-row">
             {entityHref && navigate ? (

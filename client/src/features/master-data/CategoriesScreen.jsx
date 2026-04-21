@@ -233,7 +233,7 @@ function CategoriesScreen() {
         }
         description="Group products into categories so they're easier to browse, filter, and report on."
         eyebrow="Categories"
-        title="Catalog categories"
+        title="Catalog Categories"
       />
 
       <Toolbar onSubmit={submitSearch}>

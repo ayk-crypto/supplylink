@@ -755,7 +755,22 @@ a {
 .resource-row div span {
   display: block;
   margin-top: 3px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.resource-table-head .actions-col {
+  text-align: right;
+}
+
+.resource-row .button-row {
+  justify-content: flex-end;
+}
+
+.resource-row > .secondary-button,
+.resource-row > .primary-button {
+  justify-self: end;
 }
 
 .customer-grid {

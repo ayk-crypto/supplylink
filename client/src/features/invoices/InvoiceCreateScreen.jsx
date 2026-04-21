@@ -299,7 +299,7 @@ function InvoiceCreateScreen({ navigate, orderId: routeOrderId }) {
         }
         description="Create an invoice manually or start from an existing order."
         eyebrow="Invoices"
-        title="Create invoice"
+        title="Create Invoice"
       />
 
       {optionsError ? <p className="surface-message error">{optionsError}</p> : null}

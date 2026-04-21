@@ -241,7 +241,7 @@ function CustomerDetailScreen({ id, navigate }) {
       <div className="resource-page">
         <PageHeader
           eyebrow="Customer"
-          title="Customer not found"
+          title="Customer Not Found"
           description="The customer record could not be loaded."
           action={
             <button
@@ -369,7 +369,7 @@ function CustomerDetailScreen({ id, navigate }) {
       </SectionShell>
 
       <SectionHeader
-        title="Recent orders"
+        title="Recent Orders"
         hint={
           ordersSection.data?.pagination?.total
             ? `${ordersSection.data.pagination.total} on file`
@@ -424,7 +424,7 @@ function CustomerDetailScreen({ id, navigate }) {
       </SectionShell>
 
       <SectionHeader
-        title="Recent quotations"
+        title="Recent Quotations"
         hint={
           quotationsSection.data?.pagination?.total
             ? `${quotationsSection.data.pagination.total} on file`
@@ -479,7 +479,7 @@ function CustomerDetailScreen({ id, navigate }) {
       </SectionShell>
 
       <SectionHeader
-        title="Recent invoices"
+        title="Recent Invoices"
         hint={
           invoicePagination?.total
             ? `${invoicePagination.total} on file`
@@ -542,7 +542,7 @@ function CustomerDetailScreen({ id, navigate }) {
       </SectionShell>
 
       <SectionHeader
-        title="Recent payments"
+        title="Recent Payments"
         hint={
           paymentsSection.data?.pagination?.total
             ? `${paymentsSection.data.pagination.total} on file`
@@ -596,7 +596,7 @@ function CustomerDetailScreen({ id, navigate }) {
       <AttachmentsPanel entityType="customers" entityId={id} />
 
       <SectionHeader
-        title="Recent activity"
+        title="Recent Activity"
         hint="Audit trail for this customer record."
         action={
           <button

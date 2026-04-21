@@ -222,7 +222,7 @@ function TransactionListScreen({ kind, navigate }) {
             <span>Customer</span>
             <span>Status</span>
             <span>Total</span>
-            <span />
+            <span className="actions-col">Actions</span>
           </div>
           {items.map((item) => (
             <article className="resource-row transaction-grid" key={item.id}>

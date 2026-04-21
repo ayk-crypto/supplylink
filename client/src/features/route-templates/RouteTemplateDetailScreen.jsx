@@ -149,7 +149,7 @@ function TemplateEditForm({ template, onCancel, onSave }) {
       onCancel={onCancel}
       onSubmit={handleSubmit}
       submitLabel="Save template"
-      title="Edit route template"
+      title="Edit Route Template"
     >
       <Field error={fieldErrors.name} label="Template name">
         <input
@@ -377,7 +377,7 @@ function GenerateRouteForm({ template, onCancel, onGenerated }) {
       onCancel={onCancel}
       onSubmit={handleSubmit}
       submitLabel={isSaving ? "Generating…" : "Generate route"}
-      title="Generate route from template"
+      title="Generate Route from Template"
     >
       <Field
         error={fieldErrors.routeDate}
@@ -733,7 +733,7 @@ function RouteTemplateDetailScreen({ id, navigate }) {
 
       <section className="transaction-panel">
         <SectionHeader
-          title="Default stops"
+          title="Default Stops"
           hint={`${sortedStops.length} stop${sortedStops.length === 1 ? "" : "s"}`}
           action={
             <button

@@ -92,7 +92,7 @@ function RouteForm({ onCancel, onSave }) {
       onCancel={onCancel}
       onSubmit={handleSubmit}
       submitLabel="Create route"
-      title="Create route"
+      title="Create Route"
     >
       <Field error={fieldErrors.name} label="Route name">
         <input
@@ -204,7 +204,7 @@ function RoutesListScreen({ navigate }) {
         }
         description="Plan delivery routes, manage stops, and track fulfillment progress."
         eyebrow="Routes"
-        title="Delivery routes"
+        title="Delivery Routes"
       />
 
       <Toolbar onSubmit={submitSearch}>
@@ -265,7 +265,7 @@ function RoutesListScreen({ navigate }) {
               <span>Date</span>
               <span>Status</span>
               <span>Vehicle</span>
-              <span />
+              <span className="actions-col">Actions</span>
             </div>
             {items.map((route) => (
               <article className="resource-row route-grid" key={route.id}>
