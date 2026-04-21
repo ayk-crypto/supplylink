@@ -1,0 +1,80 @@
+You are refining the SupplyLink frontend UI.
+
+Current implemented product state:
+- Multi-tenant SaaS
+- Customers, categories, products
+- Quotations, orders, invoices, payments
+- Dashboard with richer business insights
+- Document preview, print, and real PDF download
+- Secure share-link generation and public share page
+- Send Email actions for quotations and invoices
+- Reusable send-email modal already exists
+- Existing flows are working; this phase is UI/UX refinement only
+
+Your goal:
+Make the UI feel premium, highly professional, modern, responsive, and commercially competitive across dashboard and document-related screens.
+
+Priority screens to refine:
+1. Dashboard
+2. Quotation detail screen
+3. Invoice detail screen
+4. Document action areas
+5. Send Email modal
+6. Share modal
+7. Document preview modal/public document presentation where relevant
+
+What to improve:
+
+1. Dashboard polish
+- Improve overall visual hierarchy
+- Make KPI/summary cards feel stronger and cleaner
+- Improve spacing, alignment, and balance between sections
+- Make recent activity easier to scan
+- Make overdue invoices more noticeable without looking harsh
+- Improve top customers and recent payments presentation
+- Keep it responsive and polished on desktop/tablet/mobile
+
+2. Document action section polish
+- Make Preview / Download PDF / Print / Send link / Send email actions feel organized and premium
+- Improve button hierarchy and spacing
+- Reduce visual clutter
+- Keep actions easy to use on smaller screens
+
+3. Quotation and invoice detail screens
+- Improve section grouping
+- Strengthen metadata layout
+- Improve readability of totals and financial summaries
+- Make customer/vendor/document information blocks cleaner
+- Ensure pages feel professional and business-grade
+
+4. Modal refinement
+- Improve Send Email modal layout, spacing, labels, and field hierarchy
+- Improve Share modal layout and readability
+- Make modal actions clearer and cleaner
+- Improve visual consistency with the rest of the app
+
+5. Responsiveness
+- Ensure layouts adapt smoothly across device sizes
+- Avoid cramped cards, broken button rows, or awkward wrapping
+- Keep touch usability in mind for mobile/tablet
+
+6. Design direction
+- Premium SaaS feel
+- Clean typography hierarchy
+- Balanced white space
+- Strong but not flashy styling
+- Professional business application tone
+- Fast, uncluttered, modern layout
+
+Constraints:
+- Do not change backend logic
+- Do not break existing functionality
+- Do not remove current actions or working flows
+- Reuse existing components/styles where sensible
+- Keep the implementation scalable and maintainable
+
+Expected output:
+- Refine relevant frontend components and styles only
+- Summarize which screens/components were improved
+- Explain the major UI/UX improvements made
+- Mention any areas that may still need later design iteration

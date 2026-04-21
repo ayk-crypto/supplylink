@@ -4563,51 +4563,138 @@ a:hover {
 /* === end Module 20AT ============================================== */
 
 .document-share-shell {
-  width: min(560px, calc(100vw - 32px));
+  width: min(580px, calc(100vw - 32px));
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 20px;
-  box-shadow: 0 24px 60px rgba(19, 35, 28, 0.22);
-  padding: 24px;
+  border-radius: 22px;
+  box-shadow: 0 30px 70px rgba(19, 35, 28, 0.28);
+  padding: 0;
   display: grid;
-  gap: 16px;
+  gap: 0;
+  overflow: hidden;
+  max-height: calc(100vh - 32px);
 }
 .document-share-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(15, 123, 99, 0.04), transparent);
+}
+.document-share-header-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 0;
+}
+.document-share-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, rgba(15, 123, 99, 0.15), rgba(15, 123, 99, 0.06));
+  color: var(--accent, #0f7b63);
+  font-size: 1.15rem;
+  font-weight: 700;
+  border: 1px solid rgba(15, 123, 99, 0.18);
+}
+.document-share-header strong {
+  display: block;
+  font-size: 1.05rem;
+  color: var(--ink);
+  letter-spacing: -0.01em;
 }
 .document-share-header span {
   display: block;
-  margin-top: 6px;
+  margin-top: 4px;
   color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+.document-share-close {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.document-share-close:hover,
+.document-share-close:focus-visible {
+  background: var(--surface-subtle, rgba(15, 35, 28, 0.04));
+  color: var(--ink);
+}
+.document-share-body {
+  padding: 20px 24px 4px;
+  display: grid;
+  gap: 18px;
+  overflow-y: auto;
 }
 .document-share-loading {
-  min-height: 140px;
+  min-height: 180px;
   display: grid;
   justify-items: center;
   align-content: center;
   gap: 12px;
+  padding: 32px;
+}
+.document-share-field-group {
+  display: grid;
+  gap: 6px;
 }
 .document-share-field {
-  font-size: 0.9rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  color: var(--ink);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
-.document-share-shell input[type="text"] {
-  width: 100%;
+.document-share-help {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.45;
 }
+.document-share-shell input[type="text"],
 .document-share-shell input[type="email"],
 .document-share-shell textarea {
   width: 100%;
 }
 .document-email-shell {
-  max-width: 720px;
+  width: min(680px, calc(100vw - 32px));
 }
 .document-email-shell textarea {
   min-height: 180px;
   resize: vertical;
+  font-family: inherit;
+}
+.document-share-link-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.document-share-link-row input {
+  flex: 1;
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+}
+.document-share-copy-button {
+  flex-shrink: 0;
+  min-width: 110px;
+  transition: background 0.18s ease;
+}
+.document-share-copy-button.is-copied {
+  background: #1d7a46 !important;
 }
 .document-share-actions {
   justify-content: flex-start;
@@ -4615,34 +4702,54 @@ a:hover {
 .document-share-meta {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 .document-share-meta div {
   border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface-subtle);
-  padding: 14px;
+  border-radius: 12px;
+  background: var(--surface-subtle, rgba(15, 35, 28, 0.025));
+  padding: 12px 14px;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
 }
 .document-share-meta span {
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
 }
 .document-share-meta strong {
   display: block;
-  margin-top: 8px;
   color: var(--ink);
+  font-size: 0.92rem;
+  font-weight: 650;
+  word-break: break-word;
+  font-variant-numeric: tabular-nums;
+}
+.document-share-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-subtle, rgba(15, 35, 28, 0.02));
+  margin-top: 8px;
+}
+.document-share-footer .primary-button,
+.document-share-footer .secondary-button {
+  min-width: 110px;
 }
 
 .public-document-page {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(15, 123, 99, 0.08), transparent 30%),
+    radial-gradient(circle at top left, rgba(15, 123, 99, 0.10), transparent 35%),
+    radial-gradient(circle at bottom right, rgba(255, 213, 122, 0.10), transparent 30%),
     linear-gradient(180deg, #eef4f0 0%, #f8fbf9 100%);
-  padding: 24px;
+  padding: 28px 24px;
   display: grid;
   gap: 16px;
 }
@@ -4650,22 +4757,31 @@ a:hover {
 .public-document-footnote {
   width: min(1100px, 100%);
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(18, 44, 32, 0.08);
   border-radius: 18px;
-  padding: 16px 18px;
+  padding: 16px 22px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  box-shadow: 0 8px 24px -16px rgba(15, 35, 28, 0.20);
 }
 .public-document-toolbar span,
 .public-document-footnote span {
   color: var(--muted);
+  font-size: 0.85rem;
 }
 .public-document-toolbar strong {
   display: block;
   color: var(--ink);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.public-document-footnote {
+  font-size: 0.8rem;
+  color: var(--muted);
 }
 .public-document-frame-wrap,
 .public-document-empty,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 function DocumentEmailModal({
   customerEmail = "",
@@ -13,6 +13,7 @@ function DocumentEmailModal({
   const [recipientEmail, setRecipientEmail] = useState(customerEmail);
   const [subject, setSubject] = useState(defaultSubject);
   const [messageBody, setMessageBody] = useState(defaultMessageBody);
+  const closeButtonRef = useRef(null);
 
   useEffect(() => {
     setRecipientEmail(customerEmail || "");
@@ -26,6 +27,16 @@ function DocumentEmailModal({
     setMessageBody(defaultMessageBody || "");
   }, [defaultMessageBody]);
 
+  useEffect(() => {
+    function handleKey(event) {
+      if (event.key === "Escape") {
+        onClose?.();
+      }
+    }
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose]);
+
   function handleSubmit(event) {
     event.preventDefault();
     onSubmit?.({
@@ -34,6 +45,8 @@ function DocumentEmailModal({
       messageBody
     });
   }
+
+  const docTitle = documentLabel.charAt(0).toUpperCase() + documentLabel.slice(1);
 
   return (
     <div
@@ -53,46 +66,76 @@ function DocumentEmailModal({
         role="dialog"
       >
         <div className="document-share-header">
-          <div>
-            <strong id="document-email-title">Send {documentLabel} by email</strong>
-            <span>A branded email with the PDF attachment and secure share link will be sent.</span>
+          <div className="document-share-header-main">
+            <span className="document-share-icon" aria-hidden="true">
+              ✉
+            </span>
+            <div>
+              <strong id="document-email-title">Send {documentLabel} by email</strong>
+              <span>
+                A branded email with the PDF attachment and a secure share link will be
+                delivered to your recipient.
+              </span>
+            </div>
           </div>
-          <button className="secondary-button" onClick={onClose} type="button">
-            Close
+          <button
+            aria-label="Close"
+            className="document-share-close"
+            onClick={onClose}
+            ref={closeButtonRef}
+            type="button"
+          >
+            ×
           </button>
         </div>
 
-        <label className="document-share-field" htmlFor="document-email-recipient">
-          Recipient email
-        </label>
-        <input
-          id="document-email-recipient"
-          onChange={(event) => setRecipientEmail(event.target.value)}
-          placeholder="customer@example.com"
-          type="email"
-          value={recipientEmail}
-        />
+        <div className="document-share-body">
+          <div className="document-share-field-group">
+            <label className="document-share-field" htmlFor="document-email-recipient">
+              Recipient email
+            </label>
+            <input
+              autoFocus
+              id="document-email-recipient"
+              onChange={(event) => setRecipientEmail(event.target.value)}
+              placeholder="customer@example.com"
+              required
+              type="email"
+              value={recipientEmail}
+            />
+            <small className="document-share-help">
+              We use this address as the “To:” for the message.
+            </small>
+          </div>
 
-        <label className="document-share-field" htmlFor="document-email-subject">
-          Subject
-        </label>
-        <input
-          id="document-email-subject"
-          onChange={(event) => setSubject(event.target.value)}
-          placeholder={`Subject for this ${documentLabel}`}
-          type="text"
-          value={subject}
-        />
+          <div className="document-share-field-group">
+            <label className="document-share-field" htmlFor="document-email-subject">
+              Subject
+            </label>
+            <input
+              id="document-email-subject"
+              onChange={(event) => setSubject(event.target.value)}
+              placeholder={`Subject for this ${documentLabel}`}
+              type="text"
+              value={subject}
+            />
+          </div>
 
-        <label className="document-share-field" htmlFor="document-email-message">
-          Message
-        </label>
-        <textarea
-          id="document-email-message"
-          onChange={(event) => setMessageBody(event.target.value)}
-          rows="8"
-          value={messageBody}
-        />
+          <div className="document-share-field-group">
+            <label className="document-share-field" htmlFor="document-email-message">
+              Message
+            </label>
+            <textarea
+              id="document-email-message"
+              onChange={(event) => setMessageBody(event.target.value)}
+              rows="8"
+              value={messageBody}
+            />
+            <small className="document-share-help">
+              {`The ${docTitle} PDF will be attached automatically.`}
+            </small>
+          </div>
+        </div>
 
         {error ? (
           <div className="form-error" role="alert">
@@ -101,12 +144,12 @@ function DocumentEmailModal({
           </div>
         ) : null}
 
-        <div className="button-row document-share-actions">
-          <button className="primary-button" disabled={isLoading} type="submit">
-            {isLoading ? "Sending..." : "Send email"}
-          </button>
+        <div className="document-share-footer">
           <button className="secondary-button" onClick={onClose} type="button">
             Cancel
+          </button>
+          <button className="primary-button" disabled={isLoading} type="submit">
+            {isLoading ? "Sending…" : "Send email"}
           </button>
         </div>
       </form>
