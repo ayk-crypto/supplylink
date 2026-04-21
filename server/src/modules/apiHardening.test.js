@@ -158,6 +158,10 @@ test("route template generation accepts only route creation statuses", () => {
 
 test("settings update accepts valid partial sections", () => {
   const result = settingsUpdateBodySchema.safeParse({
+    company: {
+      primaryBrandColor: "#1F6FEB",
+      logoUrl: "/api/v1/settings/logo"
+    },
     invoice: {
       prefix: "INV",
       nextNumber: 10,
@@ -197,10 +201,16 @@ test("settings update rejects invalid bounds and formats", () => {
       defaultPageSize: 500
     }
   });
+  const invalidBrandColor = settingsUpdateBodySchema.safeParse({
+    company: {
+      primaryBrandColor: "blue"
+    }
+  });
 
   assert.equal(invalidEmail.success, false);
   assert.equal(invalidInvoiceNumber.success, false);
   assert.equal(invalidPadding.success, false);
   assert.equal(invalidDecimals.success, false);
   assert.equal(invalidPageSize.success, false);
+  assert.equal(invalidBrandColor.success, false);
 });

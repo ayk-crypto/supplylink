@@ -1,8 +1,23 @@
 import { z } from "zod";
 
 const optionalEmailSchema = z.union([z.string().trim().email(), z.literal("")]);
-const optionalUrlSchema = z.union([z.string().trim().url(), z.literal("")]);
+const optionalUrlSchema = z
+  .string()
+  .trim()
+  .refine((value) => value === "" || value.startsWith("/") || z.string().url().safeParse(value).success, {
+    message: "Logo URL must be empty, absolute, or root-relative"
+  });
 const shortTextSchema = z.string().trim().max(200);
+const optionalHexColorSchema = z
+  .union([
+    z
+      .string()
+      .trim()
+      .regex(/^#[0-9A-Fa-f]{6}$/, "Primary brand color must be a valid hex color like #1F6FEB")
+      .transform((value) => value.toUpperCase()),
+    z.literal("")
+  ])
+  .optional();
 
 const companySettingsSchema = z.object({
   displayName: shortTextSchema.optional(),
@@ -12,7 +27,8 @@ const companySettingsSchema = z.object({
   taxId: z.string().trim().max(100).optional(),
   addressLine1: z.string().trim().max(250).optional(),
   addressLine2: z.string().trim().max(250).optional(),
-  logoUrl: optionalUrlSchema.optional()
+  logoUrl: optionalUrlSchema.optional(),
+  primaryBrandColor: optionalHexColorSchema
 });
 
 const invoiceSettingsSchema = z.object({

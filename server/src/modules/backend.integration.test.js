@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
 import test from "node:test";
 import bcrypt from "bcryptjs";
 import {
@@ -7,6 +8,7 @@ import {
   startIntegrationApp,
   waitFor
 } from "../test/integrationTestUtils.js";
+import { getLocalFilePath } from "./files/files.storage.js";
 
 const testDatabaseUrl = getTestDatabaseUrl();
 
@@ -121,6 +123,9 @@ if (!testDatabaseUrl) {
       assert.equal(defaults.payload.data.vendorId, state.vendorA.vendor.id);
       assert.equal(defaults.payload.data.settings.company.displayName, state.vendorA.vendor.displayName);
       assert.equal(defaults.payload.data.settings.company.legalName, state.vendorA.vendor.legalName);
+      assert.equal(defaults.payload.data.settings.company.primaryBrandColor, "");
+      assert.equal(defaults.payload.data.settings.company.logoUrl, "");
+      assert.equal(defaults.payload.data.settings.company.logo, null);
       assert.equal(defaults.payload.data.settings.currency.code, "USD");
       assert.equal(defaults.payload.data.settings.invoice.nextNumber, 1);
       assert.equal(defaults.payload.data.isDefault, true);
@@ -157,6 +162,15 @@ if (!testDatabaseUrl) {
       await api.patch("/settings", {
         token: state.vendorA.token,
         body: {
+          company: {
+            primaryBrandColor: "blue"
+          }
+        },
+        expectedStatus: 400
+      });
+      await api.patch("/settings", {
+        token: state.vendorA.token,
+        body: {
           invoice: {
             nextNumber: 0,
             padding: 99
@@ -171,7 +185,8 @@ if (!testDatabaseUrl) {
           company: {
             displayName: "Alpha Trading",
             email: "settings-alpha@example.com",
-            taxId: "TAX-ALPHA"
+            taxId: "TAX-ALPHA",
+            primaryBrandColor: "#1f6feb"
           },
           invoice: {
             prefix: "ALP",
@@ -196,6 +211,7 @@ if (!testDatabaseUrl) {
       });
 
       assert.equal(updated.payload.data.settings.company.displayName, "Alpha Trading");
+      assert.equal(updated.payload.data.settings.company.primaryBrandColor, "#1F6FEB");
       assert.equal(updated.payload.data.settings.invoice.prefix, "ALP");
       assert.equal(updated.payload.data.settings.invoice.nextNumber, 42);
       assert.equal(updated.payload.data.settings.currency.code, "EUR");
@@ -206,6 +222,7 @@ if (!testDatabaseUrl) {
         token: state.vendorA.token
       });
       assert.equal(reloaded.payload.data.settings.company.displayName, "Alpha Trading");
+      assert.equal(reloaded.payload.data.settings.company.primaryBrandColor, "#1F6FEB");
       assert.equal(reloaded.payload.data.settings.currency.code, "EUR");
 
       const vendorBDefaults = await api.get("/settings", {
@@ -226,6 +243,120 @@ if (!testDatabaseUrl) {
             event.metadata.changedSections.includes("invoice")
         )
       );
+    });
+
+    await t.test("workspace branding logo upload, replacement, delete, validation, and isolation work", async () => {
+      const initial = await api.get("/settings", {
+        token: state.vendorA.token
+      });
+      assert.equal(initial.payload.data.settings.company.logo, null);
+
+      const invalidTypeForm = new FormData();
+      invalidTypeForm.set("file", new Blob(["bad"], { type: "text/plain" }), "bad.txt");
+      await api.post("/settings/logo", {
+        token: state.vendorA.token,
+        body: invalidTypeForm,
+        expectedStatus: 422
+      });
+
+      const tooLargeForm = new FormData();
+      tooLargeForm.set(
+        "file",
+        new Blob([new Uint8Array(2 * 1024 * 1024 + 1)], { type: "image/png" }),
+        "huge.png"
+      );
+      await api.post("/settings/logo", {
+        token: state.vendorA.token,
+        body: tooLargeForm,
+        expectedStatus: 413
+      });
+
+      const firstLogoForm = new FormData();
+      firstLogoForm.set(
+        "file",
+        new Blob([new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])], { type: "image/png" }),
+        "logo-one.png"
+      );
+      const firstUpload = await api.post("/settings/logo", {
+        token: state.vendorA.token,
+        body: firstLogoForm,
+        expectedStatus: 201
+      });
+      assert.equal(firstUpload.payload.data.settings.company.logoUrl, "/api/v1/settings/logo");
+      assert.equal(firstUpload.payload.data.settings.company.logo.originalFilename, "logo-one.png");
+      assert.equal(firstUpload.payload.data.settings.company.logo.mimeType, "image/png");
+      assert.equal(firstUpload.payload.data.settings.company.logo.downloadUrl, "/api/v1/settings/logo");
+
+      const firstStoredSettings = await app.pool.query(
+        "SELECT settings FROM vendor_settings WHERE vendor_id = $1",
+        [state.vendorA.vendor.id]
+      );
+      const firstStorageKey = firstStoredSettings.rows[0].settings.company.logoStorage.storageKey;
+      await fs.access(getLocalFilePath(firstStorageKey));
+
+      const logoDownload = await fetch(`${app.baseUrl}/settings/logo`, {
+        headers: {
+          Authorization: `Bearer ${state.vendorA.token}`
+        }
+      });
+      assert.equal(logoDownload.status, 200);
+      assert.equal(logoDownload.headers.get("content-type"), "image/png");
+
+      await api.get("/settings/logo", {
+        token: state.vendorB.token,
+        expectedStatus: 404
+      });
+
+      const replaceLogoForm = new FormData();
+      replaceLogoForm.set(
+        "file",
+        new Blob([new Uint8Array([255, 216, 255, 224])], { type: "image/jpeg" }),
+        "logo-two.jpg"
+      );
+      const replaced = await api.post("/settings/logo", {
+        token: state.vendorA.token,
+        body: replaceLogoForm,
+        expectedStatus: 201
+      });
+      assert.equal(replaced.payload.data.settings.company.logo.originalFilename, "logo-two.jpg");
+      assert.equal(replaced.payload.data.settings.company.logo.mimeType, "image/jpeg");
+
+      const replacedStoredSettings = await app.pool.query(
+        "SELECT settings FROM vendor_settings WHERE vendor_id = $1",
+        [state.vendorA.vendor.id]
+      );
+      const secondStorageKey = replacedStoredSettings.rows[0].settings.company.logoStorage.storageKey;
+      assert.notEqual(secondStorageKey, firstStorageKey);
+      await assert.rejects(() => fs.access(getLocalFilePath(firstStorageKey)));
+      await fs.access(getLocalFilePath(secondStorageKey));
+
+      const staffReplaceForm = new FormData();
+      staffReplaceForm.set(
+        "file",
+        new Blob([new Uint8Array([255, 216, 255, 224])], { type: "image/jpeg" }),
+        "logo-two.jpg"
+      );
+      await api.post("/settings/logo", {
+        token: state.vendorAStaff.token,
+        body: staffReplaceForm,
+        expectedStatus: 403
+      });
+
+      const removed = await api.delete("/settings/logo", {
+        token: state.vendorA.token
+      });
+      assert.equal(removed.payload.data.settings.company.logo, null);
+      assert.equal(removed.payload.data.settings.company.logoUrl, "");
+      await assert.rejects(() => fs.access(getLocalFilePath(secondStorageKey)));
+
+      await api.get("/settings/logo", {
+        token: state.vendorA.token,
+        expectedStatus: 404
+      });
+      await api.delete("/settings/logo", {
+        token: state.vendorA.token,
+        expectedStatus: 404
+      });
     });
 
     await t.test("transaction chain creates customer, product, quotation, order, invoice, and payments", async () => {
