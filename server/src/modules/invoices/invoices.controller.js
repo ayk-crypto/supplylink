@@ -11,6 +11,9 @@ import {
   buildInvoicePrintDocument
 } from "../documents/documents.service.js";
 import {
+  sendInvoiceEmail,
+} from "../documents/documents.email.service.js";
+import {
   ensureDocumentShare,
   getDocumentShareSummary
 } from "../documents/documents.share.service.js";
@@ -89,6 +92,24 @@ async function share(request, response) {
   });
 }
 
+async function email(request, response) {
+  const result = await sendInvoiceEmail(
+    request.access.vendorId,
+    request.params.invoiceId,
+    request.body,
+    request.auth
+  );
+
+  sendSuccess(response, {
+    message: "Invoice email sent",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId
+    }
+  });
+}
+
 async function create(request, response) {
   const result = await createInvoice(request.access.vendorId, request.body, request.auth);
 
@@ -147,4 +168,4 @@ async function voidInvoice(request, response) {
   return transition("void", request, response);
 }
 
-export { create, getById, issue, list, pdf, print, share, update, voidInvoice };
+export { create, email, getById, issue, list, pdf, print, share, update, voidInvoice };

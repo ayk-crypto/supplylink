@@ -7,6 +7,7 @@ import requireVendorWritable from "../../middlewares/requireVendorWritable.js";
 import validateRequest from "../../middlewares/validateRequest.js";
 import {
   create,
+  email,
   getById,
   issue,
   list,
@@ -22,6 +23,7 @@ import {
   invoiceQuerySchema,
   invoiceUpdateBodySchema
 } from "./invoices.schemas.js";
+import { documentEmailBodySchema } from "../documents/documents.schemas.js";
 
 const invoicesRoutes = Router();
 
@@ -66,6 +68,18 @@ function invoiceShareAction(handler) {
 }
 
 invoicesRoutes.post("/:invoiceId/issue", ...invoiceAction(issue));
+invoicesRoutes.post(
+  "/:invoiceId/email",
+  authenticate,
+  authorizeRoles("super_admin", "vendor_admin", "vendor_staff"),
+  validateRequest({
+    params: invoiceIdParamsSchema,
+    query: invoiceQuerySchema,
+    body: documentEmailBodySchema
+  }),
+  requireVendorAccess(),
+  asyncHandler(email)
+);
 invoicesRoutes.post("/:invoiceId/share", ...invoiceShareAction(share));
 invoicesRoutes.post("/:invoiceId/void", ...invoiceAction(voidInvoice));
 

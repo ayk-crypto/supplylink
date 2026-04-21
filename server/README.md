@@ -21,6 +21,7 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 - If `NODE_ENV` is not set, the server defaults to `development`
 - `DATABASE_URL` is only required for database-backed work such as migrations or DB health checks
 - `JWT_SECRET` must be set to a long random value outside local throwaway development
+- `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT`, `EMAIL_SMTP_SECURE`, `EMAIL_FROM_ADDRESS`, and optional SMTP auth credentials enable quotation/invoice email sending
 - `DEMO_SEED_PASSWORD` controls the password used by the demo seed script
 - `ALLOW_DEMO_SEED_IN_PRODUCTION` defaults to `false` and should stay false for normal deployments
 - `FILE_UPLOAD_DIR` controls the local/dev upload directory and defaults to `uploads` under the server workspace

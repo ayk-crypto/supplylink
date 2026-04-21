@@ -30,6 +30,9 @@ management endpoints for platform and vendor-level administration.
    copy client\.env.example client\.env.development
    ```
 
+   If you want to enable quotation/invoice email sending locally, also configure SMTP values in
+   `server\.env.development` such as `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT`, and `EMAIL_FROM_ADDRESS`.
+
 3. Apply migrations and seed a demo dataset:
 
    ```bash

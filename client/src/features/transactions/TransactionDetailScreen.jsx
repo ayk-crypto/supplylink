@@ -9,6 +9,7 @@ import {
   transitionQuotation
 } from "../../services/transactionApi.js";
 import { shareQuotation } from "../../services/documentShareApi.js";
+import { sendQuotationEmail } from "../../services/documentEmailApi.js";
 import {
   EmptyState,
   ErrorState,
@@ -24,6 +25,7 @@ import { confirmDestructive, formatDateWith } from "../system/settingsFormat.js"
 import { formatCustomer } from "./transactionUtils.js";
 import DocumentPreviewModal from "../documents/DocumentPreviewModal.jsx";
 import DocumentShareModal from "../documents/DocumentShareModal.jsx";
+import DocumentEmailModal from "../documents/DocumentEmailModal.jsx";
 import DocumentHeroPanel from "../documents/DocumentHeroPanel.jsx";
 import DocumentTotalsCard from "../documents/DocumentTotalsCard.jsx";
 import DocumentActionBar from "../documents/DocumentActionBar.jsx";
@@ -86,6 +88,9 @@ function TransactionDetailScreen({ id, kind, navigate }) {
   const [shareDetails, setShareDetails] = useState(null);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isShareLoading, setIsShareLoading] = useState(false);
+  const [isEmailOpen, setIsEmailOpen] = useState(false);
+  const [isEmailSending, setIsEmailSending] = useState(false);
+  const [emailError, setEmailError] = useState("");
 
   async function runLifecycleAction(spec) {
     if (!detail || pendingAction) {
@@ -277,6 +282,63 @@ function TransactionDetailScreen({ id, kind, navigate }) {
     window.open(shareDetails.publicUrl, "_blank", "noopener,noreferrer");
   }
 
+  function getDefaultEmailSubject() {
+    return `Quotation ${detail.quoteNumber} from ${
+      settings.company?.displayName || settings.company?.legalName || "SupplyLink"
+    }`;
+  }
+
+  function getDefaultEmailMessage() {
+    const customerName = formatCustomer(detail.customer);
+    const expiryDate = detail.expiryDate ? formatDateWith(settings, detail.expiryDate) : "";
+
+    return [
+      `Hello ${customerName},`,
+      "",
+      `Please find quotation ${detail.quoteNumber} attached as a PDF.`,
+      `Total: ${toMoney(detail.grandTotal)}`,
+      expiryDate ? `Expiry date: ${expiryDate}` : "",
+      "",
+      "You can also open the secure online version using the included share link.",
+      "",
+      "Regards,"
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  function openEmailModal() {
+    if (kind !== "quotations") {
+      return;
+    }
+
+    setEmailError("");
+    setIsEmailOpen(true);
+  }
+
+  async function submitEmail(payload) {
+    setIsEmailSending(true);
+    setEmailError("");
+
+    try {
+      const response = await sendQuotationEmail(id, payload);
+      if (response.data?.share) {
+        setShareDetails(response.data.share);
+        setDetail((current) => (current ? { ...current, sharing: response.data.share } : current));
+      }
+      setIsEmailOpen(false);
+      showToast({
+        message: `Quotation emailed to ${response.data.recipientEmail}.`,
+        title: "Email sent",
+        tone: "success"
+      });
+    } catch (requestError) {
+      setEmailError(getApiErrorMessage(requestError, "Quotation email could not be sent."));
+    } finally {
+      setIsEmailSending(false);
+    }
+  }
+
   useEffect(() => {
     let active = true;
     const controller = new AbortController();
@@ -406,13 +468,22 @@ function TransactionDetailScreen({ id, kind, navigate }) {
             {kind === "quotations" ? (
               <DocumentActionBar
                 extras={
-                  <button
-                    className="secondary-button doc-action-bar-button"
-                    onClick={openShareModal}
-                    type="button"
-                  >
-                    Send link
-                  </button>
+                  <div className="button-row">
+                    <button
+                      className="secondary-button doc-action-bar-button"
+                      onClick={openEmailModal}
+                      type="button"
+                    >
+                      Send email
+                    </button>
+                    <button
+                      className="secondary-button doc-action-bar-button"
+                      onClick={openShareModal}
+                      type="button"
+                    >
+                      Send link
+                    </button>
+                  </div>
                 }
                 isBusy={isPreviewLoading}
                 onDownload={handleQuotationDownload}
@@ -562,6 +633,24 @@ function TransactionDetailScreen({ id, kind, navigate }) {
           onCopy={copyShareLink}
           onOpen={openSharedPreview}
           share={shareDetails}
+        />
+      ) : null}
+
+      {kind === "quotations" && isEmailOpen ? (
+        <DocumentEmailModal
+          customerEmail={detail.customer?.email || ""}
+          defaultMessageBody={getDefaultEmailMessage()}
+          defaultSubject={getDefaultEmailSubject()}
+          documentLabel="quotation"
+          error={emailError}
+          isLoading={isEmailSending}
+          onClose={() => {
+            if (!isEmailSending) {
+              setIsEmailOpen(false);
+              setEmailError("");
+            }
+          }}
+          onSubmit={submitEmail}
         />
       ) : null}
     </div>

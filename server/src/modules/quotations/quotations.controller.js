@@ -11,6 +11,9 @@ import {
   buildQuotationPrintDocument
 } from "../documents/documents.service.js";
 import {
+  sendQuotationEmail,
+} from "../documents/documents.email.service.js";
+import {
   ensureDocumentShare,
   getDocumentShareSummary
 } from "../documents/documents.share.service.js";
@@ -88,6 +91,24 @@ async function share(request, response) {
 
   sendSuccess(response, {
     message: "Quotation share link ready",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.access.vendorId
+    }
+  });
+}
+
+async function email(request, response) {
+  const result = await sendQuotationEmail(
+    request.access.vendorId,
+    request.params.quotationId,
+    request.body,
+    request.auth
+  );
+
+  sendSuccess(response, {
+    message: "Quotation email sent",
     data: result,
     meta: {
       requestId: request.context.requestId,
@@ -185,6 +206,7 @@ export {
   accept,
   convertToOrder,
   create,
+  email,
   expire,
   getById,
   list,

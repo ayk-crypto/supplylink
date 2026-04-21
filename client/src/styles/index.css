@@ -4598,6 +4598,17 @@ a:hover {
 .document-share-shell input[type="text"] {
   width: 100%;
 }
+.document-share-shell input[type="email"],
+.document-share-shell textarea {
+  width: 100%;
+}
+.document-email-shell {
+  max-width: 720px;
+}
+.document-email-shell textarea {
+  min-height: 180px;
+  resize: vertical;
+}
 .document-share-actions {
   justify-content: flex-start;
 }

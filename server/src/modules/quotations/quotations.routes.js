@@ -9,6 +9,7 @@ import {
   accept,
   convertToOrder,
   create,
+  email,
   expire,
   getById,
   list,
@@ -25,6 +26,7 @@ import {
   quotationQuerySchema,
   quotationUpdateBodySchema
 } from "./quotations.schemas.js";
+import { documentEmailBodySchema } from "../documents/documents.schemas.js";
 
 const quotationsRoutes = Router();
 
@@ -69,6 +71,18 @@ function quotationShareAction(handler) {
 }
 
 quotationsRoutes.post("/:quotationId/send", ...quotationAction(send));
+quotationsRoutes.post(
+  "/:quotationId/email",
+  authenticate,
+  authorizeRoles("super_admin", "vendor_admin", "vendor_staff"),
+  validateRequest({
+    params: quotationIdParamsSchema,
+    query: quotationQuerySchema,
+    body: documentEmailBodySchema
+  }),
+  requireVendorAccess(),
+  asyncHandler(email)
+);
 quotationsRoutes.post("/:quotationId/share", ...quotationShareAction(share));
 quotationsRoutes.post("/:quotationId/accept", ...quotationAction(accept));
 quotationsRoutes.post("/:quotationId/reject", ...quotationAction(reject));

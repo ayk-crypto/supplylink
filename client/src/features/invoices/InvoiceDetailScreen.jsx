@@ -8,6 +8,7 @@ import {
   transitionInvoice
 } from "../../services/invoiceApi.js";
 import { shareInvoice } from "../../services/documentShareApi.js";
+import { sendInvoiceEmail } from "../../services/documentEmailApi.js";
 
 const INVOICE_ACTIONS = [
   { action: "issue", label: "Issue", from: ["draft"], successTitle: "Invoice issued", successMessage: "Invoice issued.", tone: "primary" },
@@ -34,6 +35,7 @@ import {
 import { formatCustomer } from "../transactions/transactionUtils.js";
 import DocumentPreviewModal from "../documents/DocumentPreviewModal.jsx";
 import DocumentShareModal from "../documents/DocumentShareModal.jsx";
+import DocumentEmailModal from "../documents/DocumentEmailModal.jsx";
 import DocumentHeroPanel from "../documents/DocumentHeroPanel.jsx";
 import DocumentTotalsCard from "../documents/DocumentTotalsCard.jsx";
 import DocumentActionBar from "../documents/DocumentActionBar.jsx";
@@ -208,6 +210,9 @@ function InvoiceDetailScreen({ id, navigate }) {
   const [shareDetails, setShareDetails] = useState(null);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isShareLoading, setIsShareLoading] = useState(false);
+  const [isEmailOpen, setIsEmailOpen] = useState(false);
+  const [isEmailSending, setIsEmailSending] = useState(false);
+  const [emailError, setEmailError] = useState("");
 
   async function runLifecycleAction(spec) {
     if (!invoice || pendingAction) {
@@ -400,6 +405,60 @@ function InvoiceDetailScreen({ id, navigate }) {
     }
   }
 
+  function getDefaultEmailSubject() {
+    return `Invoice ${invoice.invoiceNumber} from ${
+      settings.company?.displayName || settings.company?.legalName || "SupplyLink"
+    }`;
+  }
+
+  function getDefaultEmailMessage() {
+    const customerName = formatCustomer(invoice.customer);
+    const dueDate = invoice.dueDate ? formatDateWith(settings, invoice.dueDate) : "";
+
+    return [
+      `Hello ${customerName},`,
+      "",
+      `Please find invoice ${invoice.invoiceNumber} attached as a PDF.`,
+      `Balance due: ${formatMoneyWith(settings, invoice.balanceDue)}`,
+      dueDate ? `Due date: ${dueDate}` : "",
+      "",
+      "You can also open the secure online version using the included share link.",
+      "",
+      "Regards,"
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  function openEmailModal() {
+    setEmailError("");
+    setIsEmailOpen(true);
+  }
+
+  async function submitEmail(payload) {
+    setIsEmailSending(true);
+    setEmailError("");
+
+    try {
+      const response = await sendInvoiceEmail(invoice.id, payload);
+      if (response.data?.share) {
+        setShareDetails(response.data.share);
+        setInvoice((current) => (current ? { ...current, sharing: response.data.share } : current));
+      }
+      setIsEmailOpen(false);
+      showToast({
+        message: `Invoice emailed to ${response.data.recipientEmail}.`,
+        title: "Email sent",
+        tone: "success"
+      });
+    } catch (requestError) {
+      const message = getApiErrorMessage(requestError, "Invoice email could not be sent.");
+      setEmailError(message);
+    } finally {
+      setIsEmailSending(false);
+    }
+  }
+
   async function copyShareLink() {
     if (!shareDetails?.publicUrl) {
       return;
@@ -489,13 +548,22 @@ function InvoiceDetailScreen({ id, navigate }) {
           <div className="doc-toolbar">
             <DocumentActionBar
               extras={
-                <button
-                  className="secondary-button doc-action-bar-button"
-                  onClick={openShareModal}
-                  type="button"
-                >
-                  Send link
-                </button>
+                <div className="button-row">
+                  <button
+                    className="secondary-button doc-action-bar-button"
+                    onClick={openEmailModal}
+                    type="button"
+                  >
+                    Send email
+                  </button>
+                  <button
+                    className="secondary-button doc-action-bar-button"
+                    onClick={openShareModal}
+                    type="button"
+                  >
+                    Send link
+                  </button>
+                </div>
               }
               isBusy={isPrinting}
               onDownload={downloadInvoiceDocument}
@@ -660,6 +728,24 @@ function InvoiceDetailScreen({ id, navigate }) {
           onCopy={copyShareLink}
           onOpen={openSharedPreview}
           share={shareDetails}
+        />
+      ) : null}
+
+      {isEmailOpen ? (
+        <DocumentEmailModal
+          customerEmail={invoice.customer?.email || ""}
+          defaultMessageBody={getDefaultEmailMessage()}
+          defaultSubject={getDefaultEmailSubject()}
+          documentLabel="invoice"
+          error={emailError}
+          isLoading={isEmailSending}
+          onClose={() => {
+            if (!isEmailSending) {
+              setIsEmailOpen(false);
+              setEmailError("");
+            }
+          }}
+          onSubmit={submitEmail}
         />
       ) : null}
     </div>
