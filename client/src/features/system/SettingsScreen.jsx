@@ -7,6 +7,7 @@ import {
 } from "../../components/ui/ResourceScreens.jsx";
 import {
   deleteVendorLogo,
+  fetchVendorLogoBlob,
   uploadVendorLogo
 } from "../../services/settingsApi.js";
 import { useToast } from "../feedback/toastContext.js";
@@ -155,6 +156,35 @@ function SettingsScreen() {
 
   const logoInitials = getCompanyInitials(draft);
   const currentLogoUrl = getLogoUrl(providerSettings);
+  const [logoObjectUrl, setLogoObjectUrl] = useState("");
+
+  useEffect(() => {
+    if (!currentLogoUrl) {
+      setLogoObjectUrl("");
+      return undefined;
+    }
+
+    let cancelled = false;
+    let createdUrl = "";
+    const controller = new AbortController();
+
+    fetchVendorLogoBlob({ signal: controller.signal })
+      .then((blob) => {
+        if (cancelled) return;
+        createdUrl = URL.createObjectURL(blob);
+        setLogoObjectUrl(createdUrl);
+      })
+      .catch((requestError) => {
+        if (cancelled || requestError?.name === "AbortError") return;
+        setLogoObjectUrl("");
+      });
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+      if (createdUrl) URL.revokeObjectURL(createdUrl);
+    };
+  }, [currentLogoUrl]);
   const previewBrandColor = isValidHexColor(draft.company.primaryBrandColor)
     ? draft.company.primaryBrandColor.trim()
     : "";
@@ -299,8 +329,8 @@ function SettingsScreen() {
                   : undefined
               }
             >
-              {currentLogoUrl ? (
-                <img alt="Workspace logo" src={currentLogoUrl} />
+              {currentLogoUrl && logoObjectUrl ? (
+                <img alt="Workspace logo" src={logoObjectUrl} />
               ) : (
                 <span
                   aria-hidden="true"

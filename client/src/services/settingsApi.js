@@ -1,4 +1,5 @@
-import { request } from "./httpClient.js";
+import env from "../config/env.js";
+import { getStoredToken, request } from "./httpClient.js";
 
 async function getSettings(options = {}) {
   return request("/settings", options);
@@ -27,4 +28,26 @@ async function deleteVendorLogo() {
   });
 }
 
-export { deleteVendorLogo, getSettings, updateSettings, uploadVendorLogo };
+async function fetchVendorLogoBlob(options = {}) {
+  const token = options.token ?? getStoredToken();
+  const response = await fetch(`${env.apiBaseUrl}/settings/logo`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    signal: options.signal
+  });
+
+  if (!response.ok) {
+    const error = new Error(`Logo request failed with status ${response.status}`);
+    error.status = response.status;
+    throw error;
+  }
+
+  return response.blob();
+}
+
+export {
+  deleteVendorLogo,
+  fetchVendorLogoBlob,
+  getSettings,
+  updateSettings,
+  uploadVendorLogo
+};
