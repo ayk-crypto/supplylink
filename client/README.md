@@ -1327,3 +1327,53 @@ Verification
 - `npm run build`: 421.07 kB JS / 114.65 kB gzipped, 55.99 kB CSS /
   10.40 kB gzipped (≈ +3 kB JS / +0.6 kB CSS for the new pill
   catalog, color tokens, and additional formatter usages).
+
+## Module 20AQ — Core Business Logic Enhancements
+
+Module 20AQ surfaces the additive backend business-logic enhancements
+(discounts, taxes, code auto-generation, invoice recreation after void)
+in the existing screens without redesigning the app.
+
+Customer account code
+- The Account code field on the customer form now shows
+  "Leave blank to auto-generate (e.g. CUST-0001)" and an Auto-generate
+  placeholder.
+- Manually entered values are preserved and submitted as-is.
+- The field stays editable in both create and edit flows.
+
+Product SKU
+- The SKU field on the product form behaves the same way: leaving it
+  blank during create lets the backend auto-generate a SKU
+  (e.g. SKU-0001), while typed values are preserved.
+- SKU is only required client-side when editing an existing product.
+
+Quotation, order, and invoice — discounts and tax
+- A new "Pricing adjustments" section on the Create Quotation, Create
+  Order, and Create Invoice screens exposes:
+  - Discount Type (No discount / Flat amount / Percent)
+  - Discount Value (enabled once a type is selected)
+  - Tax Enabled (single checkbox toggle)
+  - Tax Rate (%) (enabled once tax is on, capped 0–100)
+- Live totals breakdown shows Subtotal, Discount (when > 0), Tax (when
+  applied), and Grand total, computed in `transactionUtils.calculateTotals`.
+- Payloads send `discountType`, `discountValue`, `taxEnabled`, and
+  `taxRate` only when set, matching the backend `discountTaxFields`
+  schema (`server/src/modules/shared/adjustmentSchemas.js`).
+- When creating an invoice from an order, pricing is prefilled from the
+  source order so propagated discount/tax context is preserved.
+- Quotation, order, and invoice detail screens now display Discount
+  (with percent badge when applicable) and Tax (with rate) alongside
+  Subtotal and Grand total.
+- The printable invoice already renders Subtotal, Discount, Tax, and
+  Total via `buildInvoicePrintHtml`, now driven by real values.
+
+Invoice recreation after void
+- The "Create invoice" action on the order detail screen is no longer
+  gated by frontend assumptions about a single invoice per order; the
+  backend now permits a fresh invoice once a prior invoice has been
+  voided, and the UI mirrors that.
+
+Verification
+- `npm run lint`: clean.
+- `npm run build`: passes; small bundle delta for the new Pricing
+  Fields component, totals helpers, and detail rows.

@@ -52,19 +52,19 @@ function toProductPayload(form) {
     categoryId: cleanOptional(form.categoryId),
     description: cleanOptional(form.description),
     name: cleanRequired(form.name),
-    sku: cleanRequired(form.sku),
+    sku: cleanOptional(form.sku),
     status: form.status,
     unitPrice: Number(form.unitPrice || 0)
   };
 }
 
-function validateProductForm(form) {
+function validateProductForm(form, mode) {
   const errors = {};
   const sku = cleanRequired(form.sku);
   const name = cleanRequired(form.name);
   const price = Number(form.unitPrice);
 
-  if (!sku) {
+  if (mode === "edit" && !sku) {
     errors.sku = "Enter a SKU.";
   }
 
@@ -108,7 +108,7 @@ function ProductForm({ categories, mode, onCancel, onSave, product }) {
     event.preventDefault();
     setError("");
 
-    const nextFieldErrors = validateProductForm(form);
+    const nextFieldErrors = validateProductForm(form, mode);
 
     if (Object.values(nextFieldErrors).some(Boolean)) {
       setFieldErrors(nextFieldErrors);
@@ -143,10 +143,19 @@ function ProductForm({ categories, mode, onCancel, onSave, product }) {
       submitLabel={mode === "edit" ? "Save product" : "Create product"}
       title={mode === "edit" ? "Edit product" : "Create product"}
     >
-      <Field error={fieldErrors.sku} label="SKU">
+      <Field
+        error={fieldErrors.sku}
+        hint={
+          mode === "edit"
+            ? "Stock keeping unit for this product."
+            : "Leave blank to auto-generate (e.g. SKU-0001)."
+        }
+        label="SKU"
+      >
         <input
           onChange={(event) => updateField("sku", event.target.value)}
-          required
+          placeholder={mode === "edit" ? undefined : "Auto-generate"}
+          required={mode === "edit"}
           type="text"
           value={form.sku}
         />

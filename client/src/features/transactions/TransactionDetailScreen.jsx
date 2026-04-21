@@ -291,6 +291,30 @@ function TransactionDetailScreen({ id, kind, navigate }) {
           value={formatDateWith(settings, detail.deliveryDate || detail.expiryDate)}
         />
         <DetailField label="Subtotal" value={toMoney(detail.subtotal)} />
+        <DetailField
+          label={
+            detail.discountType === "percent"
+              ? `Discount (${Number(detail.discountValue || 0)}%)`
+              : "Discount"
+          }
+          value={
+            Number(detail.discountTotal || detail.discountAmount || 0) > 0
+              ? `- ${toMoney(detail.discountTotal || detail.discountAmount)}`
+              : "None"
+          }
+        />
+        <DetailField
+          label={
+            detail.taxEnabled
+              ? `Tax (${Number(detail.taxRate || 0)}%)`
+              : "Tax"
+          }
+          value={
+            detail.taxEnabled
+              ? toMoney(detail.taxTotal || detail.taxAmount || 0)
+              : "Not applied"
+          }
+        />
         <DetailField label="Grand total" value={toMoney(detail.grandTotal)} />
       </section>
 

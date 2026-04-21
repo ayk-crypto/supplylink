@@ -7,17 +7,22 @@ import { getOrder, listOrders } from "../../services/transactionApi.js";
 import { Field, PageHeader } from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import LineItemEditor from "../transactions/LineItemEditor.jsx";
+import PricingFields from "../transactions/PricingFields.jsx";
 import { useTransactionOptions } from "../transactions/useTransactionOptions.js";
 import {
   addDays,
   calculateTotals,
   createBlankItem,
+  createBlankPricing,
   formatApiError,
   formatCustomer,
   mapItemsForPayload,
+  mapPricingForPayload,
+  pricingFromRecord,
   todayDate,
   toMoney,
-  validateLineItems
+  validateLineItems,
+  validatePricing
 } from "../transactions/transactionUtils.js";
 
 const invoiceStatuses = ["draft", "issued"];
@@ -53,12 +58,21 @@ function InvoiceCreateScreen({ navigate, orderId: routeOrderId }) {
     status: "draft"
   });
   const [items, setItems] = useState([createBlankItem()]);
+  const [pricing, setPricing] = useState(() => createBlankPricing());
   const [fieldErrors, setFieldErrors] = useState({});
+  const [pricingErrors, setPricingErrors] = useState({});
   const [lineErrors, setLineErrors] = useState({});
   const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingOrder, setIsLoadingOrder] = useState(false);
-  const totals = useMemo(() => calculateTotals(items), [items]);
+  const totals = useMemo(() => calculateTotals(items, pricing), [items, pricing]);
+
+  function handlePricingChange(next) {
+    setPricing(next);
+    if (Object.values(pricingErrors).some(Boolean)) {
+      setPricingErrors({});
+    }
+  }
 
   const handleOptionsError = useCallback(
     (message) => {
@@ -157,6 +171,7 @@ function InvoiceCreateScreen({ navigate, orderId: routeOrderId }) {
           notes: current.notes || order.notes || ""
         }));
         setItems(mapOrderItems(order));
+        setPricing(pricingFromRecord(order));
       } catch (requestError) {
         if (!active || requestError.name === "AbortError") {
           return;
@@ -213,6 +228,7 @@ function InvoiceCreateScreen({ navigate, orderId: routeOrderId }) {
     if (value === "manual") {
       setSelectedOrderId("");
       setItems([createBlankItem()]);
+      setPricing(createBlankPricing());
       setForm((current) => ({
         ...current,
         customerId: "",
@@ -241,18 +257,22 @@ function InvoiceCreateScreen({ navigate, orderId: routeOrderId }) {
 
     const nextFieldErrors = validateForm();
     const nextLineErrors = validateLineItems(items);
+    const nextPricingErrors = validatePricing(pricing);
 
     if (
       Object.values(nextFieldErrors).some(Boolean) ||
-      Object.keys(nextLineErrors).length > 0
+      Object.keys(nextLineErrors).length > 0 ||
+      Object.values(nextPricingErrors).some(Boolean)
     ) {
       setFieldErrors(nextFieldErrors);
       setLineErrors(nextLineErrors);
+      setPricingErrors(nextPricingErrors);
       return;
     }
 
     setFieldErrors({});
     setLineErrors({});
+    setPricingErrors({});
     setIsSaving(true);
 
     const payload = {
@@ -261,7 +281,8 @@ function InvoiceCreateScreen({ navigate, orderId: routeOrderId }) {
       issueDate: form.issueDate || null,
       items: mapItemsForPayload(items),
       notes: form.notes.trim() || null,
-      status: form.status
+      status: form.status,
+      ...mapPricingForPayload(pricing)
     };
 
     try {
@@ -401,11 +422,25 @@ function InvoiceCreateScreen({ navigate, orderId: routeOrderId }) {
 
       <LineItemEditor errors={lineErrors} items={items} onChange={setItems} products={products} />
 
+      <PricingFields errors={pricingErrors} onChange={handlePricingChange} pricing={pricing} />
+
       <section className="totals-panel">
         <div>
           <span>Subtotal</span>
           <strong>{toMoney(totals.subtotal)}</strong>
         </div>
+        {totals.discountTotal > 0 ? (
+          <div>
+            <span>Discount</span>
+            <strong>-{toMoney(totals.discountTotal)}</strong>
+          </div>
+        ) : null}
+        {totals.taxTotal > 0 ? (
+          <div>
+            <span>Tax</span>
+            <strong>{toMoney(totals.taxTotal)}</strong>
+          </div>
+        ) : null}
         <div>
           <span>Grand total</span>
           <strong>{toMoney(totals.grandTotal)}</strong>

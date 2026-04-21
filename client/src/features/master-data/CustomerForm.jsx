@@ -158,9 +158,13 @@ function CustomerForm({ mode, onCancel, onSave, record }) {
           <option value="blocked">Blocked</option>
         </select>
       </Field>
-      <Field label="Account code">
+      <Field
+        hint="Leave blank to auto-generate (e.g. CUST-0001)."
+        label="Account code"
+      >
         <input
           onChange={(event) => updateField("accountCode", event.target.value)}
+          placeholder="Auto-generate"
           type="text"
           value={form.accountCode}
         />

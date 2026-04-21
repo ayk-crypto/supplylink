@@ -508,7 +508,31 @@ function InvoiceDetailScreen({ id, navigate }) {
         <DetailField label="Issue date" value={invoice.issueDate} />
         <DetailField label="Due date" value={invoice.dueDate} />
         <DetailField label="Subtotal" value={toMoney(invoice.subtotal)} />
-        <DetailField label="Total" value={toMoney(invoice.grandTotal)} />
+        <DetailField
+          label={
+            invoice.discountType === "percent"
+              ? `Discount (${Number(invoice.discountValue || 0)}%)`
+              : "Discount"
+          }
+          value={
+            Number(invoice.discountTotal || invoice.discountAmount || 0) > 0
+              ? `- ${toMoney(invoice.discountTotal || invoice.discountAmount)}`
+              : "None"
+          }
+        />
+        <DetailField
+          label={
+            invoice.taxEnabled
+              ? `Tax (${Number(invoice.taxRate || 0)}%)`
+              : "Tax"
+          }
+          value={
+            invoice.taxEnabled
+              ? toMoney(invoice.taxTotal || invoice.taxAmount || 0)
+              : "Not applied"
+          }
+        />
+        <DetailField label="Grand total" value={toMoney(invoice.grandTotal)} />
         <DetailField label="Paid" value={toMoney(paidAmount)} />
         <DetailField label="Outstanding" value={toMoney(invoice.balanceDue)} />
       </section>

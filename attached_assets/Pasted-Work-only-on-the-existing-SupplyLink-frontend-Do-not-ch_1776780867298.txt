@@ -1,0 +1,203 @@
+Work only on the existing SupplyLink frontend.
+
+Do not change backend APIs.
+
+Goal:
+Implement Module 20AQ Frontend: Core Business Logic Enhancements.
+
+Context:
+Backend now supports additive business-logic enhancements across customers, products, quotations, orders, and invoices.
+
+Available backend behavior:
+- customer relationship.accountCode auto-generates on create when omitted/blank, but remains manually editable
+- product sku auto-generates on create when omitted/blank, but remains manually editable
+- quotations, orders, and invoices now support:
+  - discountType
+  - discountValue
+  - discountAmount
+  - taxEnabled
+  - taxRate
+  - taxAmount
+- quotation → order conversion preserves discount/tax context
+- order → invoice creation preserves discount/tax context
+- invoice recreation after void is now allowed, while duplicate active invoices are still blocked
+
+Core objective:
+Expose these new business capabilities cleanly in the frontend so the product behaves like a practical real-world commercial system, without redesigning the app or changing backend APIs.
+
+Important:
+This is not a backend change.
+Do not invent features the backend does not support.
+Keep the UI business-friendly, clear, and additive.
+
+---
+
+## What to do
+
+### 1) Customer account code UX
+Update customer create/edit UX so account code behaves sensibly:
+
+Requirements:
+- keep account code field visible and editable
+- in create flow:
+  - if left blank, allow backend auto-generation
+  - do not force the user to fill it
+- if user types a value, preserve and submit it normally
+- update help text / label if useful so it is clear the field can be left blank for auto-generation
+- keep existing validation UX where practical
+
+Also improve display where customer account code appears in detail or lists if relevant.
+
+---
+
+### 2) Product SKU UX
+Update product create/edit UX so SKU behaves sensibly:
+
+Requirements:
+- keep SKU field visible and editable
+- in create flow:
+  - if left blank, allow backend auto-generation
+  - do not force the user to fill it
+- if user types a value, preserve and submit it normally
+- update help text / label if useful so it is clear the field can be left blank for auto-generation
+- keep existing validation UX where practical
+
+Also improve display where SKU appears in detail or lists if relevant.
+
+---
+
+### 3) Quotation form: discount + tax
+Add discount and tax support to quotation create/edit flows.
+
+Requirements:
+- support discount type:
+  - flat
+  - percent
+- support discount value
+- support tax:
+  - enabled toggle/checkbox
+  - tax rate percentage
+- show totals breakdown clearly and live where practical using current form state:
+  - subtotal
+  - discount
+  - taxable subtotal if useful
+  - tax
+  - grand total
+
+Rules:
+- keep the UI simple and business-friendly
+- do not overbuild accounting complexity
+- use existing form styles and layout patterns
+- keep behavior additive, not a redesign
+
+---
+
+### 4) Quotation detail readability
+On quotation detail screen:
+- show the new pricing breakdown clearly
+- include:
+  - subtotal
+  - discount
+  - tax
+  - grand total
+- make discount/tax labels human-friendly
+- preserve existing line-item totals display where appropriate
+
+Also ensure due/delivery labels and related financial labels remain readable and polished.
+
+---
+
+### 5) Order detail readability
+On order detail screen:
+- show propagated discount/tax fields where backend returns them
+- include pricing breakdown clearly
+- preserve existing workflow/actions
+
+This should help users understand how the total was derived after conversion from quotation.
+
+---
+
+### 6) Invoice detail + print/readability
+Update invoice detail and invoice print/customer-facing presentation to include:
+- subtotal
+- discount
+- tax
+- grand total
+
+Requirements:
+- preserve current branding/logo behavior
+- keep layout professional and restrained
+- ensure print/invoice output reflects the new breakdown correctly
+- keep formatting human-readable and consistent with current settings
+
+---
+
+### 7) Invoice recreation after void
+Now that backend allows re-invoicing after void:
+
+Requirements:
+- ensure frontend “Create Invoice” / related actions no longer incorrectly block a new invoice after a prior invoice was voided
+- review any UI text or disabled-state logic that assumed one invoice forever
+- if useful, show a small contextual explanation when re-creating after void is allowed
+- do not add complicated accounting warnings unless necessary
+
+---
+
+### 8) Lists and summaries
+Where practical and already low-risk:
+- show discount/tax-aware totals correctly in quotation/order/invoice summaries if those screens already render totals from backend
+- do not add new summary features beyond what the backend already returns
+- ensure formatting stays clear
+
+---
+
+### 9) Labels, help text, and UX clarity
+Because these are business-facing fields:
+- use clear labels like:
+  - Discount Type
+  - Discount Value
+  - Tax Enabled
+  - Tax Rate
+- use small help text where useful:
+  - “Leave blank to auto-generate”
+for account code / SKU
+- keep wording business-friendly, not technical
+
+---
+
+### 10) Constraints
+- no backend changes
+- no redesign
+- no advanced tax engine
+- no multi-tax support
+- no discount approval workflow
+- no email/WhatsApp sending in this module
+- keep changes additive and production-minded
+
+---
+
+### 11) Documentation
+Update client README with a Module 20AQ section covering:
+- customer account code behavior
+- product SKU behavior
+- quotation/order/invoice discount + tax support
+- invoice recreation after void
+
+---
+
+## Verification
+
+- run client lint
+- run client build
+
+---
+
+## Deliverable
+
+1. Summary
+2. Files changed
+3. What customer/SKU UX was updated
+4. What discount/tax UI was added
+5. How invoice recreation after void is now handled in the UI
+6. Verification results
+7. Any useful follow-up items

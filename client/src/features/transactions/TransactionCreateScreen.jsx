@@ -3,16 +3,20 @@ import { createOrder, createQuotation } from "../../services/transactionApi.js";
 import { Field, PageHeader } from "../../components/ui/ResourceScreens.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import LineItemEditor from "./LineItemEditor.jsx";
+import PricingFields from "./PricingFields.jsx";
 import { useTransactionOptions } from "./useTransactionOptions.js";
 import {
   addDays,
   calculateTotals,
   createBlankItem,
+  createBlankPricing,
   formatApiError,
   mapItemsForPayload,
+  mapPricingForPayload,
   todayDate,
   toMoney,
-  validateLineItems
+  validateLineItems,
+  validatePricing
 } from "./transactionUtils.js";
 
 const configs = {
@@ -68,11 +72,20 @@ function TransactionCreateScreen({ kind, navigate }) {
     status: config.defaultStatus
   });
   const [items, setItems] = useState([createBlankItem()]);
+  const [pricing, setPricing] = useState(() => createBlankPricing());
   const [fieldErrors, setFieldErrors] = useState({});
+  const [pricingErrors, setPricingErrors] = useState({});
   const [lineErrors, setLineErrors] = useState({});
   const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const totals = calculateTotals(items);
+  const totals = calculateTotals(items, pricing);
+
+  function handlePricingChange(next) {
+    setPricing(next);
+    if (Object.values(pricingErrors).some(Boolean)) {
+      setPricingErrors({});
+    }
+  }
 
   function updateForm(field, value) {
     if (formError) {
@@ -108,18 +121,22 @@ function TransactionCreateScreen({ kind, navigate }) {
 
     const nextFieldErrors = validateForm();
     const nextLineErrors = validateLineItems(items);
+    const nextPricingErrors = validatePricing(pricing);
 
     if (
       Object.values(nextFieldErrors).some(Boolean) ||
-      Object.keys(nextLineErrors).length > 0
+      Object.keys(nextLineErrors).length > 0 ||
+      Object.values(nextPricingErrors).some(Boolean)
     ) {
       setFieldErrors(nextFieldErrors);
       setLineErrors(nextLineErrors);
+      setPricingErrors(nextPricingErrors);
       return;
     }
 
     setFieldErrors({});
     setLineErrors({});
+    setPricingErrors({});
     setIsSaving(true);
 
     const payload = {
@@ -128,7 +145,8 @@ function TransactionCreateScreen({ kind, navigate }) {
       [config.secondaryDateField]: form.secondaryDate || null,
       items: mapItemsForPayload(items),
       notes: form.notes.trim() || null,
-      status: form.status
+      status: form.status,
+      ...mapPricingForPayload(pricing)
     };
 
     try {
@@ -227,11 +245,25 @@ function TransactionCreateScreen({ kind, navigate }) {
 
       <LineItemEditor errors={lineErrors} items={items} onChange={setItems} products={products} />
 
+      <PricingFields errors={pricingErrors} onChange={handlePricingChange} pricing={pricing} />
+
       <section className="totals-panel">
         <div>
           <span>Subtotal</span>
           <strong>{toMoney(totals.subtotal)}</strong>
         </div>
+        {totals.discountTotal > 0 ? (
+          <div>
+            <span>Discount</span>
+            <strong>-{toMoney(totals.discountTotal)}</strong>
+          </div>
+        ) : null}
+        {totals.taxTotal > 0 ? (
+          <div>
+            <span>Tax</span>
+            <strong>{toMoney(totals.taxTotal)}</strong>
+          </div>
+        ) : null}
         <div>
           <span>Grand total</span>
           <strong>{toMoney(totals.grandTotal)}</strong>
