@@ -54,10 +54,6 @@ const customerCreateBodySchema = z
       })
       .optional()
       .default({})
-  })
-  .refine((value) => value.customer.email || value.customer.phone, {
-    message: "Either customer.email or customer.phone is required for duplicate matching",
-    path: ["customer"]
   });
 
 const customerUpdateBodySchema = z

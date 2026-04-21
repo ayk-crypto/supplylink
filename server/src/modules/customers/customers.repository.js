@@ -121,38 +121,6 @@ async function findCustomerForVendor(vendorId, customerId) {
   return result.rows[0] || null;
 }
 
-async function findCustomerMasterByIdentity({ email = null, phone = null }, client = { query }) {
-  const conditions = [];
-  const values = [];
-
-  if (email) {
-    values.push(email);
-    conditions.push(`LOWER(email) = LOWER($${values.length})`);
-  }
-
-  if (phone) {
-    values.push(phone);
-    conditions.push(`phone = $${values.length}`);
-  }
-
-  if (conditions.length === 0) {
-    return null;
-  }
-
-  const result = await client.query(
-    `SELECT ${CUSTOMER_SELECT}
-     FROM customers customer
-     WHERE ${conditions.join(" OR ")}
-     ORDER BY
-       CASE WHEN $1::text IS NOT NULL AND LOWER(email) = LOWER($1::text) THEN 0 ELSE 1 END,
-       created_at ASC
-     LIMIT 1`,
-    values
-  );
-
-  return result.rows[0] || null;
-}
-
 async function createCustomerMaster(payload, client) {
   const result = await client.query(
     `INSERT INTO customers (
@@ -245,15 +213,7 @@ async function getNextVendorAccountCode(vendorId, client = { query }) {
 
 async function createCustomerAndRelationship({ vendorId, customer, relationship }) {
   return withTransaction(async (client) => {
-    const existingCustomer = await findCustomerMasterByIdentity(
-      {
-        email: customer.email || null,
-        phone: customer.phone || null
-      },
-      client
-    );
-
-    const customerRecord = existingCustomer || (await createCustomerMaster(customer, client));
+    const customerRecord = await createCustomerMaster(customer, client);
     const existingRelationship = await findVendorCustomerRelationship(
       vendorId,
       customerRecord.id,
@@ -265,7 +225,7 @@ async function createCustomerAndRelationship({ vendorId, customer, relationship 
         customer: customerRecord,
         relationship: existingRelationship,
         relationshipAlreadyExists: true,
-        reusedCustomer: Boolean(existingCustomer)
+        reusedCustomer: false
       };
     }
 
@@ -282,7 +242,7 @@ async function createCustomerAndRelationship({ vendorId, customer, relationship 
       customer: customerRecord,
       relationship: relationshipRecord,
       relationshipAlreadyExists: false,
-      reusedCustomer: Boolean(existingCustomer)
+      reusedCustomer: false
     };
   });
 }

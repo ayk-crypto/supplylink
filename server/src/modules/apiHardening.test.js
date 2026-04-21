@@ -72,6 +72,17 @@ test("customer creation accepts blank account code for auto-generation", () => {
   assert.equal(result.data.relationship.accountCode, null);
 });
 
+test("customer creation no longer requires email or phone for duplicate matching", () => {
+  const result = customerCreateBodySchema.safeParse({
+    customer: {
+      fullName: "Same Name Customer",
+      companyName: "Another Company"
+    }
+  });
+
+  assert.equal(result.success, true);
+});
+
 test("customer update allows manual account code override", () => {
   const result = customerUpdateBodySchema.safeParse({
     relationship: {

@@ -392,6 +392,45 @@ if (!testDatabaseUrl) {
         `ACCT-${suffix}`.slice(0, 80).toUpperCase()
       );
 
+      const sameNameCustomer = await api.post("/customers", {
+        token: state.vendorA.token,
+        body: {
+          customer: {
+            fullName: "Integration Buyer",
+            companyName: "Integration Buyer Branch",
+            email: `buyer-branch.${suffix}@example.com`,
+            phone: "+1-555-0201"
+          },
+          relationship: {
+            status: "active"
+          }
+        },
+        expectedStatus: 201
+      });
+      assert.notEqual(sameNameCustomer.payload.data.customer.id, state.customer.id);
+      assert.equal(sameNameCustomer.payload.data.customer.fullName, state.customer.fullName);
+      assert.equal(
+        sameNameCustomer.payload.data.customer.companyName,
+        "Integration Buyer Branch"
+      );
+
+      const noIdentityCustomer = await api.post("/customers", {
+        token: state.vendorA.token,
+        body: {
+          customer: {
+            fullName: "Walk In Buyer",
+            companyName: "Cash Counter"
+          },
+          relationship: {
+            status: "active"
+          }
+        },
+        expectedStatus: 201
+      });
+      assert.equal(noIdentityCustomer.payload.data.customer.email, null);
+      assert.equal(noIdentityCustomer.payload.data.customer.phone, null);
+      assert.match(noIdentityCustomer.payload.data.relationship.accountCode, /^CUST-\d{4,}$/);
+
       const category = await api.post("/categories", {
         token: state.vendorA.token,
         body: {
