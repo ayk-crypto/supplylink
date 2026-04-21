@@ -1,0 +1,163 @@
+Work only on the existing SupplyLink frontend.
+
+Do not change backend APIs.
+
+Goal:
+Implement Module 20AN: UX and Responsiveness Cleanup (Post-20AL/20AM Refinement).
+
+Context:
+SupplyLink is now feature-complete with routes, route templates, and workspace branding.
+During real usage testing, several UI/UX and responsiveness issues were identified, especially in:
+- Settings page (company info + branding section)
+- Modal forms (e.g., route template stop modal)
+- Multi-field grid layouts
+
+Core objective:
+Fix real-world usability and responsiveness issues across the app, making layouts flexible and readable on all screen sizes, without redesigning the system.
+
+---
+
+## What to do
+
+### 1) Responsive form grid system (HIGH PRIORITY)
+
+Fix rigid multi-column layouts across the app, especially:
+
+- Settings → Company info section
+- All create/edit forms
+- Route template modals
+
+Requirements:
+- Replace fixed multi-column layouts with responsive grids
+- Use breakpoints:
+  - Desktop: max 3 fields per row
+  - Tablet: 2 fields per row
+  - Mobile: 1 field per row
+- Ensure fields never compress too tightly
+- Maintain consistent spacing between fields
+
+---
+
+### 2) Modal responsiveness fixes (HIGH PRIORITY)
+
+Fix modal layouts such as:
+- Route Template "Add stop" modal
+- Any form-based modal
+
+Improvements:
+- Stack fields vertically on smaller screens
+- Avoid forcing side-by-side fields
+- Ensure modal width adapts properly
+- Ensure content scrolls if height exceeds viewport
+- Ensure buttons wrap properly (no overflow)
+- Improve padding and spacing inside modal
+
+---
+
+### 3) Settings page improvements (TARGETED FIXES)
+
+Improve the Settings → Company info section:
+
+#### Company info grid
+- Reduce number of fields per row (max 3)
+- Group fields logically:
+  - Identity (name fields)
+  - Contact (email/phone)
+  - Compliance (tax)
+
+#### Logo section
+- Improve alignment:
+  - Stack logo + upload button vertically
+  - Reduce empty horizontal space
+- Ensure responsive behavior
+
+#### Brand color control
+- Replace current long horizontal bar with:
+  - small color picker + hex input
+  - clear visual preview (color chip)
+- Keep it simple and intuitive
+
+#### Container width
+- Add a reasonable max-width to the settings content (e.g. 1100–1200px)
+- Center content for better readability on large screens
+
+---
+
+### 4) Table and overflow polish
+
+Across list and detail screens:
+- Ensure TableScroll is applied consistently
+- Fix any horizontal overflow issues
+- Ensure tables remain usable on smaller screens
+- Avoid layout breaking when long text appears
+
+---
+
+### 5) Button and action layout
+
+- Ensure buttons do not overflow in:
+  - modals
+  - narrow screens
+- Allow wrapping where needed
+- Maintain clear spacing between primary and secondary actions
+- Ensure primary action is visually dominant
+
+---
+
+### 6) Typography and wrapping
+
+- Ensure long values (emails, names, SKUs, notes) wrap correctly
+- Avoid horizontal scrolling caused by text overflow
+- Apply consistent wrapping rules across:
+  - tables
+  - detail views
+  - forms
+
+---
+
+### 7) Consistency pass
+
+Ensure consistent usage of:
+- SectionHeader
+- EmptyState
+- LoadingSkeleton
+- TableScroll
+
+Remove any remaining ad-hoc UI patterns if found.
+
+---
+
+### 8) Constraints
+
+- no backend changes
+- no redesign
+- no new features
+- keep implementation safe and additive
+- focus only on real issues observed during testing
+
+---
+
+### 9) Documentation
+
+Update client README with a short section describing:
+- responsiveness improvements
+- form grid behavior
+- modal improvements
+
+---
+
+## Verification
+
+- run client lint
+- run client build
+
+---
+
+## Deliverable
+
+1. Summary
+2. Files changed
+3. What responsiveness issues were fixed
+4. What UX improvements were made (especially settings + modals)
+5. Verification results
+6. Any remaining minor issues

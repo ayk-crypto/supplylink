@@ -1129,3 +1129,53 @@ Constraints respected:
   new `.settings-logo-tile`.
 - All buttons follow the existing busy-text pattern (`Uploading…`,
   `Removing…`) and use shared `secondary-button` / `primary-button` classes.
+
+## Module 20AN — UX & Responsiveness Cleanup
+
+Targeted, additive polish on the existing surfaces — no redesign, no
+backend changes. All rules live at the bottom of `client/src/styles/index.css`
+in a clearly delimited block so they win the cascade.
+
+Form grids
+- `.form-grid` is now an explicit responsive system instead of an
+  unbounded `auto-fit`:
+  - Desktop (≥ 1081 px): 3 columns max.
+  - Tablet (721–1080 px): 2 columns.
+  - Mobile (≤ 720 px): single column.
+- Applies everywhere the shared grid is used (Settings, all create/edit
+  forms, route template modal).
+
+Modals
+- `.form-panel` widened to `min(820px, 100%)` with consistent 24 px
+  padding (18 px on mobile).
+- On screens ≤ 720 px, every grid inside a modal (`.form-grid`,
+  `.route-template-stop-grid`, `.route-stop-grid`, `.weekday-picker`)
+  collapses to a single column so fields never get crushed side-by-side.
+- Modal heading row wraps if the title + close button can't fit.
+- Existing `align-items: flex-end` on the backdrop already turns the
+  modal into a bottom sheet on phones; preserved.
+
+Settings page
+- `.resource-page` and `.dashboard-page` now have `max-width: 1200px`
+  with `margin-inline: auto` for readability on wide displays.
+- Company info reuses the new 3 / 2 / 1 grid automatically.
+- `.settings-company-row` stacks the logo tile on top of the upload /
+  remove controls on small screens, with the tile aligned to the start
+  rather than stretching.
+- `.brand-color-row` is capped at 360 px so the swatch + hex input +
+  Clear button stay compact instead of stretching across the panel; it
+  also wraps when needed.
+
+Buttons & overflow
+- `.button-row` and `.form-actions` always allow flex-wrapping, so
+  primary / secondary action pairs never overflow narrow modals.
+- Long values in detail fields, resource rows, record rows, and
+  notification items wrap with `overflow-wrap: anywhere`.
+- `.table-scroll` and `.resource-table` keep `max-width: 100%` +
+  `overflow-x: auto` so wide tables scroll horizontally inside their
+  container instead of pushing the page.
+
+Verification
+- `npm run lint`: clean.
+- `npm run build`: 413.00 kB JS / 112.62 kB gzipped, 54.16 kB CSS /
+  10.15 kB gzipped.

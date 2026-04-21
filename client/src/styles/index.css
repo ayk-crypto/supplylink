@@ -3839,3 +3839,119 @@ button.attachment-badge:focus-visible {
 .attachment-badge svg {
   flex-shrink: 0;
 }
+
+/* === Module 20AN: UX & Responsiveness Cleanup ====================== */
+/* Additive overrides — placed last so they win cascade against the
+   earlier auto-fit grid and modal definitions. */
+
+/* Container: cap content width on very wide screens for readability. */
+.resource-page,
+.dashboard-page {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+}
+
+/* Form grid: explicit 3 / 2 / 1 columns instead of auto-fit overflow. */
+.form-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 1080px) {
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Modal form panels: a touch wider on desktop, generous padding,
+   and always vertically scrollable when content exceeds viewport. */
+.form-panel {
+  width: min(820px, 100%);
+  padding: 24px;
+}
+
+@media (max-width: 720px) {
+  .form-panel {
+    padding: 18px;
+  }
+
+  .form-panel-heading {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Inside modals on small screens, force every grid to single column
+     regardless of any nested grid templates. */
+  .form-panel .form-grid,
+  .form-panel .route-template-stop-grid,
+  .form-panel .route-stop-grid,
+  .form-panel .weekday-picker {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Button rows: always allow wrapping; never force overflow. */
+.button-row,
+.form-actions {
+  flex-wrap: wrap;
+}
+
+/* Settings company / branding row: stack on small screens, reduce
+   empty horizontal space on wide ones. */
+.settings-company-row {
+  align-items: flex-start;
+}
+
+@media (max-width: 720px) {
+  .settings-company-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .settings-logo-tile {
+    align-self: flex-start;
+  }
+
+  .settings-branding-controls .button-row {
+    justify-content: flex-start;
+  }
+}
+
+/* Brand color row: keep the swatch + hex input + Clear compact and
+   wrappable instead of stretching across the full panel width. */
+.brand-color-row {
+  flex-wrap: wrap;
+  max-width: 360px;
+}
+
+.brand-color-row input[type="text"] {
+  flex: 1 1 140px;
+  min-width: 120px;
+}
+
+/* Long values (emails, ids, urls) must wrap rather than overflow. */
+.detail-field strong,
+.resource-row strong,
+.record-row strong,
+.notification-board-item p,
+.notification-item p {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Ensure scrollable tables don't push the page wider than the viewport. */
+.table-scroll,
+.resource-table {
+  max-width: 100%;
+  overflow-x: auto;
+}
+/* === end Module 20AN ============================================== */
