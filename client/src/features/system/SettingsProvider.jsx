@@ -10,16 +10,39 @@ import {
   toBackendPayload
 } from "./settingsDefaults.js";
 
+function unwrapSections(payload) {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  if (
+    payload.settings &&
+    typeof payload.settings === "object" &&
+    !Array.isArray(payload.settings)
+  ) {
+    return payload.settings;
+  }
+
+  if (
+    payload.sections &&
+    typeof payload.sections === "object" &&
+    !Array.isArray(payload.sections)
+  ) {
+    return payload.sections;
+  }
+
+  return payload;
+}
+
 function extractSettings(response) {
   if (!response || typeof response !== "object") {
     return null;
   }
 
-  if (response.data && typeof response.data === "object") {
-    return response.data;
-  }
+  const envelope =
+    response.data && typeof response.data === "object" ? response.data : response;
 
-  return response;
+  return unwrapSections(envelope);
 }
 
 function SettingsProvider({ children }) {

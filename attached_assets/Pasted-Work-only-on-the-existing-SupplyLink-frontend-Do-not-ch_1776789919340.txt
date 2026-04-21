@@ -1,0 +1,74 @@
+Work only on the existing SupplyLink frontend.
+
+Do not change backend APIs.
+
+Goal:
+Fix Settings values reverting after successful save.
+
+Context:
+Settings save/reset validation errors are fixed, and the UI now shows "settings saved", but changed values (for example currency or primary brand color) revert immediately afterward. This indicates a frontend state rehydration/remapping issue rather than a validation issue.
+
+Core objective:
+Ensure that when PATCH /api/v1/settings succeeds, the saved values remain persisted in the UI and in the settings provider state.
+
+What to do:
+
+1) Inspect the full save flow
+Review:
+- Settings screen local draft state
+- SettingsProvider state
+- PATCH /api/v1/settings response handling
+- any re-fetch/reload after save
+- mergeSettings / hydration logic
+- reset logic
+- legacy localStorage migration interaction
+
+2) Determine the exact root cause
+Find whether the revert is caused by:
+- stale provider state overwriting the saved draft
+- incorrect mapping of backend response back into frontend settings state
+- mergeSettings/default merge logic reintroducing old/default values
+- wrong field names in response hydration
+- save success toast firing before state is actually updated correctly
+
+3) Fix save state persistence
+Requirements:
+- after successful PATCH /api/v1/settings, the UI must reflect the saved values immediately
+- the provider/shared settings state must update to the newly saved values
+- a later re-fetch must not overwrite them with stale/default values
+- save success toast should only reflect real successful persisted state
+
+4) Verify response mapping carefully
+Ensure fields like these persist correctly end-to-end:
+- currency code/symbol fields
+- primaryBrandColor
+- company email / phone
+- date format
+- invoice settings
+- preferences
+
+5) Keep payload mapper intact
+Do not regress the recent fix that sanitized PATCH payloads.
+The issue now is not payload validation; it is post-save state persistence.
+
+6) Check reload/hydration behavior
+If the provider re-fetches after save:
+- make sure the fetched response is mapped correctly
+- make sure merge/default logic does not overwrite valid saved fields
+- make sure legacy aliases do not override current values
+
+7) Verification
+- run client lint
+- run client build
+- manually verify:
+  - change currency and save → stays saved
+  - change brand color and save → stays saved
+  - reload page → values still remain
+  - reset → values update correctly and stay updated
+
+Deliverable:
+1. Summary
+2. Files changed
+3. Root cause found
+4. What part of save/rehydration logic was fixed
+5. Verification results
