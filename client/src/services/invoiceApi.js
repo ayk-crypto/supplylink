@@ -27,6 +27,13 @@ async function getInvoicePrintDocument(invoiceId, options = {}) {
   return request(`/invoices/${invoiceId}/print`, options);
 }
 
+async function downloadInvoicePdf(invoiceId, options = {}) {
+  return request(`/invoices/${invoiceId}/pdf`, {
+    ...options,
+    responseType: "blob"
+  });
+}
+
 async function listPayments(params = {}, options = {}) {
   return request(`/payments${toQueryString(params)}`, options);
 }
@@ -48,6 +55,7 @@ export {
   createInvoice,
   createInvoiceFromOrder,
   createPayment,
+  downloadInvoicePdf,
   getInvoice,
   getInvoicePrintDocument,
   listInvoices,

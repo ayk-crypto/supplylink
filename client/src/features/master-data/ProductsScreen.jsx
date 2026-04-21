@@ -43,7 +43,7 @@ function toProductForm(product) {
     name: product.name || "",
     sku: product.sku || "",
     status: product.status || "active",
-    unitPrice: product.unitPrice || "0"
+    unitPrice: String(product.unitPrice ?? 0)
   };
 }
 
@@ -52,7 +52,7 @@ function toProductPayload(form) {
     categoryId: cleanOptional(form.categoryId),
     description: cleanOptional(form.description),
     name: cleanRequired(form.name),
-    sku: cleanOptional(form.sku),
+    sku: cleanOptional(form.sku) ?? undefined,
     status: form.status,
     unitPrice: Number(form.unitPrice || 0)
   };

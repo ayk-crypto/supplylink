@@ -16,7 +16,7 @@ function setStoredToken(token) {
 }
 
 async function request(path, options = {}) {
-  const { token: requestToken, ...fetchOptions } = options;
+  const { responseType = "json", token: requestToken, ...fetchOptions } = options;
   const token = requestToken ?? getStoredToken();
   const headers = {
     ...(fetchOptions.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
@@ -34,16 +34,44 @@ async function request(path, options = {}) {
         : fetchOptions.body
   });
 
-  const payload = await response.json().catch(() => null);
+  const contentType = response.headers.get("Content-Type") || "";
+  let payload = null;
+
+  if (responseType === "blob") {
+    if (contentType.includes("application/json")) {
+      payload = await response.json().catch(() => null);
+    } else {
+      payload = await response.blob().catch(() => null);
+    }
+  } else if (responseType === "text") {
+    payload = await response.text().catch(() => null);
+  } else {
+    payload = await response.json().catch(() => null);
+  }
 
   if (!response.ok) {
-    const error = new Error(payload?.message || `API request failed with status ${response.status}`);
+    const errorMessage =
+      responseType === "json"
+        ? payload?.message || `API request failed with status ${response.status}`
+        : `API request failed with status ${response.status}`;
+    const error = new Error(errorMessage);
     error.status = response.status;
     error.payload = payload;
     throw error;
   }
 
-  return payload;
+  if (responseType === "json") {
+    return payload;
+  }
+
+  return {
+    data: payload,
+    headers: {
+      contentDisposition: response.headers.get("Content-Disposition"),
+      contentType
+    },
+    status: response.status
+  };
 }
 
 export { getStoredToken, request, setStoredToken, TOKEN_STORAGE_KEY };

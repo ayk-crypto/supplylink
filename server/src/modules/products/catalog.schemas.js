@@ -4,6 +4,10 @@ const uuidParam = z.string().uuid();
 const jsonRecordSchema = z.record(z.string(), z.unknown());
 const optionalSkuSchema = z.preprocess(
   (value) => {
+    if (value === null) {
+      return undefined;
+    }
+
     if (typeof value === "string" && value.trim() === "") {
       return undefined;
     }

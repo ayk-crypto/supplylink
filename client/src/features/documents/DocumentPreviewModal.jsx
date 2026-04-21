@@ -67,7 +67,7 @@ function DocumentPreviewModal({ document, isLoading = false, onClose, onDownload
               onClick={onDownload}
               type="button"
             >
-              Download
+              Download PDF
             </button>
             <button
               className="primary-button"

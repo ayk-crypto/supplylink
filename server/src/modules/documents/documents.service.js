@@ -2,7 +2,8 @@ import AppError from "../../core/errors/AppError.js";
 import { findVendorById } from "../vendors/vendors.repository.js";
 import { getQuotationDetail } from "../quotations/quotations.service.js";
 import { getInvoiceDetail } from "../invoices/invoices.service.js";
-import { getTenantSettings } from "../settings/settings.service.js";
+import { getTenantLogo, getTenantSettings } from "../settings/settings.service.js";
+import { renderStructuredDocumentPdf } from "./documents.pdf.js";
 
 const DOCUMENT_RENDER_VERSION = "2026-04-print-v1";
 
@@ -117,11 +118,11 @@ function buildDocumentEnvelope({
     renderVersion: DOCUMENT_RENDER_VERSION,
     output: {
       format: "structured-json",
-      renderTargets: ["browser_print", "future_pdf"],
+      renderTargets: ["browser_print", "download_pdf"],
       htmlIncluded: false,
       pdfGenerated: false,
       generatedPdfAttachment: null,
-      notes: "This payload is structured for print screens and future PDF rendering; it does not include rendered HTML or PDF bytes."
+      notes: "This payload is structured for browser preview/print and backend PDF rendering; it does not include rendered HTML or PDF bytes."
     },
     title: `${documentType.toUpperCase()} ${documentNumber}`,
     sections: {
@@ -150,6 +151,22 @@ async function getVendorForDocument(vendorId) {
   }
 
   return vendor;
+}
+
+async function getVendorLogoPath(vendorId) {
+  try {
+    const result = await getTenantLogo(vendorId);
+    return result.path || null;
+  } catch (error) {
+    if (
+      error?.code === "WORKSPACE_LOGO_NOT_FOUND" ||
+      error?.code === "WORKSPACE_LOGO_INVALID"
+    ) {
+      return null;
+    }
+
+    throw error;
+  }
 }
 
 async function buildQuotationPrintDocument(vendorId, quotationId) {
@@ -223,4 +240,51 @@ async function buildInvoicePrintDocument(vendorId, invoiceId) {
   });
 }
 
-export { buildInvoicePrintDocument, buildQuotationPrintDocument, DOCUMENT_RENDER_VERSION };
+function buildPdfFilename(document) {
+  const header = document.sections?.header || {};
+  const number = header.invoiceNumber || header.quoteNumber || document.title || "document";
+
+  return `${String(number)
+    .replace(/[^a-z0-9-]+/gi, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .toLowerCase() || "document"}.pdf`;
+}
+
+async function buildQuotationPdfDocument(vendorId, quotationId) {
+  const [document, logoPath] = await Promise.all([
+    buildQuotationPrintDocument(vendorId, quotationId),
+    getVendorLogoPath(vendorId)
+  ]);
+  const buffer = await renderStructuredDocumentPdf(document, { logoPath });
+
+  return {
+    buffer,
+    contentType: "application/pdf",
+    filename: buildPdfFilename(document),
+    document
+  };
+}
+
+async function buildInvoicePdfDocument(vendorId, invoiceId) {
+  const [document, logoPath] = await Promise.all([
+    buildInvoicePrintDocument(vendorId, invoiceId),
+    getVendorLogoPath(vendorId)
+  ]);
+  const buffer = await renderStructuredDocumentPdf(document, { logoPath });
+
+  return {
+    buffer,
+    contentType: "application/pdf",
+    filename: buildPdfFilename(document),
+    document
+  };
+}
+
+export {
+  buildInvoicePdfDocument,
+  buildInvoicePrintDocument,
+  buildQuotationPdfDocument,
+  buildQuotationPrintDocument,
+  DOCUMENT_RENDER_VERSION
+};

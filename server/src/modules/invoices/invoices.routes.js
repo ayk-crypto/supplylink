@@ -5,7 +5,16 @@ import authorizeRoles from "../../middlewares/authorizeRoles.js";
 import requireVendorAccess from "../../middlewares/requireVendorAccess.js";
 import requireVendorWritable from "../../middlewares/requireVendorWritable.js";
 import validateRequest from "../../middlewares/validateRequest.js";
-import { create, getById, issue, list, print, update, voidInvoice } from "./invoices.controller.js";
+import {
+  create,
+  getById,
+  issue,
+  list,
+  pdf,
+  print,
+  update,
+  voidInvoice
+} from "./invoices.controller.js";
 import {
   invoiceCreateBodySchema,
   invoiceIdParamsSchema,
@@ -47,6 +56,15 @@ function invoiceAction(handler) {
 
 invoicesRoutes.post("/:invoiceId/issue", ...invoiceAction(issue));
 invoicesRoutes.post("/:invoiceId/void", ...invoiceAction(voidInvoice));
+
+invoicesRoutes.get(
+  "/:invoiceId/pdf",
+  authenticate,
+  authorizeRoles("super_admin", "vendor_admin", "vendor_staff"),
+  validateRequest({ params: invoiceIdParamsSchema, query: invoiceQuerySchema }),
+  requireVendorAccess(),
+  asyncHandler(pdf)
+);
 
 invoicesRoutes.get(
   "/:invoiceId/print",

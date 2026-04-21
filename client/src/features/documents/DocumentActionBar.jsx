@@ -24,7 +24,7 @@ function DocumentActionBar({
         type="button"
       >
         <span aria-hidden="true">⤓</span>
-        Download
+        Download PDF
       </button>
       <button
         className="primary-button doc-action-bar-button"

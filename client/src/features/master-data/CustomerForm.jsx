@@ -60,10 +60,6 @@ function validateCustomerForm(form) {
   if (!fullName || fullName.length < 2) {
     errors.fullName = "Enter the customer's full name.";
   }
-  if (!email && !phone) {
-    errors.email = "Add an email or phone number.";
-    errors.phone = "Add a phone number or email.";
-  }
   if (email && !isValidEmail(email)) {
     errors.email = "Enter a valid email address.";
   }

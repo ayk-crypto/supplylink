@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   createPayment,
+  downloadInvoicePdf,
   getInvoice,
   getInvoicePrintDocument,
   listPayments,
@@ -34,7 +35,11 @@ import DocumentPreviewModal from "../documents/DocumentPreviewModal.jsx";
 import DocumentHeroPanel from "../documents/DocumentHeroPanel.jsx";
 import DocumentTotalsCard from "../documents/DocumentTotalsCard.jsx";
 import DocumentActionBar from "../documents/DocumentActionBar.jsx";
-import { downloadDocumentHtml, openDocumentPrintWindow } from "../documents/documentUtils.js";
+import {
+  downloadBlobFile,
+  getDownloadFilename,
+  openDocumentPrintWindow
+} from "../documents/documentUtils.js";
 
 const paymentMethods = ["cash", "card", "bank_transfer", "check", "other"];
 
@@ -346,18 +351,18 @@ function InvoiceDetailScreen({ id, navigate }) {
 
   async function downloadInvoiceDocument() {
     try {
-      const document = previewDocument || (await loadInvoiceDocument());
-      if (!previewDocument) {
-        setPreviewDocument(document);
-      }
-      downloadDocumentHtml(document, settings);
+      const response = await downloadInvoicePdf(invoice.id);
+      downloadBlobFile(
+        response.data,
+        getDownloadFilename(response.headers?.contentDisposition, `invoice-${invoice.id}.pdf`)
+      );
       showToast({
-        message: "Invoice document downloaded as HTML.",
+        message: "Invoice PDF downloaded.",
         title: "Download started"
       });
     } catch (requestError) {
       showToast({
-        message: getApiErrorMessage(requestError, "Invoice document could not be downloaded."),
+        message: getApiErrorMessage(requestError, "Invoice PDF could not be downloaded."),
         title: "Download failed",
         tone: "error"
       });

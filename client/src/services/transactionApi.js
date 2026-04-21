@@ -41,6 +41,13 @@ async function getQuotationPrintDocument(quotationId, options = {}) {
   return request(`/quotations/${quotationId}/print`, options);
 }
 
+async function downloadQuotationPdf(quotationId, options = {}) {
+  return request(`/quotations/${quotationId}/pdf`, {
+    ...options,
+    responseType: "blob"
+  });
+}
+
 async function transitionQuotation(quotationId, action) {
   return request(`/quotations/${quotationId}/${action}`, {
     method: "POST"
@@ -57,6 +64,7 @@ export {
   convertQuotationToOrder,
   createOrder,
   createQuotation,
+  downloadQuotationPdf,
   getOrder,
   getQuotationPrintDocument,
   getQuotation,

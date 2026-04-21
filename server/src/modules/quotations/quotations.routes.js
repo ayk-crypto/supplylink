@@ -12,6 +12,7 @@ import {
   expire,
   getById,
   list,
+  pdf,
   print,
   reject,
   send,
@@ -61,6 +62,15 @@ quotationsRoutes.post("/:quotationId/accept", ...quotationAction(accept));
 quotationsRoutes.post("/:quotationId/reject", ...quotationAction(reject));
 quotationsRoutes.post("/:quotationId/expire", ...quotationAction(expire));
 quotationsRoutes.post("/:quotationId/convert-to-order", ...quotationAction(convertToOrder));
+
+quotationsRoutes.get(
+  "/:quotationId/pdf",
+  authenticate,
+  authorizeRoles("super_admin", "vendor_admin", "vendor_staff"),
+  validateRequest({ params: quotationIdParamsSchema, query: quotationQuerySchema }),
+  requireVendorAccess(),
+  asyncHandler(pdf)
+);
 
 quotationsRoutes.get(
   "/:quotationId/print",

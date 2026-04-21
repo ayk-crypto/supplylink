@@ -35,6 +35,26 @@ function buildDocumentFilename(docPayload) {
   return `${String(number).replace(/[^a-z0-9-]+/gi, "-").replace(/-+/g, "-")}-${type}.html`.toLowerCase();
 }
 
+function getDownloadFilename(contentDisposition, fallback = "document.pdf") {
+  if (typeof contentDisposition !== "string" || !contentDisposition.trim()) {
+    return fallback;
+  }
+
+  const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+
+  if (utf8Match?.[1]) {
+    return decodeURIComponent(utf8Match[1]);
+  }
+
+  const basicMatch = contentDisposition.match(/filename="([^"]+)"/i) || contentDisposition.match(/filename=([^;]+)/i);
+
+  if (!basicMatch?.[1]) {
+    return fallback;
+  }
+
+  return basicMatch[1].trim().replace(/^"|"$/g, "") || fallback;
+}
+
 function buildDocumentHtml(docPayload, settings) {
   const sections = docPayload?.sections || {};
   const vendor = sections.vendor || {};
@@ -468,10 +488,23 @@ function downloadDocumentHtml(docPayload, settings) {
   window.URL.revokeObjectURL(url);
 }
 
+function downloadBlobFile(blob, filename) {
+  const url = window.URL.createObjectURL(blob);
+  const link = window.document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  window.document.body.appendChild(link);
+  link.click();
+  window.document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+}
+
 export {
   buildDocumentFilename,
   buildDocumentHtml,
+  downloadBlobFile,
   downloadDocumentHtml,
+  getDownloadFilename,
   getDocumentBranding,
   openDocumentPrintWindow
 };

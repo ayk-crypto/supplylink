@@ -5,7 +5,8 @@ function getApiErrorMessage(error, fallback = "The request could not be complete
     return fallback;
   }
 
-  const detail = error.payload?.details?.[0]?.message;
+  const details = error.payload?.error?.details || error.payload?.details || [];
+  const detail = details.find((item) => item?.message)?.message;
 
   return detail || error.message || fallback;
 }

@@ -6,7 +6,10 @@ import {
   transitionInvoice,
   updateInvoice
 } from "./invoices.service.js";
-import { buildInvoicePrintDocument } from "../documents/documents.service.js";
+import {
+  buildInvoicePdfDocument,
+  buildInvoicePrintDocument
+} from "../documents/documents.service.js";
 
 async function list(request, response) {
   const result = await getInvoiceDirectory(request.access.vendorId, request.query);
@@ -46,6 +49,16 @@ async function print(request, response) {
       output: "structured-json"
     }
   });
+}
+
+async function pdf(request, response) {
+  const result = await buildInvoicePdfDocument(request.access.vendorId, request.params.invoiceId);
+
+  response.setHeader("Content-Type", result.contentType);
+  response.setHeader("Content-Disposition", `attachment; filename="${result.filename}"`);
+  response.setHeader("Cache-Control", "private, max-age=0, must-revalidate");
+
+  return response.send(result.buffer);
 }
 
 async function create(request, response) {
@@ -106,4 +119,4 @@ async function voidInvoice(request, response) {
   return transition("void", request, response);
 }
 
-export { create, getById, issue, list, print, update, voidInvoice };
+export { create, getById, issue, list, pdf, print, update, voidInvoice };

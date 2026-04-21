@@ -104,6 +104,17 @@ test("product creation accepts blank sku for auto-generation", () => {
   assert.equal(result.data.sku, undefined);
 });
 
+test("product creation accepts null sku for auto-generation compatibility", () => {
+  const result = productCreateBodySchema.safeParse({
+    sku: null,
+    name: "Auto SKU Product",
+    unitPrice: 10
+  });
+
+  assert.equal(result.success, true);
+  assert.equal(result.data.sku, undefined);
+});
+
 test("product update allows manual sku override", () => {
   const result = productUpdateBodySchema.safeParse({
     sku: "manual-001"

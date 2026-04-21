@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   convertQuotationToOrder,
+  downloadQuotationPdf,
   getOrder,
   getQuotationPrintDocument,
   getQuotation,
@@ -24,7 +25,11 @@ import DocumentPreviewModal from "../documents/DocumentPreviewModal.jsx";
 import DocumentHeroPanel from "../documents/DocumentHeroPanel.jsx";
 import DocumentTotalsCard from "../documents/DocumentTotalsCard.jsx";
 import DocumentActionBar from "../documents/DocumentActionBar.jsx";
-import { downloadDocumentHtml, openDocumentPrintWindow } from "../documents/documentUtils.js";
+import {
+  downloadBlobFile,
+  getDownloadFilename,
+  openDocumentPrintWindow
+} from "../documents/documentUtils.js";
 
 const QUOTATION_ACTIONS = [
   { action: "send", label: "Send", from: ["draft"], successTitle: "Quotation sent", successMessage: "Quotation marked as sent." },
@@ -191,18 +196,18 @@ function TransactionDetailScreen({ id, kind, navigate }) {
 
   async function handleQuotationDownload() {
     try {
-      const document = previewDocument || (await loadQuotationDocument());
-      if (!previewDocument) {
-        setPreviewDocument(document);
-      }
-      downloadDocumentHtml(document, settings);
+      const response = await downloadQuotationPdf(id);
+      downloadBlobFile(
+        response.data,
+        getDownloadFilename(response.headers?.contentDisposition, `quotation-${id}.pdf`)
+      );
       showToast({
-        message: "Quotation document downloaded as HTML.",
+        message: "Quotation PDF downloaded.",
         title: "Download started"
       });
     } catch (requestError) {
       showToast({
-        message: getApiErrorMessage(requestError, "Quotation document could not be downloaded."),
+        message: getApiErrorMessage(requestError, "Quotation PDF could not be downloaded."),
         title: "Download failed",
         tone: "error"
       });

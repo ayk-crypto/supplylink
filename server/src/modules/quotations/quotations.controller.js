@@ -6,7 +6,10 @@ import {
   transitionQuotation,
   updateQuotation
 } from "./quotations.service.js";
-import { buildQuotationPrintDocument } from "../documents/documents.service.js";
+import {
+  buildQuotationPdfDocument,
+  buildQuotationPrintDocument
+} from "../documents/documents.service.js";
 import { convertQuotationToOrder } from "../orders/orders.service.js";
 
 async function list(request, response) {
@@ -50,6 +53,19 @@ async function print(request, response) {
       output: "structured-json"
     }
   });
+}
+
+async function pdf(request, response) {
+  const result = await buildQuotationPdfDocument(
+    request.access.vendorId,
+    request.params.quotationId
+  );
+
+  response.setHeader("Content-Type", result.contentType);
+  response.setHeader("Content-Disposition", `attachment; filename="${result.filename}"`);
+  response.setHeader("Cache-Control", "private, max-age=0, must-revalidate");
+
+  return response.send(result.buffer);
 }
 
 async function create(request, response) {
@@ -137,4 +153,16 @@ async function expire(request, response) {
   return transition("expire", request, response);
 }
 
-export { accept, convertToOrder, create, expire, getById, list, print, reject, send, update };
+export {
+  accept,
+  convertToOrder,
+  create,
+  expire,
+  getById,
+  list,
+  pdf,
+  print,
+  reject,
+  send,
+  update
+};
