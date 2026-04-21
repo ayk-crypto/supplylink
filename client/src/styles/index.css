@@ -889,6 +889,20 @@ a {
   font-size: 0.78rem;
 }
 
+.route-stop-order-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  margin-top: 2px;
+}
+
+.route-stop-orders-hint {
+  flex-basis: 100%;
+  margin: 0 0 2px;
+  font-size: 0.78rem;
+}
+
 .route-stop-orders-assign {
   display: flex;
   flex-wrap: wrap;

@@ -1377,3 +1377,68 @@ Verification
 - `npm run lint`: clean.
 - `npm run build`: passes; small bundle delta for the new Pricing
   Fields component, totals helpers, and detail rows.
+
+## Module 20AR — Multi-Order Per Stop Route Intelligence UX
+
+Module 20AR upgrades the Route Detail screen to treat each stop as a
+container for one *or many* assigned orders, matching the existing
+backend contract (`stop.assignedOrders`, `stop.assignmentSummary`,
+route-level summary). No backend changes; additive only.
+
+Source of truth
+- `stop.assignedOrders` is now treated as the canonical list of orders
+  on a stop. Legacy `stop.order` / `stop.orderId` aliases are only used
+  as a defensive fallback when the array is missing.
+- `stop.eligibleOrders` is filtered client-side to exclude orders that
+  are already assigned to the stop, so the Assign dropdown never offers
+  duplicates.
+
+Assigned orders presentation
+- The Orders panel for a stop renders `assignedOrders` as a real list,
+  with one row per order showing:
+  - Order number
+  - Order status (using the shared `StatusPill` with `kind="order"`)
+  - Order grand total (via `formatMoneyWith` from app settings)
+  - Order date when provided by the backend
+- Each row has its own Unassign button; the in-flight row shows a
+  "Removing…" label while the request is pending and all rows disable
+  while any assignment request is in flight to prevent double-submits.
+
+Assign UX
+- Assigning an additional order does not replace existing assignments —
+  it appends. The hint copy reflects this:
+  - With existing assignments: "This stop already has assigned orders.
+    You can add another without replacing them."
+  - With none yet: "A stop can carry more than one order — assign as
+    many as needed."
+- The Assign button stays disabled until an eligible order is selected
+  and re-disables during the request, with an "Assigning…" label on the
+  active row.
+- Empty-state copy distinguishes "no eligible orders for this customer"
+  from "all eligible orders are already assigned to this stop."
+
+Stop and route summaries
+- Stop-level "Orders" cell on the stops table now reads from
+  `stop.assignmentSummary.{orderCount, orderValueTotal}` and shows
+  `<count> · <value>` (or "None").
+- Route-level metric strip uses `route.summary` aggregates:
+  Total stops, Assigned orders, Assigned order value, and Coverage
+  (assigned-order count vs. stop count). All four reflect multi-order
+  stops correctly.
+
+Responsive polish
+- Existing `route-stop-orders-panel` two-column layout collapses to a
+  single column under 720px (unchanged).
+- New `.route-stop-order-meta` row keeps the order status pill, total,
+  and date wrapping cleanly inside narrow assigned-order rows.
+- Stops table continues to use the shared `TableScroll` so additional
+  orders inside an expanded stop never break the outer grid.
+
+Files changed
+- `client/src/features/routes/RouteDetailScreen.jsx`
+- `client/src/styles/index.css`
+- `client/README.md`
+
+Verification
+- `npm run lint`: clean.
+- `npm run build`: passes.

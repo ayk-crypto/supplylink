@@ -580,18 +580,34 @@ function RouteDetailScreen({ id, navigate }) {
               </div>
               {sortedStops.map((stop) => {
                 const isBusy = pendingStopId === stop.id;
-                const stopSummary = stop.assignmentSummary || {
-                  orderCount: 0,
-                  orderValueTotal: 0
+                const assignedOrders = (
+                  Array.isArray(stop.assignedOrders)
+                    ? stop.assignedOrders
+                    : stop.order
+                    ? [stop.order]
+                    : []
+                ).filter(Boolean);
+                const assignedOrderIds = new Set(
+                  assignedOrders
+                    .map((order) => order && order.id)
+                    .filter(Boolean)
+                );
+                const summaryFromServer = stop.assignmentSummary || {};
+                const derivedOrderCount = assignedOrders.length;
+                const derivedOrderValueTotal = assignedOrders.reduce(
+                  (acc, order) => acc + Number(order?.grandTotal || 0),
+                  0
+                );
+                const stopSummary = {
+                  orderCount:
+                    Number(summaryFromServer.orderCount) || derivedOrderCount,
+                  orderValueTotal:
+                    Number(summaryFromServer.orderValueTotal) ||
+                    derivedOrderValueTotal
                 };
-                const assignedOrders = Array.isArray(stop.assignedOrders)
-                  ? stop.assignedOrders
-                  : stop.order
-                  ? [stop.order]
-                  : [];
-                const eligibleOrders = Array.isArray(stop.eligibleOrders)
-                  ? stop.eligibleOrders
-                  : [];
+                const eligibleOrders = (
+                  Array.isArray(stop.eligibleOrders) ? stop.eligibleOrders : []
+                ).filter((order) => !assignedOrderIds.has(order.id));
                 const isExpanded = expandedStopId === stop.id;
                 const anyAssignmentBusy = Boolean(pendingAssignment.stopId);
                 const isThisStopBusy = pendingAssignment.stopId === stop.id;
@@ -670,16 +686,26 @@ function RouteDetailScreen({ id, navigate }) {
                                 const isUnassignBusy =
                                   isThisStopBusy &&
                                   pendingAssignment.orderId === order.id;
+                                const orderDate = order.orderDate
+                                  ? formatRouteDate(order.orderDate)
+                                  : "";
                                 return (
                                   <li key={order.id}>
                                     <div>
                                       <strong>
                                         {order.orderNumber || order.id}
                                       </strong>
-                                      <span className="muted">
-                                        {formatOrderStatus(order.status)} ·{" "}
-                                        {formatMoney(order.grandTotal)}
-                                      </span>
+                                      <div className="route-stop-order-meta">
+                                        <StatusPill
+                                          kind="order"
+                                          status={order.status}
+                                          label={formatOrderStatus(order.status)}
+                                        />
+                                        <span className="muted">
+                                          {formatMoney(order.grandTotal)}
+                                          {orderDate ? ` · ${orderDate}` : ""}
+                                        </span>
+                                      </div>
                                     </div>
                                     <button
                                       className="secondary-button compact"
@@ -695,7 +721,8 @@ function RouteDetailScreen({ id, navigate }) {
                             </ul>
                           ) : (
                             <p className="muted">
-                              No orders are currently assigned to this stop.
+                              No orders are currently assigned to this stop yet.
+                              You can assign one or more eligible orders below.
                             </p>
                           )}
                         </div>
@@ -708,6 +735,11 @@ function RouteDetailScreen({ id, navigate }) {
                           </header>
                           {eligibleOrders.length ? (
                             <div className="route-stop-orders-assign">
+                              <p className="muted route-stop-orders-hint">
+                                {assignedOrders.length
+                                  ? "This stop already has assigned orders. You can add another without replacing them."
+                                  : "A stop can carry more than one order — assign as many as needed."}
+                              </p>
                               <select
                                 disabled={anyAssignmentBusy}
                                 onChange={(event) =>
@@ -741,9 +773,13 @@ function RouteDetailScreen({ id, navigate }) {
                             </div>
                           ) : (
                             <p className="muted">
-                              No eligible orders for this customer. Confirm the
-                              order belongs to {formatStopCustomer(stop)} and is
-                              in draft, confirmed, packed, or dispatched status.
+                              {assignedOrders.length
+                                ? `All eligible orders for ${formatStopCustomer(
+                                    stop
+                                  )} are already assigned to this stop.`
+                                : `No eligible orders for ${formatStopCustomer(
+                                    stop
+                                  )}. Confirm the order belongs to this customer and is in draft, confirmed, packed, or dispatched status.`}
                             </p>
                           )}
                         </div>

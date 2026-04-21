@@ -70,8 +70,22 @@ function summarizeRouteAssignment(route) {
   return stops.reduce(
     (acc, stop) => {
       const stopSummary = stop?.assignmentSummary || {};
-      acc.assignedOrderCount += Number(stopSummary.orderCount || 0);
-      acc.assignedOrderValueTotal += Number(stopSummary.orderValueTotal || 0);
+      const assignedOrders = (
+        Array.isArray(stop?.assignedOrders)
+          ? stop.assignedOrders
+          : stop?.order
+          ? [stop.order]
+          : []
+      ).filter(Boolean);
+      const derivedCount = assignedOrders.length;
+      const derivedValue = assignedOrders.reduce(
+        (sum, order) => sum + Number(order?.grandTotal || 0),
+        0
+      );
+      acc.assignedOrderCount +=
+        Number(stopSummary.orderCount) || derivedCount;
+      acc.assignedOrderValueTotal +=
+        Number(stopSummary.orderValueTotal) || derivedValue;
       return acc;
     },
     {

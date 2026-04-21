@@ -1,0 +1,107 @@
+Work only on the existing SupplyLink frontend.
+
+Do not change backend APIs.
+
+Goal:
+Implement Module 20AR Frontend: Multi-Order Per Stop Route Intelligence UX.
+
+Context:
+Backend now supports multiple assigned orders per route stop through the existing route intelligence and assignment endpoints.
+
+Important backend behavior:
+- stop.assignedOrders is now a real array with multiple orders possible
+- stop.assignmentSummary.orderCount reflects multiple orders
+- stop.assignmentSummary.orderValueTotal sums all assigned orders for the stop
+- route-level summaries aggregate across all assigned orders on all stops
+- assign/unassign endpoints remain the same
+- legacy stop.orderId / stop.order aliases may still exist for compatibility, but frontend should treat assignedOrders as the source of truth
+
+Core objective:
+Upgrade the Route Detail experience so one stop can clearly show and manage multiple assigned orders, without redesigning the app or changing backend APIs.
+
+What to do:
+
+1) Inspect backend response shape first
+- understand the current route detail / stops / intelligence payloads
+- use assignedOrders as the source of truth
+- do not depend on legacy orderId/order aliases except as fallback if needed
+
+2) Update route detail UI for multiple orders
+Enhance the existing Route Detail screen so each stop can:
+- show multiple assigned orders clearly
+- show assigned order count and total value
+- show eligible open orders for assignment
+- support assigning and unassigning more than one order
+
+3) Assigned orders presentation
+For each stop:
+- render assignedOrders as a real list/table, not as a single-order assumption
+- show useful fields such as:
+  - order number
+  - order date if available
+  - status
+  - value/total
+- keep it compact and readable
+- use existing formatting helpers and status presentation patterns where practical
+
+4) Assignment UX
+Update the current assignment UI so:
+- a stop can assign additional eligible orders even when one is already assigned
+- eligible orders remain selectable from backend-provided eligibleOrders
+- assigning one order does not replace existing assigned orders
+- unassign acts on a specific assigned order row
+- buttons disable appropriately while requests are in flight
+- toasts remain correct and not misleading
+
+5) Stop-level and route-level summaries
+Ensure Route Detail clearly shows:
+- route-level:
+  - total stops
+  - total assigned orders
+  - total assigned order value
+  - coverage indicator if still useful
+- stop-level:
+  - assigned order count
+  - assigned order value
+
+These should now reflect multiple orders correctly.
+
+6) Responsive/readability polish
+Because assigned orders will add density:
+- keep stop panels readable on smaller screens
+- use TableScroll where needed
+- ensure multiple assigned order rows do not break the layout
+- keep the UI practical and operational, not overloaded
+
+7) Compatibility cleanup
+Where the current Route Detail UI implicitly assumes one order per stop:
+- remove/replace those assumptions
+- use assignedOrders array consistently
+- keep implementation additive and low risk
+
+8) Constraints
+- no backend changes
+- no redesign of Routes screens
+- no maps, optimization, automation, or driver assignment
+- keep changes additive and production-minded
+- make the route screen feel like a practical dispatch tool
+
+9) Documentation
+Update client README with Module 20AR coverage:
+- multiple assigned orders per stop
+- stop/order summaries
+- assign/unassign behavior
+
+Verification:
+- run client lint
+- run client build
+
+Deliverable:
+1. Summary
+2. Files changed
+3. What multi-order-per-stop UX was added
+4. How assignment/unassignment now works in the UI
+5. What summaries changed
+6. Any backend limitations encountered
+7. Verification results
+8. Any useful follow-up items
