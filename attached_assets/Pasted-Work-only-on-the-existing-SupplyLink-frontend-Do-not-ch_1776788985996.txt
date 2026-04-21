@@ -1,0 +1,65 @@
+Work only on the existing SupplyLink frontend.
+
+Do not change backend APIs.
+
+Goal:
+Fix Settings save/reset validation failures by aligning frontend PATCH /api/v1/settings payloads exactly to the backend-accepted editable schema.
+
+Context:
+The Settings page fails validation not only on Save after branding changes, but also on Reset. This indicates the problem is broader than logo fields: the frontend is likely sending a settings object shape that does not match the backend PATCH schema.
+
+What to do:
+
+1) Inspect the backend-accepted settings shape
+- review what PATCH /api/v1/settings actually accepts
+- inspect the frontend DEFAULT_SETTINGS shape
+- compare live save/reset payloads against backend schema expectations
+
+2) Identify schema drift / invalid fields
+Find any fields in frontend state/defaults that backend does not accept, including:
+- branding/logo-managed fields
+- derived/display-only fields
+- wrong nested paths
+- unsupported null/empty-string values
+- any newer frontend-only settings keys
+
+3) Implement a strict payload mapper
+Create a single helper that converts full frontend settings state into a backend-safe PATCH payload.
+
+Requirements:
+- include only editable fields accepted by backend
+- omit all read-only/server-managed/derived fields
+- normalize values to what backend expects
+- use this helper for:
+  - Save Settings
+  - Reset Settings
+  - any migration PATCH flow
+
+4) Make reset backend-safe
+Ensure Reset does not send raw DEFAULT_SETTINGS directly if that shape contains unsupported fields.
+Instead, pass reset/default state through the same payload mapper before PATCH.
+
+5) Keep branding behavior intact
+- dedicated logo upload/remove must remain separate
+- brand color should still save through PATCH if backend supports it
+- displayed branding state should remain visible in UI
+
+6) Verify with manual scenarios
+Manually confirm:
+- Save works without validation error
+- Reset works without validation error
+- Save after logo upload works
+- Save after brand color change works
+- Save after editing company/invoice/currency/preferences works
+
+7) Verification
+- run client lint
+- run client build
+
+Deliverable:
+1. Summary
+2. Files changed
+3. Root cause found
+4. Exact payload/schema mismatch fixed
+5. What fields are now omitted/normalized
+6. Verification results

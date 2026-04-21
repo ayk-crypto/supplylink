@@ -18,7 +18,7 @@ function getPreferences(settings) {
   return settings?.preferences || DEFAULT_SETTINGS.preferences;
 }
 
-const HEX_COLOR_PATTERN = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
 function isValidHexColor(value) {
   return typeof value === "string" && HEX_COLOR_PATTERN.test(value.trim());
@@ -69,15 +69,22 @@ function formatMoneyWith(settings, value) {
   return `${symbol}${display}`;
 }
 
-function dateFormatOptions(format) {
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function formatDatePattern(date, format) {
+  const yyyy = date.getFullYear();
+  const mm = pad2(date.getMonth() + 1);
+  const dd = pad2(date.getDate());
   switch (format) {
-    case "iso":
-      return null;
-    case "long":
-      return { day: "numeric", month: "long", year: "numeric" };
-    case "medium":
+    case "DD/MM/YYYY":
+      return `${dd}/${mm}/${yyyy}`;
+    case "MM/DD/YYYY":
+      return `${mm}/${dd}/${yyyy}`;
+    case "YYYY-MM-DD":
     default:
-      return { day: "numeric", month: "short", year: "numeric" };
+      return `${yyyy}-${mm}-${dd}`;
   }
 }
 
@@ -91,12 +98,7 @@ function formatDateWith(settings, value) {
     }
 
     const format = getPreferences(settings).dateFormat;
-
-    if (format === "iso") {
-      return date.toISOString().slice(0, 10);
-    }
-
-    return new Intl.DateTimeFormat(undefined, dateFormatOptions(format)).format(date);
+    return formatDatePattern(date, format);
   } catch {
     return String(value);
   }
@@ -112,23 +114,9 @@ function formatDateTimeWith(settings, value) {
     }
 
     const format = getPreferences(settings).dateFormat;
-
-    if (format === "iso") {
-      const iso = date.toISOString();
-      return `${iso.slice(0, 10)} ${iso.slice(11, 16)}`;
-    }
-
-    const baseOptions = dateFormatOptions(format) || {
-      day: "numeric",
-      month: "short",
-      year: "numeric"
-    };
-
-    return new Intl.DateTimeFormat(undefined, {
-      ...baseOptions,
-      hour: "2-digit",
-      minute: "2-digit"
-    }).format(date);
+    const datePart = formatDatePattern(date, format);
+    const timePart = `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+    return `${datePart} ${timePart}`;
   } catch {
     return String(value);
   }

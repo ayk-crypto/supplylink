@@ -93,8 +93,8 @@ function buildInvoicePrintHtml(document, branding = {}) {
         }
         <div>
           <h2>${escapeHtml(vendor.displayName || vendor.legalName || "Vendor")}</h2>
-          <p>${escapeHtml(vendor.contactEmail || "")}</p>
-          <p>${escapeHtml(vendor.contactPhone || "")}</p>
+          <p>${escapeHtml(vendor.email || vendor.contactEmail || "")}</p>
+          <p>${escapeHtml(vendor.phone || vendor.contactPhone || "")}</p>
         </div>
       </div>
     </header>

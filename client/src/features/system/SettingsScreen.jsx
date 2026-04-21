@@ -25,12 +25,11 @@ import {
 
 const DEFAULT_BRAND_COLOR_PLACEHOLDER = "#2563eb";
 
-function stripServerOnlyBranding(settings) {
-  const next = { ...settings, company: { ...settings.company } };
-  delete next.company.logoUrl;
-  delete next.company.logo;
-  return next;
-}
+const DATE_FORMAT_OPTIONS = [
+  { value: "YYYY-MM-DD", label: "ISO (2026-04-20)" },
+  { value: "DD/MM/YYYY", label: "European (20/04/2026)" },
+  { value: "MM/DD/YYYY", label: "US (04/20/2026)" }
+];
 
 const CURRENCY_OPTIONS = [
   { value: "USD", label: "US Dollar (USD) — $" },
@@ -42,18 +41,12 @@ const CURRENCY_OPTIONS = [
   { value: "JPY", label: "Japanese Yen (JPY) — ¥" }
 ];
 
-const DATE_FORMAT_OPTIONS = [
-  { value: "iso", label: "ISO (2026-04-20)" },
-  { value: "medium", label: "Medium (Apr 20, 2026)" },
-  { value: "long", label: "Long (April 20, 2026)" }
-];
-
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
 function buildInvoiceNumberPreview(invoice) {
-  const padding = Math.max(0, Math.min(10, Number(invoice.padding) || 0));
-  const next = Number(invoice.nextNumber) || 0;
-  const padded = padding > 0 ? String(next).padStart(padding, "0") : String(next);
+  const padding = Math.max(1, Math.min(12, Number(invoice.padding) || 1));
+  const next = Math.max(1, Number(invoice.nextNumber) || 1);
+  const padded = String(next).padStart(padding, "0");
   return `${invoice.prefix || ""}${padded}${invoice.suffix || ""}`;
 }
 
@@ -98,7 +91,7 @@ function SettingsScreen() {
     event.preventDefault();
     const colorRaw = (draft.company.primaryBrandColor || "").trim();
     if (colorRaw && !isValidHexColor(colorRaw)) {
-      setBrandColorError("Use a hex color like #2563eb or #fff.");
+      setBrandColorError("Use a 6-digit hex color like #2563EB.");
       showToast({
         message: "Brand color must be a valid hex (#rgb or #rrggbb).",
         title: "Save failed",
@@ -109,7 +102,7 @@ function SettingsScreen() {
     setBrandColorError("");
     setIsSaving(true);
     try {
-      await save(stripServerOnlyBranding(draft));
+      await save(draft);
       showToast({
         message: "Your settings are saved for everyone in this workspace.",
         title: "Settings updated",
@@ -133,7 +126,7 @@ function SettingsScreen() {
 
     setIsSaving(true);
     try {
-      const restored = await save(stripServerOnlyBranding(DEFAULT_SETTINGS));
+      const restored = await save(DEFAULT_SETTINGS);
       setDraft(restored);
       showToast({
         message: "Settings restored to defaults.",
@@ -190,8 +183,7 @@ function SettingsScreen() {
         ...current,
         company: {
           ...current.company,
-          logoUrl: next?.company?.logoUrl ?? "",
-          logo: next?.company?.logo ?? null
+          logoUrl: next?.company?.logoUrl ?? ""
         }
       }));
       showToast({
@@ -230,8 +222,7 @@ function SettingsScreen() {
         ...current,
         company: {
           ...current.company,
-          logoUrl: next?.company?.logoUrl ?? "",
-          logo: next?.company?.logo ?? null
+          logoUrl: next?.company?.logoUrl ?? ""
         }
       }));
       showToast({
@@ -434,18 +425,18 @@ function SettingsScreen() {
             </Field>
             <Field label="Contact email">
               <input
-                onChange={(event) => updateSection("company", "contactEmail", event.target.value)}
+                onChange={(event) => updateSection("company", "email", event.target.value)}
                 placeholder="ops@yourcompany.com"
                 type="email"
-                value={draft.company.contactEmail}
+                value={draft.company.email}
               />
             </Field>
             <Field label="Contact phone">
               <input
-                onChange={(event) => updateSection("company", "contactPhone", event.target.value)}
+                onChange={(event) => updateSection("company", "phone", event.target.value)}
                 placeholder="+1 555 0100"
                 type="tel"
-                value={draft.company.contactPhone}
+                value={draft.company.phone}
               />
             </Field>
             <Field label="Tax / VAT ID">
@@ -507,10 +498,10 @@ function SettingsScreen() {
             </Field>
             <Field hint="Leading zeros, e.g. 4 → 0001" label="Number padding">
               <input
-                max={10}
-                min={0}
+                max={12}
+                min={1}
                 onChange={(event) =>
-                  updateSection("invoice", "padding", Number(event.target.value) || 0)
+                  updateSection("invoice", "padding", Number(event.target.value) || 1)
                 }
                 step={1}
                 type="number"

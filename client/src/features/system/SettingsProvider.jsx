@@ -7,7 +7,7 @@ import {
   clearLegacySettings,
   mergeSettings,
   readLegacySettings,
-  stripServerManagedBranding
+  toBackendPayload
 } from "./settingsDefaults.js";
 
 function extractSettings(response) {
@@ -58,7 +58,7 @@ function SettingsProvider({ children }) {
 
         if (legacy && !legacyMigrationDoneRef.current) {
           try {
-            await updateSettings(stripServerManagedBranding(merged));
+            await updateSettings(toBackendPayload(merged));
             clearLegacySettings();
           } catch {
             // best-effort: keep legacy values in memory; will retry on next save
@@ -102,10 +102,10 @@ function SettingsProvider({ children }) {
   );
 
   const save = useCallback(async (nextSettings) => {
-    const payload = mergeSettings(DEFAULT_SETTINGS, nextSettings);
+    const payload = toBackendPayload(nextSettings);
     const response = await updateSettings(payload);
     const persisted = extractSettings(response);
-    const merged = mergeSettings(DEFAULT_SETTINGS, persisted ?? payload);
+    const merged = mergeSettings(DEFAULT_SETTINGS, persisted ?? nextSettings);
 
     if (isMountedRef.current) {
       setSettings(merged);
