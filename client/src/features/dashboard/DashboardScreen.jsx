@@ -238,10 +238,10 @@ function NotificationsList({ notifications }) {
 
   return (
     <div className="dashboard-notification-list">
-      {notifications.latest.map((notification) => (
+      {notifications.latest.slice(0, 4).map((notification) => (
         <article className="dashboard-notification-row" key={notification.id}>
           <span className={notification.isRead ? "read-dot read" : "read-dot"} />
-          <div>
+          <div className="dashboard-notification-body">
             <strong>{notification.title}</strong>
             <p>{notification.message}</p>
           </div>
@@ -415,7 +415,7 @@ function DashboardScreen({ navigate }) {
           <ActivityFeed
             formatDate={formatDate}
             formatMoney={formatMoney}
-            items={dashboard.recent?.activity || []}
+            items={(dashboard.recent?.activity || []).slice(0, 3)}
             navigate={navigate}
           />
         </div>

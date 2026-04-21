@@ -5453,8 +5453,25 @@ a:hover {
   gap: 12px;
 }
 .dashboard-notification-row .read-dot {
-  margin-top: 6px;
+  margin-top: 7px;
   flex-shrink: 0;
+}
+.dashboard-notification-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+.dashboard-notification-body strong {
+  display: block;
+  line-height: 1.3;
+}
+.dashboard-notification-body p {
+  margin: 0 !important;
+  line-height: 1.45;
+  color: var(--muted);
+  overflow-wrap: anywhere;
 }
 
 /* Responsive breakpoints */
