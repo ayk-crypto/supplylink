@@ -1,0 +1,122 @@
+Work only on the existing SupplyLink frontend.
+
+Do not change backend APIs.
+
+Goal:
+Implement Module 20AM Frontend: Workspace Branding and Identity.
+
+Context:
+Backend now supports workspace branding inside settings and dedicated logo endpoints.
+
+Available backend behavior:
+- GET /api/v1/settings
+  Returns additive branding fields inside settings.company:
+  - primaryBrandColor
+  - logoUrl
+  - logo
+- PATCH /api/v1/settings
+  Accepts company.primaryBrandColor
+- GET /api/v1/settings/logo
+  Returns the current vendor logo inline
+- POST /api/v1/settings/logo
+  Multipart upload endpoint using field name: file
+- DELETE /api/v1/settings/logo
+  Removes the current workspace logo
+
+Branding is workspace identity, not a generic attachment.
+Branding fields are additive and older environments may not have them.
+
+Core objective:
+Turn the existing Settings page into a real workspace branding/identity surface by wiring logo upload and brand color support cleanly into the frontend, and begin applying branding to the most important customer-facing places without redesigning the app.
+
+What to do:
+
+1) Inspect backend contracts first
+- understand exact branding fields returned in settings.company
+- understand logo upload/remove behavior
+- follow existing frontend service and settings patterns
+- do not change backend APIs
+
+2) Extend settings frontend model and API
+Update the existing settings layer to support branding fields, including:
+- company.primaryBrandColor
+- company.logoUrl
+- company.logo
+
+Ensure:
+- safe defaults if branding fields are missing
+- older environments do not break
+- current settings persistence continues to work cleanly
+
+3) Settings screen branding UX
+Upgrade the existing Company info section so users can:
+- see the current logo if uploaded
+- upload/replace logo
+- remove logo if supported
+- edit primary brand color
+- preview branding where practical
+
+Requirements:
+- keep the current Settings page structure intact
+- no redesign
+- preserve existing save/reset behavior where appropriate
+- use shared UI primitives and current styling conventions
+
+4) Logo upload UX
+Implement a clean upload flow:
+- upload/replace button
+- preview current logo
+- remove button if a logo exists
+- busy state while uploading/removing
+- success/error toasts
+- preserve accessibility and safe mobile behavior
+
+5) Brand color UX
+Add a practical primary brand color control:
+- use a clean UI such as color picker + hex input, or another restrained approach
+- respect backend validation rules
+- save through the existing settings save flow
+- show a small preview of the color
+
+6) Branding propagation
+Apply branding in a limited, high-value way.
+Prioritize:
+- Settings page company/logo tile preview
+- invoice detail print/invoice output
+- invoice/company identity areas where branding is customer-facing
+
+Optional only if very safe and low risk:
+- subtle app-shell workspace logo/avatar usage
+
+Do not turn this into a full app theming system.
+
+7) Safe fallbacks
+- if no logo exists, keep a clean initials/placeholder fallback
+- if no brand color exists, keep existing defaults
+- do not break current layout or settings behavior
+
+8) Documentation
+Update client README with branding support coverage:
+- logo upload
+- brand color
+- where branding is currently applied
+
+9) Verification
+- run client lint
+- run client build
+
+Deliverable:
+1. Summary
+2. Files changed
+3. What branding UX was added
+4. Where branding is now applied
+5. Any backend limitations encountered
+6. Verification results
+7. Any useful follow-up items
+
+Constraints:
+- no backend changes
+- no redesign
+- keep branding focused on workspace identity and customer-facing usage
+- do not build a full theming engine
+- keep changes additive and production-minded

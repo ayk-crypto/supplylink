@@ -6,7 +6,8 @@ import {
   DEFAULT_SETTINGS,
   clearLegacySettings,
   mergeSettings,
-  readLegacySettings
+  readLegacySettings,
+  stripServerManagedBranding
 } from "./settingsDefaults.js";
 
 function extractSettings(response) {
@@ -57,7 +58,7 @@ function SettingsProvider({ children }) {
 
         if (legacy && !legacyMigrationDoneRef.current) {
           try {
-            await updateSettings(merged);
+            await updateSettings(stripServerManagedBranding(merged));
             clearLegacySettings();
           } catch {
             // best-effort: keep legacy values in memory; will retry on next save

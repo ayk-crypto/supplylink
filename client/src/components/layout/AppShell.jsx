@@ -1,5 +1,11 @@
 import { useState } from "react";
 import { useAuth } from "../../features/auth/useAuth.js";
+import { useAppSettings } from "../../features/system/settingsContext.js";
+import {
+  getBrandColor,
+  getCompanyInitials,
+  getLogoUrl
+} from "../../features/system/settingsFormat.js";
 
 function AppShell({
   activePath = "/dashboard",
@@ -9,11 +15,18 @@ function AppShell({
   onNavigate
 }) {
   const { logout, user } = useAuth();
+  const { settings } = useAppSettings();
   const [isNavOpen, setIsNavOpen] = useState(false);
   const activeVendor = user?.memberships?.find(
     (membership) => membership.vendorId === user.currentVendorId
   );
   const roleLabel = user?.roleCodes?.join(", ") || "Team member";
+  const logoUrl = getLogoUrl(settings);
+  const brandColor = getBrandColor(settings);
+  const brandInitials = getCompanyInitials(settings);
+  const brandMarkStyle = brandColor
+    ? { background: brandColor, color: "#fff" }
+    : undefined;
 
   return (
     <div className="app-layout">
@@ -29,9 +42,19 @@ function AppShell({
       <aside className={`sidebar ${isNavOpen ? "sidebar-open" : ""}`}>
         <div className="sidebar-header">
           <div className="brand-lockup">
-            <span className="brand-mark">SL</span>
+            {logoUrl ? (
+              <img alt="Workspace logo" className="brand-logo" src={logoUrl} />
+            ) : (
+              <span className="brand-mark" style={brandMarkStyle}>
+                {brandInitials}
+              </span>
+            )}
             <div>
-              <strong>SupplyLink</strong>
+              <strong>
+                {settings?.company?.displayName ||
+                  settings?.company?.legalName ||
+                  "SupplyLink"}
+              </strong>
               <small>Operations console</small>
             </div>
           </div>

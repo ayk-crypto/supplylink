@@ -1,10 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ErrorState,
   Field,
   LoadingState,
   PageHeader
 } from "../../components/ui/ResourceScreens.jsx";
+import {
+  deleteVendorLogo,
+  uploadVendorLogo
+} from "../../services/settingsApi.js";
 import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage } from "../master-data/resourceUtils.js";
 import { useAppSettings } from "./settingsContext.js";
@@ -12,8 +16,21 @@ import { DEFAULT_SETTINGS, mergeSettings } from "./settingsDefaults.js";
 import {
   CURRENCY_SYMBOLS,
   confirmDestructive,
-  formatMoneyWith
+  formatMoneyWith,
+  getBrandColor,
+  getCompanyInitials,
+  getLogoUrl,
+  isValidHexColor
 } from "./settingsFormat.js";
+
+const DEFAULT_BRAND_COLOR_PLACEHOLDER = "#2563eb";
+
+function stripServerOnlyBranding(settings) {
+  const next = { ...settings, company: { ...settings.company } };
+  delete next.company.logoUrl;
+  delete next.company.logo;
+  return next;
+}
 
 const CURRENCY_OPTIONS = [
   { value: "USD", label: "US Dollar (USD) — $" },
@@ -52,6 +69,10 @@ function SettingsScreen() {
   } = useAppSettings();
   const [draft, setDraft] = useState(providerSettings);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isRemovingLogo, setIsRemovingLogo] = useState(false);
+  const [brandColorError, setBrandColorError] = useState("");
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     setDraft(providerSettings);
@@ -75,9 +96,20 @@ function SettingsScreen() {
 
   async function handleSave(event) {
     event.preventDefault();
+    const colorRaw = (draft.company.primaryBrandColor || "").trim();
+    if (colorRaw && !isValidHexColor(colorRaw)) {
+      setBrandColorError("Use a hex color like #2563eb or #fff.");
+      showToast({
+        message: "Brand color must be a valid hex (#rgb or #rrggbb).",
+        title: "Save failed",
+        tone: "error"
+      });
+      return;
+    }
+    setBrandColorError("");
     setIsSaving(true);
     try {
-      await save(draft);
+      await save(stripServerOnlyBranding(draft));
       showToast({
         message: "Your settings are saved for everyone in this workspace.",
         title: "Settings updated",
@@ -101,7 +133,7 @@ function SettingsScreen() {
 
     setIsSaving(true);
     try {
-      const restored = await save(DEFAULT_SETTINGS);
+      const restored = await save(stripServerOnlyBranding(DEFAULT_SETTINGS));
       setDraft(restored);
       showToast({
         message: "Settings restored to defaults.",
@@ -128,12 +160,98 @@ function SettingsScreen() {
     }
   }
 
-  const logoInitials = (draft.company.displayName || draft.company.legalName || "S")
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() || "")
-    .join("") || "S";
+  const logoInitials = getCompanyInitials(draft);
+  const currentLogoUrl = getLogoUrl(providerSettings);
+  const previewBrandColor = isValidHexColor(draft.company.primaryBrandColor)
+    ? draft.company.primaryBrandColor.trim()
+    : "";
+
+  function handlePickLogo() {
+    fileInputRef.current?.click();
+  }
+
+  async function handleLogoFileChange(event) {
+    const file = event.target.files?.[0];
+    if (event.target) event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      showToast({
+        message: "Choose an image file (PNG, JPG, or SVG).",
+        title: "Unsupported file",
+        tone: "error"
+      });
+      return;
+    }
+    setIsUploadingLogo(true);
+    try {
+      await uploadVendorLogo(file);
+      const next = await refresh();
+      setDraft((current) => ({
+        ...current,
+        company: {
+          ...current.company,
+          logoUrl: next?.company?.logoUrl ?? "",
+          logo: next?.company?.logo ?? null
+        }
+      }));
+      showToast({
+        message: "Workspace logo updated.",
+        title: "Logo uploaded",
+        tone: "success"
+      });
+    } catch (requestError) {
+      showToast({
+        message: getApiErrorMessage(
+          requestError,
+          "Logo could not be uploaded."
+        ),
+        title: "Upload failed",
+        tone: "error"
+      });
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  }
+
+  async function handleRemoveLogo() {
+    if (
+      !confirmDestructive(
+        providerSettings,
+        "Remove the workspace logo? Initials will be shown until a new logo is uploaded."
+      )
+    ) {
+      return;
+    }
+    setIsRemovingLogo(true);
+    try {
+      await deleteVendorLogo();
+      const next = await refresh();
+      setDraft((current) => ({
+        ...current,
+        company: {
+          ...current.company,
+          logoUrl: next?.company?.logoUrl ?? "",
+          logo: next?.company?.logo ?? null
+        }
+      }));
+      showToast({
+        message: "Workspace logo removed.",
+        title: "Logo removed",
+        tone: "success"
+      });
+    } catch (requestError) {
+      showToast({
+        message: getApiErrorMessage(
+          requestError,
+          "Logo could not be removed."
+        ),
+        title: "Remove failed",
+        tone: "error"
+      });
+    } finally {
+      setIsRemovingLogo(false);
+    }
+  }
 
   const description = isHydrated
     ? "Configure how SupplyLink presents and numbers your business records. Changes are saved to your workspace."
@@ -182,13 +300,120 @@ function SettingsScreen() {
             <span>Used on invoices, quotations, and printed documents.</span>
           </div>
           <div className="settings-company-row">
-            <div aria-hidden="true" className="settings-logo-placeholder">
-              {logoInitials}
+            <div
+              className="settings-logo-tile"
+              style={
+                previewBrandColor
+                  ? { borderColor: previewBrandColor }
+                  : undefined
+              }
+            >
+              {currentLogoUrl ? (
+                <img alt="Workspace logo" src={currentLogoUrl} />
+              ) : (
+                <span
+                  aria-hidden="true"
+                  className="settings-logo-placeholder"
+                  style={
+                    previewBrandColor
+                      ? { background: previewBrandColor, color: "#fff" }
+                      : undefined
+                  }
+                >
+                  {logoInitials}
+                </span>
+              )}
             </div>
-            <p className="muted">
-              Logo upload arrives with the backend asset endpoint. The initials above will be
-              replaced with your uploaded mark.
-            </p>
+            <div className="settings-branding-controls">
+              <p className="muted">
+                Your workspace logo appears in invoices, printed documents, and
+                the workspace header. PNG, JPG, or SVG up to a few hundred KB
+                works best.
+              </p>
+              <div className="button-row" style={{ justifyContent: "flex-start" }}>
+                <button
+                  className="secondary-button"
+                  disabled={isUploadingLogo || isRemovingLogo}
+                  onClick={handlePickLogo}
+                  type="button"
+                >
+                  {isUploadingLogo
+                    ? "Uploading…"
+                    : currentLogoUrl
+                    ? "Replace logo"
+                    : "Upload logo"}
+                </button>
+                {currentLogoUrl ? (
+                  <button
+                    className="secondary-button"
+                    disabled={isUploadingLogo || isRemovingLogo}
+                    onClick={handleRemoveLogo}
+                    type="button"
+                  >
+                    {isRemovingLogo ? "Removing…" : "Remove logo"}
+                  </button>
+                ) : null}
+              </div>
+              <input
+                accept="image/*"
+                className="visually-hidden"
+                onChange={handleLogoFileChange}
+                ref={fileInputRef}
+                type="file"
+              />
+            </div>
+          </div>
+          <div className="form-grid">
+            <Field
+              error={brandColorError}
+              hint="Used as an accent on invoices and the workspace header. Hex like #2563eb."
+              label="Primary brand color"
+            >
+              <div className="brand-color-row">
+                <input
+                  aria-label="Brand color picker"
+                  className="brand-color-swatch-input"
+                  onChange={(event) =>
+                    updateSection(
+                      "company",
+                      "primaryBrandColor",
+                      event.target.value
+                    )
+                  }
+                  type="color"
+                  value={
+                    isValidHexColor(draft.company.primaryBrandColor)
+                      ? draft.company.primaryBrandColor
+                      : DEFAULT_BRAND_COLOR_PLACEHOLDER
+                  }
+                />
+                <input
+                  maxLength={7}
+                  onChange={(event) => {
+                    if (brandColorError) setBrandColorError("");
+                    updateSection(
+                      "company",
+                      "primaryBrandColor",
+                      event.target.value
+                    );
+                  }}
+                  placeholder={DEFAULT_BRAND_COLOR_PLACEHOLDER}
+                  type="text"
+                  value={draft.company.primaryBrandColor || ""}
+                />
+                {draft.company.primaryBrandColor ? (
+                  <button
+                    className="secondary-button compact"
+                    onClick={() =>
+                      updateSection("company", "primaryBrandColor", "")
+                    }
+                    type="button"
+                  >
+                    Clear
+                  </button>
+                ) : null}
+              </div>
+            </Field>
           </div>
           <div className="form-grid">
             <Field label="Display name">

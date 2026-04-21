@@ -12,4 +12,19 @@ async function updateSettings(payload, options = {}) {
   });
 }
 
-export { getSettings, updateSettings };
+async function uploadVendorLogo(file) {
+  const body = new FormData();
+  body.append("file", file);
+  return request("/settings/logo", {
+    method: "POST",
+    body
+  });
+}
+
+async function deleteVendorLogo() {
+  return request("/settings/logo", {
+    method: "DELETE"
+  });
+}
+
+export { deleteVendorLogo, getSettings, updateSettings, uploadVendorLogo };

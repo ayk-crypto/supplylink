@@ -1073,3 +1073,59 @@ Constraints respected:
 - Reuses shared primitives (`PageHeader`, `SectionHeader`, `Toolbar`,
   `FormPanel`, `Field`, `LoadingSkeleton`, `ErrorState`, `EmptyState`,
   `TableScroll`, `Pagination`).
+
+## Module 20AM — Workspace Branding (Logo + Primary Color)
+
+Adds vendor-level branding controls that propagate from Settings into the
+sidebar lockup and the printable invoice header. No backend changes; uses
+the existing `/settings` PATCH (for `company.primaryBrandColor`) and the
+`/settings/logo` multipart upload + DELETE endpoints.
+
+Settings → **Company info** now includes:
+- Logo tile (96×96): renders the workspace logo when present, otherwise a
+  brand-colored initials placeholder derived from `displayName`/`legalName`.
+- **Upload logo / Replace logo** — `<input type="file" accept="image/*">`
+  routed through `uploadVendorLogo(file)`, which posts a `FormData` body to
+  `POST /settings/logo` (the shared `httpClient` omits `Content-Type` so the
+  browser sets the multipart boundary).
+- **Remove logo** — `DELETE /settings/logo`, gated by `confirmDestructive`.
+- **Primary brand color** — color-swatch input + hex text input + Clear
+  button. Validated client-side against `#rgb` / `#rrggbb` (`isValidHexColor`)
+  before save; invalid values surface a `Field` error and a toast.
+
+State plumbing:
+- `settingsDefaults.js` extends `DEFAULT_SETTINGS.company` with
+  `primaryBrandColor: ""`, `logoUrl: ""`, and `logo: null` so `mergeSettings`
+  preserves them when reading from the server.
+- `SettingsScreen.handleSave` calls `stripServerOnlyBranding(draft)` before
+  `save()` so the PATCH body only carries `company.primaryBrandColor` (logo
+  fields are server-managed via the upload/delete endpoints). Reset to
+  defaults uses the same stripper.
+- After upload/remove, the screen calls `refresh()` and re-merges the result
+  into the local draft so the new `logoUrl` shows immediately.
+
+Shared helpers in `settingsFormat.js`:
+- `getBrandColor(settings)` — returns the validated hex or `""`.
+- `getLogoUrl(settings)` — prefers `company.logoUrl`, falls back to
+  `company.logo.url` / `company.logo.dataUrl`.
+- `getCompanyInitials(settings)` — up to two initials from display/legal name.
+- `isValidHexColor(value)` — `#rgb` / `#rrggbb` regex check.
+
+Propagation:
+- **AppShell sidebar** (`components/layout/AppShell.jsx`) reads
+  `useAppSettings()` and renders `<img class="brand-logo">` when a logo is
+  configured, otherwise the existing `.brand-mark` initials tile tinted with
+  the brand color. The brand strong-text now reflects the workspace
+  display/legal name (falls back to "SupplyLink").
+- **Invoice print** (`buildInvoicePrintHtml(document, branding)`) accepts a
+  `{ brandColor, logoUrl }` branding object. The header now shows the vendor
+  logo next to the vendor block, paints the title in the brand color, and
+  uses it as the accent border under the header and above the grand-total
+  row. Hex values are HTML-escaped before interpolation.
+
+Constraints respected:
+- Backend untouched; only existing endpoints used.
+- Legacy `.settings-logo-placeholder` styles preserved and reused inside the
+  new `.settings-logo-tile`.
+- All buttons follow the existing busy-text pattern (`Uploading…`,
+  `Removing…`) and use shared `secondary-button` / `primary-button` classes.

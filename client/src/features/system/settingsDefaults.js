@@ -8,7 +8,10 @@ const DEFAULT_SETTINGS = {
     contactPhone: "",
     addressLine1: "",
     addressLine2: "",
-    taxId: ""
+    taxId: "",
+    primaryBrandColor: "",
+    logoUrl: "",
+    logo: null
   },
   invoice: {
     prefix: "INV-",
@@ -90,10 +93,24 @@ function clearLegacySettings() {
   }
 }
 
+function stripServerManagedBranding(settings) {
+  if (!settings || typeof settings !== "object") {
+    return settings;
+  }
+  const next = { ...settings };
+  if (next.company && typeof next.company === "object") {
+    next.company = { ...next.company };
+    delete next.company.logoUrl;
+    delete next.company.logo;
+  }
+  return next;
+}
+
 export {
   DEFAULT_SETTINGS,
   LEGACY_STORAGE_KEY,
   clearLegacySettings,
   mergeSettings,
-  readLegacySettings
+  readLegacySettings,
+  stripServerManagedBranding
 };

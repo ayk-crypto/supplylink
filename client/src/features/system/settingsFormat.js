@@ -18,6 +18,38 @@ function getPreferences(settings) {
   return settings?.preferences || DEFAULT_SETTINGS.preferences;
 }
 
+const HEX_COLOR_PATTERN = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+function isValidHexColor(value) {
+  return typeof value === "string" && HEX_COLOR_PATTERN.test(value.trim());
+}
+
+function getBrandColor(settings) {
+  const raw = settings?.company?.primaryBrandColor;
+  return isValidHexColor(raw) ? raw.trim() : "";
+}
+
+function getLogoUrl(settings) {
+  const raw = settings?.company?.logoUrl;
+  if (typeof raw === "string" && raw.trim()) {
+    return raw.trim();
+  }
+  const logo = settings?.company?.logo;
+  if (logo && typeof logo === "object") {
+    if (typeof logo.url === "string" && logo.url.trim()) return logo.url.trim();
+    if (typeof logo.dataUrl === "string" && logo.dataUrl.trim()) return logo.dataUrl.trim();
+  }
+  return "";
+}
+
+function getCompanyInitials(settings) {
+  const company = settings?.company || DEFAULT_SETTINGS.company;
+  const source = company.displayName || company.legalName || "S";
+  const parts = source.split(/\s+/).filter(Boolean).slice(0, 2);
+  const initials = parts.map((part) => part[0]?.toUpperCase() || "").join("");
+  return initials || "S";
+}
+
 function clampDecimals(value) {
   const num = Number(value);
   if (!Number.isFinite(num)) return 2;
@@ -137,9 +169,13 @@ export {
   formatDateTimeWith,
   formatDateWith,
   formatMoneyWith,
+  getBrandColor,
+  getCompanyInitials,
   getCurrency,
   getDefaultPageSize,
+  getLogoUrl,
   getPreferences,
+  isValidHexColor,
   shouldConfirmDestructive,
   shouldShowNotificationsBadge
 };

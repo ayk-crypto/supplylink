@@ -23,7 +23,11 @@ import AttachmentsPanel from "../attachments/AttachmentsPanel.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
 import { useAppSettings } from "../system/settingsContext.js";
-import { confirmDestructive } from "../system/settingsFormat.js";
+import {
+  confirmDestructive,
+  getBrandColor,
+  getLogoUrl
+} from "../system/settingsFormat.js";
 import { formatCustomer } from "../transactions/transactionUtils.js";
 
 const paymentMethods = ["cash", "card", "bank_transfer", "check", "other"];
@@ -37,13 +41,16 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-function buildInvoicePrintHtml(document) {
+function buildInvoicePrintHtml(document, branding = {}) {
   const sections = document.sections || {};
   const vendor = sections.vendor || {};
   const customer = sections.customer || {};
   const header = sections.header || {};
   const totals = sections.totals || {};
   const items = sections.items || [];
+  const logoUrl = branding.logoUrl || "";
+  const brandColor = branding.brandColor || "#1f2621";
+  const accentBorder = branding.brandColor || "#dbe4dd";
 
   return `<!doctype html>
 <html>
@@ -52,8 +59,10 @@ function buildInvoicePrintHtml(document) {
     <title>${escapeHtml(document.title || "Invoice")}</title>
     <style>
       body { margin: 0; padding: 32px; color: #1f2621; font-family: Inter, Arial, sans-serif; }
-      header { display: flex; justify-content: space-between; gap: 24px; border-bottom: 1px solid #dbe4dd; padding-bottom: 20px; }
-      h1 { margin: 0 0 8px; font-size: 28px; }
+      header { display: flex; justify-content: space-between; gap: 24px; border-bottom: 3px solid ${escapeHtml(accentBorder)}; padding-bottom: 20px; }
+      .vendor-block { display: flex; gap: 16px; align-items: flex-start; }
+      .vendor-logo { max-width: 120px; max-height: 80px; object-fit: contain; }
+      h1 { margin: 0 0 8px; font-size: 28px; color: ${escapeHtml(brandColor)}; }
       h2 { margin: 0 0 8px; font-size: 16px; }
       p { margin: 3px 0; color: #647067; }
       section { margin-top: 24px; }
@@ -63,7 +72,7 @@ function buildInvoicePrintHtml(document) {
       th { color: #647067; font-size: 12px; text-transform: uppercase; }
       .totals { margin-left: auto; width: min(320px, 100%); }
       .totals div { display: flex; justify-content: space-between; padding: 6px 0; }
-      .grand { font-weight: 700; border-top: 1px solid #dbe4dd; margin-top: 6px; padding-top: 10px; }
+      .grand { font-weight: 700; border-top: 2px solid ${escapeHtml(accentBorder)}; margin-top: 6px; padding-top: 10px; }
       @media print { body { padding: 20px; } button { display: none; } }
     </style>
   </head>
@@ -76,10 +85,17 @@ function buildInvoicePrintHtml(document) {
         <p>Issue date: ${escapeHtml(header.issueDate || "Not set")}</p>
         <p>Due date: ${escapeHtml(header.dueDate || "Not set")}</p>
       </div>
-      <div>
-        <h2>${escapeHtml(vendor.displayName || vendor.legalName || "Vendor")}</h2>
-        <p>${escapeHtml(vendor.contactEmail || "")}</p>
-        <p>${escapeHtml(vendor.contactPhone || "")}</p>
+      <div class="vendor-block">
+        ${
+          logoUrl
+            ? `<img class="vendor-logo" alt="" src="${escapeHtml(logoUrl)}" />`
+            : ""
+        }
+        <div>
+          <h2>${escapeHtml(vendor.displayName || vendor.legalName || "Vendor")}</h2>
+          <p>${escapeHtml(vendor.contactEmail || "")}</p>
+          <p>${escapeHtml(vendor.contactPhone || "")}</p>
+        </div>
       </div>
     </header>
     <section class="blocks">
@@ -417,7 +433,10 @@ function InvoiceDetailScreen({ id, navigate }) {
 
     try {
       const response = await getInvoicePrintDocument(invoice.id);
-      const html = buildInvoicePrintHtml(response.data);
+      const html = buildInvoicePrintHtml(response.data, {
+        brandColor: getBrandColor(settings),
+        logoUrl: getLogoUrl(settings)
+      });
 
       printWindow.document.open();
       printWindow.document.write(html);
