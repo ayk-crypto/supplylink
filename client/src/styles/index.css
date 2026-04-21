@@ -803,8 +803,8 @@ a {
 
 .route-stop-grid {
   grid-template-columns:
-    52px minmax(180px, 1.3fr) 120px minmax(150px, 0.9fr)
-    minmax(110px, 0.7fr) auto;
+    48px minmax(200px, 1.4fr) 130px minmax(140px, 0.9fr)
+    minmax(110px, 0.7fr) minmax(280px, auto);
 }
 
 .route-stop-grid .stop-sequence {
