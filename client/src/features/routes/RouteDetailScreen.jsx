@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { listCustomers } from "../../services/masterDataApi.js";
 import {
+  assignOrderToStop,
   createRouteStop,
-  getRoute,
+  getRouteIntelligence,
+  unassignOrderFromStop,
   updateRoute,
   updateRouteStop
 } from "../../services/routeApi.js";
@@ -20,16 +22,18 @@ import AttachmentsPanel from "../attachments/AttachmentsPanel.jsx";
 import { useToast } from "../feedback/toastContext.js";
 import { cleanOptional, getApiErrorMessage } from "../master-data/resourceUtils.js";
 import { useAppSettings } from "../system/settingsContext.js";
-import { confirmDestructive } from "../system/settingsFormat.js";
+import { confirmDestructive, formatMoneyWith } from "../system/settingsFormat.js";
 import {
   ROUTE_STATUSES,
   STOP_STATUSES,
   formatDateTime,
+  formatOrderStatus,
   formatRouteDate,
   formatRouteStatus,
   formatStopCustomer,
   formatStopStatus,
-  nextSequenceNumber
+  nextSequenceNumber,
+  summarizeRouteAssignment
 } from "./routeUtils.js";
 
 const ROUTE_TRANSITIONS = [
@@ -197,9 +201,16 @@ function RouteDetailScreen({ id, navigate }) {
   const [stopFormState, setStopFormState] = useState(null);
   const [pendingStopId, setPendingStopId] = useState("");
 
+  const [expandedStopId, setExpandedStopId] = useState("");
+  const [pendingAssignment, setPendingAssignment] = useState({
+    stopId: "",
+    orderId: ""
+  });
+  const [stopOrderSelections, setStopOrderSelections] = useState({});
+
   const loadRoute = useCallback(
     async ({ signal } = {}) => {
-      const response = await getRoute(id, { signal });
+      const response = await getRouteIntelligence(id, { signal });
       setRoute(response?.data || null);
     },
     [id]
@@ -264,6 +275,12 @@ function RouteDetailScreen({ id, navigate }) {
     stops.sort((a, b) => (Number(a.sequenceNumber) || 0) - (Number(b.sequenceNumber) || 0));
     return stops;
   }, [route]);
+
+  const routeSummary = useMemo(() => summarizeRouteAssignment(route), [route]);
+  const formatMoney = useCallback(
+    (value) => formatMoneyWith(settings, Number(value || 0)),
+    [settings]
+  );
 
   if (isLoading) {
     return <LoadingSkeleton label="Loading route" rows={4} />;
@@ -335,6 +352,87 @@ function RouteDetailScreen({ id, navigate }) {
       });
     } finally {
       setPendingStopId("");
+    }
+  }
+
+  async function notifyMutationOutcome({ stop, successTitle, successMessage }) {
+    try {
+      await loadRoute();
+      showToast({
+        message: successMessage,
+        title: successTitle,
+        tone: "success"
+      });
+    } catch (refreshError) {
+      showToast({
+        message: `${successMessage} ${getApiErrorMessage(
+          refreshError,
+          "Route view could not refresh — reload the screen to see the latest state."
+        )}`,
+        title: "Updated, refresh failed",
+        tone: "warning"
+      });
+      void stop;
+    }
+  }
+
+  async function handleAssignOrder(stop) {
+    const orderId = stopOrderSelections[stop.id] || "";
+    if (!orderId) return;
+    if (pendingAssignment.stopId) return;
+    setPendingAssignment({ stopId: stop.id, orderId });
+    try {
+      await assignOrderToStop(route.id, stop.id, orderId);
+      setStopOrderSelections((current) => ({ ...current, [stop.id]: "" }));
+      await notifyMutationOutcome({
+        stop,
+        successTitle: "Order assigned",
+        successMessage: `Order assigned to stop #${stop.sequenceNumber}.`
+      });
+    } catch (requestError) {
+      showToast({
+        message: getApiErrorMessage(
+          requestError,
+          "Order could not be assigned to this stop."
+        ),
+        title: "Assign failed",
+        tone: "error"
+      });
+    } finally {
+      setPendingAssignment({ stopId: "", orderId: "" });
+    }
+  }
+
+  async function handleUnassignOrder(stop, order) {
+    if (!order?.id) return;
+    if (
+      !confirmDestructive(
+        settings,
+        `Remove order ${order.orderNumber || order.id} from stop #${stop.sequenceNumber}?`
+      )
+    ) {
+      return;
+    }
+    if (pendingAssignment.stopId) return;
+    setPendingAssignment({ stopId: stop.id, orderId: order.id });
+    try {
+      await unassignOrderFromStop(route.id, stop.id, order.id);
+      await notifyMutationOutcome({
+        stop,
+        successTitle: "Order unassigned",
+        successMessage: `Order removed from stop #${stop.sequenceNumber}.`
+      });
+    } catch (requestError) {
+      showToast({
+        message: getApiErrorMessage(
+          requestError,
+          "Order could not be unassigned from this stop."
+        ),
+        title: "Unassign failed",
+        tone: "error"
+      });
+    } finally {
+      setPendingAssignment({ stopId: "", orderId: "" });
     }
   }
 
@@ -418,6 +516,29 @@ function RouteDetailScreen({ id, navigate }) {
         />
       </section>
 
+      <section className="metric-strip">
+        <div className="metric-card">
+          <span>Total stops</span>
+          <strong>{routeSummary.stopCount}</strong>
+        </div>
+        <div className="metric-card">
+          <span>Assigned orders</span>
+          <strong>{routeSummary.assignedOrderCount}</strong>
+        </div>
+        <div className="metric-card">
+          <span>Assigned order value</span>
+          <strong>{formatMoney(routeSummary.assignedOrderValueTotal)}</strong>
+        </div>
+        <div className="metric-card">
+          <span>Coverage</span>
+          <strong>
+            {routeSummary.stopCount
+              ? `${routeSummary.assignedOrderCount} / ${routeSummary.stopCount} stops`
+              : "No stops"}
+          </strong>
+        </div>
+      </section>
+
       <section className="transaction-panel">
         <SectionHeader
           title="Stops"
@@ -453,52 +574,181 @@ function RouteDetailScreen({ id, navigate }) {
                 <span>Customer</span>
                 <span>Status</span>
                 <span>Planned arrival</span>
-                <span>Order</span>
+                <span>Orders</span>
                 <span />
               </div>
               {sortedStops.map((stop) => {
                 const isBusy = pendingStopId === stop.id;
+                const stopSummary = stop.assignmentSummary || {
+                  orderCount: 0,
+                  orderValueTotal: 0
+                };
+                const assignedOrders = Array.isArray(stop.assignedOrders)
+                  ? stop.assignedOrders
+                  : stop.order
+                  ? [stop.order]
+                  : [];
+                const eligibleOrders = Array.isArray(stop.eligibleOrders)
+                  ? stop.eligibleOrders
+                  : [];
+                const isExpanded = expandedStopId === stop.id;
+                const anyAssignmentBusy = Boolean(pendingAssignment.stopId);
+                const isThisStopBusy = pendingAssignment.stopId === stop.id;
+                const selectedOrderId = stopOrderSelections[stop.id] || "";
+                const ordersLabel = stopSummary.orderCount
+                  ? `${stopSummary.orderCount} · ${formatMoney(stopSummary.orderValueTotal)}`
+                  : "None";
                 return (
-                  <article className="resource-row route-stop-grid" key={stop.id}>
-                    <span className="stop-sequence">{stop.sequenceNumber}</span>
-                    <div>
-                      <strong>{formatStopCustomer(stop)}</strong>
-                      <span>{stop.notes || "No notes"}</span>
-                    </div>
-                    <span className="status-pill">{formatStopStatus(stop.status)}</span>
-                    <span>{formatDateTime(stop.plannedArrivalAt) || "—"}</span>
-                    <span>{stop.order?.orderNumber || stop.orderId || "—"}</span>
-                    <div className="stop-actions">
-                      {stop.status !== "completed" ? (
+                  <Fragment key={stop.id}>
+                    <article className="resource-row route-stop-grid">
+                      <span className="stop-sequence">{stop.sequenceNumber}</span>
+                      <div>
+                        <strong>{formatStopCustomer(stop)}</strong>
+                        <span>{stop.notes || "No notes"}</span>
+                      </div>
+                      <span className="status-pill">{formatStopStatus(stop.status)}</span>
+                      <span>{formatDateTime(stop.plannedArrivalAt) || "—"}</span>
+                      <span>{ordersLabel}</span>
+                      <div className="stop-actions">
+                        <button
+                          aria-expanded={isExpanded}
+                          className="secondary-button compact"
+                          onClick={() =>
+                            setExpandedStopId((current) =>
+                              current === stop.id ? "" : stop.id
+                            )
+                          }
+                          type="button"
+                        >
+                          {isExpanded ? "Hide orders" : "Orders"}
+                        </button>
+                        {stop.status !== "completed" ? (
+                          <button
+                            className="secondary-button compact"
+                            disabled={isBusy}
+                            onClick={() => transitionStopStatus(stop, "completed")}
+                            type="button"
+                          >
+                            {isBusy ? "Saving…" : "Complete"}
+                          </button>
+                        ) : null}
+                        {stop.status === "pending" ? (
+                          <button
+                            className="secondary-button compact"
+                            disabled={isBusy}
+                            onClick={() => transitionStopStatus(stop, "skipped")}
+                            type="button"
+                          >
+                            {isBusy ? "Saving…" : "Skip"}
+                          </button>
+                        ) : null}
                         <button
                           className="secondary-button compact"
                           disabled={isBusy}
-                          onClick={() => transitionStopStatus(stop, "completed")}
+                          onClick={() => setStopFormState({ mode: "edit", stop })}
                           type="button"
                         >
-                          {isBusy ? "Saving…" : "Complete"}
+                          Edit
                         </button>
-                      ) : null}
-                      {stop.status === "pending" ? (
-                        <button
-                          className="secondary-button compact"
-                          disabled={isBusy}
-                          onClick={() => transitionStopStatus(stop, "skipped")}
-                          type="button"
-                        >
-                          {isBusy ? "Saving…" : "Skip"}
-                        </button>
-                      ) : null}
-                      <button
-                        className="secondary-button compact"
-                        disabled={isBusy}
-                        onClick={() => setStopFormState({ mode: "edit", stop })}
-                        type="button"
-                      >
-                        Edit
-                      </button>
-                    </div>
-                  </article>
+                      </div>
+                    </article>
+                    {isExpanded ? (
+                      <div className="route-stop-orders-panel">
+                        <div className="route-stop-orders-block">
+                          <header>
+                            <h4>Assigned orders</h4>
+                            <span className="muted">
+                              {stopSummary.orderCount} order
+                              {stopSummary.orderCount === 1 ? "" : "s"} ·{" "}
+                              {formatMoney(stopSummary.orderValueTotal)}
+                            </span>
+                          </header>
+                          {assignedOrders.length ? (
+                            <ul className="route-stop-orders-list">
+                              {assignedOrders.map((order) => {
+                                const isUnassignBusy =
+                                  isThisStopBusy &&
+                                  pendingAssignment.orderId === order.id;
+                                return (
+                                  <li key={order.id}>
+                                    <div>
+                                      <strong>
+                                        {order.orderNumber || order.id}
+                                      </strong>
+                                      <span className="muted">
+                                        {formatOrderStatus(order.status)} ·{" "}
+                                        {formatMoney(order.grandTotal)}
+                                      </span>
+                                    </div>
+                                    <button
+                                      className="secondary-button compact"
+                                      disabled={anyAssignmentBusy}
+                                      onClick={() => handleUnassignOrder(stop, order)}
+                                      type="button"
+                                    >
+                                      {isUnassignBusy ? "Removing…" : "Unassign"}
+                                    </button>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          ) : (
+                            <p className="muted">
+                              No orders are currently assigned to this stop.
+                            </p>
+                          )}
+                        </div>
+                        <div className="route-stop-orders-block">
+                          <header>
+                            <h4>Assign an eligible order</h4>
+                            <span className="muted">
+                              {eligibleOrders.length} eligible
+                            </span>
+                          </header>
+                          {eligibleOrders.length ? (
+                            <div className="route-stop-orders-assign">
+                              <select
+                                disabled={anyAssignmentBusy}
+                                onChange={(event) =>
+                                  setStopOrderSelections((current) => ({
+                                    ...current,
+                                    [stop.id]: event.target.value
+                                  }))
+                                }
+                                value={selectedOrderId}
+                              >
+                                <option value="">Select an eligible order</option>
+                                {eligibleOrders.map((order) => (
+                                  <option key={order.id} value={order.id}>
+                                    {order.orderNumber || order.id} ·{" "}
+                                    {formatOrderStatus(order.status)} ·{" "}
+                                    {formatMoney(order.grandTotal)}
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                className="primary-button compact"
+                                disabled={!selectedOrderId || anyAssignmentBusy}
+                                onClick={() => handleAssignOrder(stop)}
+                                type="button"
+                              >
+                                {isThisStopBusy &&
+                                pendingAssignment.orderId === selectedOrderId
+                                  ? "Assigning…"
+                                  : "Assign order"}
+                              </button>
+                            </div>
+                          ) : (
+                            <p className="muted">
+                              No eligible orders for this customer. Confirm the
+                              order belongs to {formatStopCustomer(stop)} and is
+                              in draft, confirmed, packed, or dispatched status.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ) : null}
+                  </Fragment>
                 );
               })}
             </div>

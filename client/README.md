@@ -1179,3 +1179,81 @@ Verification
 - `npm run lint`: clean.
 - `npm run build`: 413.00 kB JS / 112.62 kB gzipped, 54.16 kB CSS /
   10.15 kB gzipped.
+
+## Module 20AO — Route Intelligence and Order Assignment UX
+
+Additive upgrade to the existing Route Detail screen so dispatchers can
+understand exactly what a route delivers and assign / unassign orders to
+each stop without leaving the screen. No backend changes, no redesign.
+
+API layer (`client/src/services/routeApi.js`)
+- `getRouteIntelligence(routeId)` — `GET /routes/:routeId/intelligence`,
+  returns the route plus `summary` (`stopCount`, `assignedOrderCount`,
+  `assignedOrderValueTotal`) and `stops[]` enriched with
+  `assignedOrders`, `assignmentSummary`, and `eligibleOrders`.
+- `assignOrderToStop(routeId, stopId, orderId)` —
+  `POST /routes/:routeId/stops/:stopId/orders/:orderId`.
+- `unassignOrderFromStop(routeId, stopId, orderId)` — `DELETE` on the
+  same path. Both reuse the existing auth-aware `request` helper.
+
+Helpers (`client/src/features/routes/routeUtils.js`)
+- `formatOrderStatus` for assignable order statuses
+  (`draft / confirmed / packed / dispatched / delivered / cancelled`).
+- `summarizeRouteAssignment(route)` — prefers `route.summary` from the
+  intelligence endpoint, falls back to summing per-stop summaries so the
+  metric strip always renders.
+
+Route Detail screen (`client/src/features/routes/RouteDetailScreen.jsx`)
+- Loads the intelligence payload instead of the basic route record.
+- Adds a `metric-strip` row beneath the existing detail grid showing
+  total stops, assigned order count, assigned order value (formatted
+  with the tenant currency via `formatMoneyWith`), and a coverage
+  indicator (`assigned / stops`).
+- Each stop row now shows an `Orders` cell as `count · value` (or
+  `None`), and gains an `Orders` toggle button in the action row.
+- Expanded panel renders below the row using a new
+  `.route-stop-orders-panel` block (full-width inside the existing
+  grid). It contains:
+  - **Assigned orders** — list of currently-assigned orders for the
+    stop with order number, status, value, and an `Unassign` action
+    that confirms via `confirmDestructive`.
+  - **Assign an eligible order** — only orders the backend exposes in
+    `stop.eligibleOrders` (already filtered to this stop's customer
+    and to assignable statuses) appear in the dropdown. The `Assign`
+    button is disabled until a selection is made and while a request
+    is in flight.
+- After every assign / unassign call the screen re-fetches
+  intelligence so summary metrics, per-stop counts, and eligibility
+  lists stay in sync without a full page reload.
+- Toasts confirm success and surface backend error messages
+  (`getApiErrorMessage`); per-stop assign / unassign actions are
+  mutually disabled while a request is pending.
+
+Eligibility presentation
+- The dropdown only contains orders the backend marks as eligible for
+  the stop's customer; ineligible orders are simply omitted.
+- When a stop already has an order, that order shows under
+  **Assigned orders** with an `Unassign` button — backend enforces
+  one assignment per stop, so the user removes first and then
+  assigns a different order.
+
+Responsive & UX
+- The orders panel is a 2-column grid on desktop and collapses to a
+  single column at ≤ 720 px.
+- Existing stop management actions (`Complete`, `Skip`, `Edit`) and
+  the route status transitions are unchanged.
+- Stop list still scrolls horizontally inside `TableScroll` on
+  narrow viewports.
+
+Backend limitations encountered
+- A stop currently holds at most one assigned order (DB stores a
+  single `order_id`); the UI treats `assignedOrders` as an array for
+  forward compatibility but expects 0 or 1 entries.
+- `eligibleOrders` is only populated on the intelligence endpoint
+  (not on basic route detail), so the screen always uses the
+  intelligence call.
+
+Verification
+- `npm run lint`: clean.
+- `npm run build`: 417.98 kB JS / 113.79 kB gzipped, 55.43 kB CSS /
+  10.32 kB gzipped.

@@ -41,12 +41,31 @@ async function updateRouteStop(routeId, stopId, payload) {
   });
 }
 
+async function getRouteIntelligence(routeId, options = {}) {
+  return request(`/routes/${routeId}/intelligence`, options);
+}
+
+async function assignOrderToStop(routeId, stopId, orderId) {
+  return request(`/routes/${routeId}/stops/${stopId}/orders/${orderId}`, {
+    method: "POST"
+  });
+}
+
+async function unassignOrderFromStop(routeId, stopId, orderId) {
+  return request(`/routes/${routeId}/stops/${stopId}/orders/${orderId}`, {
+    method: "DELETE"
+  });
+}
+
 export {
+  assignOrderToStop,
   createRoute,
   createRouteStop,
   getRoute,
+  getRouteIntelligence,
   listRouteStops,
   listRoutes,
+  unassignOrderFromStop,
   updateRoute,
   updateRouteStop
 };

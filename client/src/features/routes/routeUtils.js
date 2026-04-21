@@ -44,6 +44,44 @@ function formatStopCustomer(stop) {
   return "Customer";
 }
 
+const ORDER_STATUS_LABELS = {
+  draft: "Draft",
+  confirmed: "Confirmed",
+  packed: "Packed",
+  dispatched: "Dispatched",
+  delivered: "Delivered",
+  cancelled: "Cancelled"
+};
+
+function formatOrderStatus(status) {
+  return ORDER_STATUS_LABELS[status] || status || "Order";
+}
+
+function summarizeRouteAssignment(route) {
+  const fromServer = route?.summary;
+  const stops = Array.isArray(route?.stops) ? route.stops : [];
+  if (fromServer) {
+    return {
+      stopCount: Number(fromServer.stopCount || stops.length || 0),
+      assignedOrderCount: Number(fromServer.assignedOrderCount || 0),
+      assignedOrderValueTotal: Number(fromServer.assignedOrderValueTotal || 0)
+    };
+  }
+  return stops.reduce(
+    (acc, stop) => {
+      const stopSummary = stop?.assignmentSummary || {};
+      acc.assignedOrderCount += Number(stopSummary.orderCount || 0);
+      acc.assignedOrderValueTotal += Number(stopSummary.orderValueTotal || 0);
+      return acc;
+    },
+    {
+      stopCount: stops.length,
+      assignedOrderCount: 0,
+      assignedOrderValueTotal: 0
+    }
+  );
+}
+
 function nextSequenceNumber(stops) {
   if (!Array.isArray(stops) || !stops.length) return 1;
   const max = stops.reduce((acc, stop) => {
@@ -54,14 +92,17 @@ function nextSequenceNumber(stops) {
 }
 
 export {
+  ORDER_STATUS_LABELS,
   ROUTE_STATUSES,
   ROUTE_STATUS_LABELS,
   STOP_STATUSES,
   STOP_STATUS_LABELS,
   formatDateTime,
+  formatOrderStatus,
   formatRouteDate,
   formatRouteStatus,
   formatStopCustomer,
   formatStopStatus,
-  nextSequenceNumber
+  nextSequenceNumber,
+  summarizeRouteAssignment
 };

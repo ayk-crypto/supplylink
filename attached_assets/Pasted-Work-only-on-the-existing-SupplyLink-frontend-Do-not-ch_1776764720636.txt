@@ -1,0 +1,113 @@
+Work only on the existing SupplyLink frontend.
+
+Do not change backend APIs.
+
+Goal:
+Implement Module 20AO Frontend: Route Intelligence and Order Assignment UX.
+
+Context:
+Backend now supports route intelligence and order assignment for route stops.
+SupplyLink already has route detail, route templates, customers, and orders flows.
+
+Core objective:
+Upgrade the Route Detail experience so dispatchers can understand what is being delivered on a route and assign/unassign relevant orders to each stop, without redesigning the app or changing backend APIs.
+
+What to do:
+
+1) Inspect backend contracts first
+- understand exact route intelligence response shape
+- understand order assignment/unassignment endpoint behavior
+- follow existing frontend API/service patterns
+- do not change backend APIs
+
+2) Extend route API/frontend layer
+Add or extend frontend route services for:
+- loading route intelligence / assigned orders / eligible orders
+- assigning an order to a stop
+- unassigning an order from a stop
+
+Use existing auth-aware service conventions.
+
+3) Upgrade Route Detail screen
+Enhance the existing Route Detail screen so it becomes a more operational dispatch view.
+
+Add route-level summary surfaces showing:
+- total stops
+- assigned order count
+- assigned order value
+
+Use existing metric/card styles where practical.
+Do not redesign the screen.
+
+4) Stop-level intelligence
+For each stop in the route detail screen, show:
+- assigned order count
+- assigned order value
+- assigned orders list or compact table
+- relevant eligible open orders for that customer, if backend provides them
+
+Keep this readable and responsive.
+Do not clutter the stop rows excessively.
+
+5) Assign / unassign UX
+Allow the user to:
+- assign an eligible order to a stop
+- unassign an assigned order
+
+Requirements:
+- keep interaction simple and operational
+- use a compact panel, expandable area, modal, or inline section — choose the cleanest low-risk option
+- show success/error toasts
+- disable actions while requests are in flight
+- reflect updates without requiring a full page reload where practical
+
+6) Eligibility presentation
+Make it clear which orders are:
+- already assigned to this stop
+- eligible to assign
+- unavailable/ineligible if backend exposes that distinction
+
+At minimum, show only eligible orders in the assignment UI.
+
+7) Totals and visibility
+Route detail should help answer:
+- what is being delivered today?
+- how many orders are on this route?
+- how much value is on this route?
+- what does each stop carry?
+
+Add stop-level and route-level summaries where practical.
+
+8) Responsive and UX constraints
+- keep Route Detail readable on smaller screens
+- use TableScroll where needed
+- do not break existing stop management actions
+- keep implementation additive and professional
+- no redesign of current Routes screens
+
+9) Documentation
+Update client README with route intelligence coverage:
+- assigned orders
+- eligible orders
+- route/stop summaries
+- assign/unassign workflow
+
+10) Verification
+- run client lint
+- run client build
+
+Deliverable:
+1. Summary
+2. Files changed
+3. What route intelligence UX was added
+4. How order assignment/unassignment works in the UI
+5. What route/stop summaries were added
+6. Any backend limitations encountered
+7. Verification results
+8. Any useful follow-up items
+
+Important product guidance:
+- route detail should feel like a dispatch screen
+- keep the UI practical, not overloaded
+- make assignments fast and understandable
+- do not add maps, optimization, or advanced automation

@@ -807,6 +807,86 @@ a {
   justify-content: flex-end;
 }
 
+.route-stop-orders-panel {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 14px 16px 18px;
+  background: var(--surface-subtle, rgba(0, 0, 0, 0.04));
+  border-top: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.08));
+}
+
+.route-stop-orders-block header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.route-stop-orders-block header h4 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-strong, #111);
+}
+
+.route-stop-orders-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.route-stop-orders-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  background: var(--surface, #fff);
+  border: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.08));
+  border-radius: 8px;
+}
+
+.route-stop-orders-list li > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.route-stop-orders-list li > div strong {
+  font-size: 0.9rem;
+}
+
+.route-stop-orders-list li > div span {
+  font-size: 0.78rem;
+}
+
+.route-stop-orders-assign {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.route-stop-orders-assign select {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .route-stop-orders-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .route-template-grid {
   grid-template-columns:
     minmax(190px, 1.5fr) minmax(140px, 1fr) 110px minmax(120px, 0.7fr)
