@@ -2,8 +2,9 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import AppError from "../../core/errors/AppError.js";
-import env from "../../config/env.js";
+import env, { assertRequiredEnvVars } from "../../config/env.js";
 import { pool, withTransaction } from "../../config/db.js";
+import logger from "../../core/logging/logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,7 +28,9 @@ async function getExecutedMigrations() {
 }
 
 async function run() {
-  if (!env.DATABASE_URL || !pool) {
+  assertRequiredEnvVars();
+
+  if (!env.RUNTIME_DATABASE_URL || !pool) {
     throw new AppError("DATABASE_URL is required to run migrations", {
       statusCode: 500,
       code: "DATABASE_NOT_CONFIGURED"
@@ -55,15 +58,20 @@ async function run() {
       await client.query("INSERT INTO schema_migrations (name) VALUES ($1)", [fileName]);
     });
 
-    console.log(`Applied migration: ${fileName}`);
+    logger.info("database.migration.applied", { fileName });
   }
 
-  console.log("Migrations complete");
+  logger.info("database.migration.complete", {
+    environment: env.NODE_ENV
+  });
 }
 
 run()
   .catch((error) => {
-    console.error(error);
+    logger.error("database.migration.failed", {
+      message: error.message,
+      stack: error.stack
+    });
     process.exitCode = 1;
   })
   .finally(async () => {

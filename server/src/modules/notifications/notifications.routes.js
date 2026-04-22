@@ -8,6 +8,7 @@ import {
   notificationIdParamsSchema,
   notificationQuerySchema
 } from "./notifications.schemas.js";
+import { emptyBodySchema } from "../../core/http/emptySchema.js";
 
 const notificationsRoutes = Router();
 
@@ -27,6 +28,7 @@ notificationsRoutes.get(
 notificationsRoutes.patch(
   "/read-all",
   authenticate,
+  validateRequest({ body: emptyBodySchema }),
   asyncHandler(markAllRead)
 );
 
@@ -40,6 +42,7 @@ notificationsRoutes.post(
 notificationsRoutes.post(
   "/read-all",
   authenticate,
+  validateRequest({ body: emptyBodySchema }),
   asyncHandler(markAllRead)
 );
 
@@ -53,14 +56,14 @@ notificationsRoutes.get(
 notificationsRoutes.patch(
   "/:notificationId/read",
   authenticate,
-  validateRequest({ params: notificationIdParamsSchema }),
+  validateRequest({ params: notificationIdParamsSchema, body: emptyBodySchema }),
   asyncHandler(markRead)
 );
 
 notificationsRoutes.post(
   "/:notificationId/read",
   authenticate,
-  validateRequest({ params: notificationIdParamsSchema }),
+  validateRequest({ params: notificationIdParamsSchema, body: emptyBodySchema }),
   asyncHandler(markRead)
 );
 

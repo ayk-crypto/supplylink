@@ -37,8 +37,9 @@ async function getSettingsLogo(request, response) {
   const result = await getTenantLogo(request.access.vendorId);
 
   response.setHeader("Content-Type", result.company.logo.mimeType);
-  response.setHeader("Content-Disposition", `inline; filename="${result.company.logo.originalFilename}"`);
+  response.setHeader("Content-Disposition", `attachment; filename="${result.company.logo.originalFilename}"`);
   response.setHeader("Cache-Control", "private, max-age=0, must-revalidate");
+  response.setHeader("X-Content-Type-Options", "nosniff");
 
   return response.sendFile(result.path);
 }

@@ -47,11 +47,11 @@ const DATA_TABLES = [
 ];
 
 function getTestDatabaseUrl() {
-  return process.env.TEST_DATABASE_URL || process.env.DATABASE_URL || "";
+  return process.env.TEST_DATABASE_URL || "";
 }
 
 function assertSafeTestDatabaseUrl(databaseUrl) {
-  assert.ok(databaseUrl, "TEST_DATABASE_URL or DATABASE_URL is required for integration tests");
+  assert.ok(databaseUrl, "TEST_DATABASE_URL is required for integration tests");
 
   const parsed = new URL(databaseUrl);
   const databaseName = parsed.pathname.replace(/^\//, "").toLowerCase();
@@ -121,7 +121,8 @@ async function startIntegrationApp() {
   assertSafeTestDatabaseUrl(databaseUrl);
 
   process.env.NODE_ENV = "test";
-  process.env.DATABASE_URL = databaseUrl;
+  process.env.TEST_DATABASE_URL = databaseUrl;
+  process.env.DATABASE_URL = "";
   process.env.JWT_SECRET = process.env.JWT_SECRET || "integration-test-jwt-secret";
   process.env.FILE_UPLOAD_DIR = testUploadDir;
   process.env.FILE_UPLOAD_MAX_BYTES = process.env.FILE_UPLOAD_MAX_BYTES || "1048576";

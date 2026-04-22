@@ -1,4 +1,5 @@
 import AppError from "../../core/errors/AppError.js";
+import logger from "../../core/logging/logger.js";
 import { deleteLocalFile, getLocalFilePath, saveLocalFile } from "../files/files.storage.js";
 import { recordAuditEvent } from "../audit/audit.service.js";
 import {
@@ -217,7 +218,11 @@ async function bestEffortDeleteManagedLogo(company = {}) {
   try {
     await deleteLocalFile(storageKey);
   } catch (error) {
-    console.error("Failed to delete previous workspace logo", error);
+    logger.error("settings.logo.cleanup_failed", {
+      storageKey,
+      message: error.message,
+      stack: error.stack
+    });
   }
 }
 

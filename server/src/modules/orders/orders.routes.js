@@ -23,6 +23,7 @@ import {
   orderQuerySchema,
   orderUpdateBodySchema
 } from "./orders.schemas.js";
+import { emptyBodySchema } from "../../core/http/emptySchema.js";
 
 const ordersRoutes = Router();
 
@@ -49,7 +50,11 @@ function orderAction(handler) {
   return [
     authenticate,
     authorizeRoles("super_admin", "vendor_admin"),
-    validateRequest({ params: orderIdParamsSchema, query: orderQuerySchema }),
+    validateRequest({
+      params: orderIdParamsSchema,
+      query: orderQuerySchema,
+      body: emptyBodySchema
+    }),
     requireVendorAccess(),
     requireVendorWritable(),
     asyncHandler(handler)

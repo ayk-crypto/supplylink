@@ -1,8 +1,9 @@
 import bcrypt from "bcryptjs";
 import { fileURLToPath } from "url";
 import AppError from "../../core/errors/AppError.js";
-import env from "../../config/env.js";
+import env, { assertRequiredEnvVars } from "../../config/env.js";
 import { pool, withTransaction } from "../../config/db.js";
+import logger from "../../core/logging/logger.js";
 
 const DEMO_MARKER = "SupplyLink demo seed data. Safe to recreate in local/test databases.";
 const DEMO = {
@@ -539,7 +540,9 @@ async function seedDemoData(client) {
 }
 
 async function run() {
-  if (!env.DATABASE_URL || !pool) {
+  assertRequiredEnvVars();
+
+  if (!env.RUNTIME_DATABASE_URL || !pool) {
     throw new AppError("DATABASE_URL is required to seed demo data", {
       statusCode: 500,
       code: "DATABASE_NOT_CONFIGURED"
@@ -555,16 +558,18 @@ async function run() {
 
   const seeded = await withTransaction(seedDemoData);
 
-  console.log("Demo seed complete");
-  console.log(`Super admin: ${DEMO.superAdminEmail} / ${env.DEMO_SEED_PASSWORD}`);
-  console.log(`Vendor admin: ${DEMO.vendorAdminEmail} / ${env.DEMO_SEED_PASSWORD}`);
-  console.log(`Vendor ID: ${seeded.vendor.id}`);
-  console.log(`Customer ID: ${seeded.customer.id}`);
-  console.log(`Product ID: ${seeded.product.id}`);
-  console.log(`Quotation ID: ${seeded.quotation.id}`);
-  console.log(`Order ID: ${seeded.order.id}`);
-  console.log(`Invoice ID: ${seeded.invoice.id}`);
-  console.log(`Payment ID: ${seeded.payment.id}`);
+  logger.info("database.seed.complete", {
+    superAdminEmail: DEMO.superAdminEmail,
+    vendorAdminEmail: DEMO.vendorAdminEmail,
+    vendorId: seeded.vendor.id,
+    customerId: seeded.customer.id,
+    productId: seeded.product.id,
+    quotationId: seeded.quotation.id,
+    orderId: seeded.order.id,
+    invoiceId: seeded.invoice.id,
+    paymentId: seeded.payment.id,
+    note: "Use the configured DEMO_SEED_PASSWORD value locally if you need to sign in."
+  });
 }
 
 const isDirectRun = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
@@ -572,7 +577,10 @@ const isDirectRun = process.argv[1] && fileURLToPath(import.meta.url) === proces
 if (isDirectRun) {
   run()
     .catch((error) => {
-      console.error(error);
+      logger.error("database.seed.failed", {
+        message: error.message,
+        stack: error.stack
+      });
       process.exitCode = 1;
     })
     .finally(async () => {

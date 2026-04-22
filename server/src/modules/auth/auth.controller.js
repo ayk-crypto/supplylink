@@ -1,8 +1,15 @@
 import { sendSuccess } from "../../core/http/apiResponse.js";
+import logger from "../../core/logging/logger.js";
 import { getCurrentUserProfile, loginUser, registerUser } from "./auth.service.js";
 
 async function register(request, response) {
   const result = await registerUser(request.body, request.auth || null);
+  logger.info("auth.register", {
+    requestId: request.context.requestId,
+    userId: result.user.id,
+    roleCodes: result.user.roleCodes,
+    vendorId: result.vendor?.id || null
+  });
 
   sendSuccess(response, {
     statusCode: 201,
@@ -16,6 +23,11 @@ async function register(request, response) {
 
 async function login(request, response) {
   const result = await loginUser(request.body);
+  logger.info("auth.login", {
+    requestId: request.context.requestId,
+    userId: result.user.id,
+    vendorId: result.user.currentVendorId || null
+  });
 
   sendSuccess(response, {
     message: "Login successful",

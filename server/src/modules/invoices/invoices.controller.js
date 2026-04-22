@@ -1,4 +1,5 @@
 import { sendSuccess } from "../../core/http/apiResponse.js";
+import logger from "../../core/logging/logger.js";
 import {
   createInvoice,
   getInvoiceDetail,
@@ -83,6 +84,13 @@ async function share(request, response) {
     request.params.invoiceId,
     request.auth
   );
+  logger.info("invoice.share.ready", {
+    requestId: request.context.requestId,
+    vendorId: request.access.vendorId,
+    invoiceId: request.params.invoiceId,
+    actorUserId: request.auth.userId,
+    shareId: result.id
+  });
 
   sendSuccess(response, {
     message: "Invoice share link ready",
@@ -101,6 +109,13 @@ async function revokeShare(request, response) {
     request.params.invoiceId,
     request.auth
   );
+  logger.info("invoice.share.revoked", {
+    requestId: request.context.requestId,
+    vendorId: request.access.vendorId,
+    invoiceId: request.params.invoiceId,
+    actorUserId: request.auth.userId,
+    shareId: result.id
+  });
 
   sendSuccess(response, {
     message: "Invoice share link revoked",
@@ -119,6 +134,13 @@ async function regenerateShare(request, response) {
     request.params.invoiceId,
     request.auth
   );
+  logger.info("invoice.share.regenerated", {
+    requestId: request.context.requestId,
+    vendorId: request.access.vendorId,
+    invoiceId: request.params.invoiceId,
+    actorUserId: request.auth.userId,
+    shareId: result.id
+  });
 
   sendSuccess(response, {
     message: "Invoice share link regenerated",
@@ -150,6 +172,13 @@ async function email(request, response) {
 
 async function create(request, response) {
   const result = await createInvoice(request.access.vendorId, request.body, request.auth);
+  logger.info("invoice.created", {
+    requestId: request.context.requestId,
+    vendorId: request.access.vendorId,
+    invoiceId: result.id,
+    actorUserId: request.auth.userId,
+    status: result.status
+  });
 
   sendSuccess(response, {
     statusCode: 201,

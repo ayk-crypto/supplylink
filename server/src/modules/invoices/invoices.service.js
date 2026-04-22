@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { withTransaction } from "../../config/db.js";
 import AppError from "../../core/errors/AppError.js";
 import { calculateDocumentPricing, toCents, toMoney, toNumber } from "../shared/pricing.js";
 import {
@@ -521,36 +522,43 @@ async function createInvoice(vendorId, payload, actor) {
     taxRate: source.taxRate
   });
   const status = payload.status || "draft";
-  const invoice = await createInvoiceWithItems({
-    invoice: {
-      vendor_id: vendorId,
-      customer_id: source.customerId,
-      vendor_customer_relationship_id: source.relationship.id,
-      order_id: payload.orderId || null,
-      invoice_number: payload.invoiceNumber || generateInvoiceNumber(),
-      status,
-      issue_date: payload.issueDate || null,
-      due_date: payload.dueDate || null,
-      discount_type: pricing.discountType,
-      discount_value: pricing.discountValue,
-      discount_amount: pricing.discountAmount,
-      tax_enabled: pricing.taxEnabled,
-      tax_rate: pricing.taxRate,
-      tax_amount: pricing.taxAmount,
-      notes: payload.notes || source.order?.notes || null,
-      balance_due: calculateBalanceDue(status, pricing.grandTotal),
-      created_by: actor.userId,
-      subtotal: pricing.subtotal,
-      discount_total: pricing.discountTotal,
-      tax_total: pricing.taxTotal,
-      grand_total: pricing.grandTotal
-    },
-    items
-  });
+  const invoice = await withTransaction(async (client) => {
+    const createdInvoice = await createInvoiceWithItems(
+      {
+        invoice: {
+          vendor_id: vendorId,
+          customer_id: source.customerId,
+          vendor_customer_relationship_id: source.relationship.id,
+          order_id: payload.orderId || null,
+          invoice_number: payload.invoiceNumber || generateInvoiceNumber(),
+          status,
+          issue_date: payload.issueDate || null,
+          due_date: payload.dueDate || null,
+          discount_type: pricing.discountType,
+          discount_value: pricing.discountValue,
+          discount_amount: pricing.discountAmount,
+          tax_enabled: pricing.taxEnabled,
+          tax_rate: pricing.taxRate,
+          tax_amount: pricing.taxAmount,
+          notes: payload.notes || source.order?.notes || null,
+          balance_due: calculateBalanceDue(status, pricing.grandTotal),
+          created_by: actor.userId,
+          subtotal: pricing.subtotal,
+          discount_total: pricing.discountTotal,
+          tax_total: pricing.taxTotal,
+          grand_total: pricing.grandTotal
+        },
+        items
+      },
+      client
+    );
 
-  if (!["draft", "void"].includes(status)) {
-    await ensureInvoiceLedgerEntry(vendorId, invoice.id, actor.userId);
-  }
+    if (!["draft", "void"].includes(status)) {
+      await ensureInvoiceLedgerEntry(vendorId, createdInvoice.id, actor.userId, client);
+    }
+
+    return createdInvoice;
+  });
 
   const detail = await getInvoiceDetail(vendorId, invoice.id);
 
@@ -679,21 +687,28 @@ async function transitionInvoice(vendorId, invoiceId, action, actor = {}) {
     status: transition.to,
     balance_due: calculateBalanceDue(transition.to, Number(existing.grand_total))
   };
-  const updated = await updateInvoiceWithOptionalItems({
-    vendorId,
-    invoiceId,
-    invoiceUpdates
+  const updated = await withTransaction(async (client) => {
+    const nextInvoice = await updateInvoiceWithOptionalItems(
+      {
+        vendorId,
+        invoiceId,
+        invoiceUpdates
+      },
+      client
+    );
+
+    if (transition.to === "issued") {
+      await ensureInvoiceLedgerEntry(vendorId, invoiceId, actor.userId, client);
+    }
+
+    if (transition.to === "void") {
+      await voidInvoiceLedgerEntry(vendorId, invoiceId, actor.userId, client);
+    }
+
+    return nextInvoice;
   });
 
   assertInvoiceFound(updated, invoiceId);
-
-  if (transition.to === "issued") {
-    await ensureInvoiceLedgerEntry(vendorId, invoiceId, actor.userId);
-  }
-
-  if (transition.to === "void") {
-    await voidInvoiceLedgerEntry(vendorId, invoiceId, actor.userId);
-  }
 
   const detail = await getInvoiceDetail(vendorId, invoiceId);
 

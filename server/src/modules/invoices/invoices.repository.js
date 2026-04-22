@@ -322,9 +322,9 @@ async function listOrderItemsForInvoice(vendorId, orderId, client = { query }) {
   return result.rows;
 }
 
-async function createInvoiceWithItems({ invoice, items }) {
-  return withTransaction(async (client) => {
-    const invoiceResult = await client.query(
+async function createInvoiceWithItems({ invoice, items }, client = null) {
+  const executor = async (transactionClient) => {
+    const invoiceResult = await transactionClient.query(
       `INSERT INTO invoices (
          vendor_id,
          customer_id,
@@ -378,7 +378,7 @@ async function createInvoiceWithItems({ invoice, items }) {
     const createdInvoice = invoiceResult.rows[0];
 
     for (const item of items) {
-      await client.query(
+      await transactionClient.query(
         `INSERT INTO invoice_items (
            invoice_id,
            vendor_id,
@@ -410,11 +410,20 @@ async function createInvoiceWithItems({ invoice, items }) {
     }
 
     return createdInvoice;
-  });
+  };
+
+  if (client) {
+    return executor(client);
+  }
+
+  return withTransaction(executor);
 }
 
-async function updateInvoiceWithOptionalItems({ vendorId, invoiceId, invoiceUpdates, items = null }) {
-  return withTransaction(async (client) => {
+async function updateInvoiceWithOptionalItems(
+  { vendorId, invoiceId, invoiceUpdates, items = null },
+  client = null
+) {
+  const executor = async (transactionClient) => {
     const headerEntries = Object.entries(invoiceUpdates).filter(([, value]) => value !== undefined);
 
     if (headerEntries.length > 0) {
@@ -427,7 +436,7 @@ async function updateInvoiceWithOptionalItems({ vendorId, invoiceId, invoiceUpda
       values.push(vendorId);
       values.push(invoiceId);
 
-      await client.query(
+      await transactionClient.query(
         `UPDATE invoices invoice
          SET ${setClauses.join(", ")},
              updated_at = NOW()
@@ -438,7 +447,7 @@ async function updateInvoiceWithOptionalItems({ vendorId, invoiceId, invoiceUpda
     }
 
     if (items) {
-      await client.query(
+      await transactionClient.query(
         `DELETE FROM invoice_items
          WHERE vendor_id = $1
            AND invoice_id = $2`,
@@ -446,7 +455,7 @@ async function updateInvoiceWithOptionalItems({ vendorId, invoiceId, invoiceUpda
       );
 
       for (const item of items) {
-        await client.query(
+        await transactionClient.query(
           `INSERT INTO invoice_items (
              invoice_id,
              vendor_id,
@@ -478,8 +487,14 @@ async function updateInvoiceWithOptionalItems({ vendorId, invoiceId, invoiceUpda
       }
     }
 
-    return findInvoiceForVendor(vendorId, invoiceId, client);
-  });
+    return findInvoiceForVendor(vendorId, invoiceId, transactionClient);
+  };
+
+  if (client) {
+    return executor(client);
+  }
+
+  return withTransaction(executor);
 }
 
 export {

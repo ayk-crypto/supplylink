@@ -27,13 +27,17 @@ management endpoints for platform and vendor-level administration.
 
    ```bash
    copy server\.env.example server\.env.development
+   copy server\.env.test.example server\.env.test
    copy client\.env.example client\.env.development
    ```
 
-   If you want to enable quotation/invoice email sending locally, also configure SMTP values in
-   `server\.env.development` such as `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT`, and `EMAIL_FROM_ADDRESS`.
-   If SMTP is not configured, document email actions stay optional and the UI falls back to secure
-   share-link guidance instead of breaking the document workflow.
+   Backend runtime notes:
+
+   - `DATABASE_URL` is required for development and production.
+   - `TEST_DATABASE_URL` is required for integration tests and must point to an isolated database whose name includes `test`.
+   - `CORS_ALLOWED_ORIGINS` should be a comma-separated allowlist such as `http://localhost:5173,https://app.example.com`.
+   - SMTP-backed document email sending requires `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT`, `EMAIL_FROM_ADDRESS`, and optionally `EMAIL_SMTP_USER` plus `EMAIL_SMTP_PASS`.
+   - In `NODE_ENV=test`, the server uses `TEST_DATABASE_URL` only. It will not silently fall back to `DATABASE_URL`.
 
 3. Apply migrations and seed a demo dataset:
 
@@ -60,7 +64,7 @@ npm run db:seed
 - `npm run build` validates the server build step and builds the frontend.
 - `npm run lint` runs ESLint in both workspaces.
 - `npm run test` runs the server's built-in Node test suite.
-- `npm run test:integration` runs DB-backed server integration tests when `TEST_DATABASE_URL` is configured.
+- `npm run test:integration` runs DB-backed server integration tests using `TEST_DATABASE_URL` only.
 - `npm run start` starts the Express server in production mode.
 - `npm run db:migrate --workspace server` applies SQL migrations.
 - `npm run db:seed` creates a small local/demo dataset.
@@ -80,9 +84,29 @@ Shared backend patterns now include:
 - request context and tenant context middleware
 - a consistent API envelope for success and error responses
 - reusable validation with Zod
+- strict validation that rejects unknown fields across request bodies, params, and queries
+- structured request and error logging with request IDs
+- production middleware for security headers, CORS allowlists, and API rate limiting
 - a role foundation for platform and vendor scopes
 - SQL migrations for the initial multi-tenant schema
 - JWT auth, bcrypt password hashing, and role-aware guards
+
+## Required Backend Environment Variables
+
+- `DATABASE_URL`: required outside tests.
+- `TEST_DATABASE_URL`: required for integration tests and test runtime.
+- `JWT_SECRET`: required in every environment.
+- `CORS_ALLOWED_ORIGINS`: comma-separated allowed browser origins.
+- `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT`, `EMAIL_FROM_ADDRESS`: required only when document email sending is enabled.
+
+## Production Readiness Notes
+
+- The API now emits a request ID on every response and includes it in normalized error responses.
+- Errors are routed through centralized middleware and do not expose raw stacks to clients.
+- Helmet is enabled, CORS is allowlist-based, and API-wide rate limiting is applied under `/api/v1`.
+- File uploads are stored outside public routes, validated for size and type, and downloaded with `Content-Disposition: attachment` plus `X-Content-Type-Options: nosniff`.
+- Integration tests refuse to run unless `TEST_DATABASE_URL` points to a database whose name includes `test`.
+- Critical invoice, payment, and share actions are logged with structured console output for traceability.
 
 The tenancy model is designed so a `customer` can exist once while the
 `vendor_customer_relationships` table keeps each vendor-customer association

@@ -59,3 +59,32 @@ test("validateRequest preserves body and params replacement", async () => {
   assert.deepEqual(request.body, { count: 2 });
   assert.deepEqual(request.params, { itemId: "abc" });
 });
+
+test("validateRequest rejects unknown nested fields", async () => {
+  const request = {
+    body: {
+      profile: {
+        name: "Buyer",
+        unexpected: true
+      }
+    }
+  };
+  const error = await runMiddleware(
+    validateRequest({
+      body: z.object({
+        profile: z.object({
+          name: z.string()
+        })
+      })
+    }),
+    request
+  );
+
+  assert.equal(error.code, "VALIDATION_ERROR");
+  assert.deepEqual(error.details, [
+    {
+      path: "profile.unexpected",
+      message: "Unknown field"
+    }
+  ]);
+});

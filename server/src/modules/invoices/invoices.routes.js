@@ -26,6 +26,7 @@ import {
   invoiceUpdateBodySchema
 } from "./invoices.schemas.js";
 import { documentEmailBodySchema } from "../documents/documents.schemas.js";
+import { emptyBodySchema } from "../../core/http/emptySchema.js";
 
 const invoicesRoutes = Router();
 
@@ -52,7 +53,11 @@ function invoiceAction(handler) {
   return [
     authenticate,
     authorizeRoles("super_admin", "vendor_admin"),
-    validateRequest({ params: invoiceIdParamsSchema, query: invoiceQuerySchema }),
+    validateRequest({
+      params: invoiceIdParamsSchema,
+      query: invoiceQuerySchema,
+      body: emptyBodySchema
+    }),
     requireVendorAccess(),
     requireVendorWritable(),
     asyncHandler(handler)
@@ -63,7 +68,11 @@ function invoiceShareAction(handler) {
   return [
     authenticate,
     authorizeRoles("super_admin", "vendor_admin", "vendor_staff"),
-    validateRequest({ params: invoiceIdParamsSchema, query: invoiceQuerySchema }),
+    validateRequest({
+      params: invoiceIdParamsSchema,
+      query: invoiceQuerySchema,
+      body: emptyBodySchema
+    }),
     requireVendorAccess(),
     asyncHandler(handler)
   ];

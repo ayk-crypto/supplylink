@@ -1,4 +1,5 @@
 import { sendSuccess } from "../../core/http/apiResponse.js";
+import logger from "../../core/logging/logger.js";
 import {
   createPayment,
   getPaymentDetail,
@@ -34,6 +35,13 @@ async function getById(request, response) {
 
 async function create(request, response) {
   const result = await createPayment(request.access.vendorId, request.body, request.auth);
+  logger.info("payment.created", {
+    requestId: request.context.requestId,
+    vendorId: request.access.vendorId,
+    paymentId: result.id,
+    actorUserId: request.auth.userId,
+    invoiceId: result.invoiceId
+  });
 
   sendSuccess(response, {
     statusCode: 201,

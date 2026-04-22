@@ -7,6 +7,7 @@ const notFound = (request, response, next) => {
     statusCode: 404,
     message: `Route not found: ${request.method} ${request.originalUrl}`,
     code: "ROUTE_NOT_FOUND",
+    requestId: request.context?.requestId || null,
     meta: {
       requestId: request.context?.requestId || null
     }

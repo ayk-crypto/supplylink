@@ -27,6 +27,7 @@ import {
   routeStopUpdateBodySchema,
   routeUpdateBodySchema
 } from "./routes.schemas.js";
+import { emptyBodySchema } from "../../core/http/emptySchema.js";
 
 const routesRoutes = Router();
 
@@ -124,7 +125,8 @@ routesRoutes.post(
   authorizeRoles("super_admin", "vendor_admin"),
   validateRequest({
     params: routeStopOrderParamsSchema,
-    query: routeQuerySchema
+    query: routeQuerySchema,
+    body: emptyBodySchema
   }),
   requireVendorAccess(),
   requireVendorWritable(),

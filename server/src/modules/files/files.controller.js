@@ -78,6 +78,9 @@ async function download(request, response) {
 
   response.setHeader("Content-Type", result.attachment.mimeType);
   response.setHeader("Content-Length", String(result.attachment.fileSize));
+  response.setHeader("Content-Disposition", `attachment; filename="${result.attachment.originalFilename}"`);
+  response.setHeader("X-Content-Type-Options", "nosniff");
+  response.setHeader("Cache-Control", "private, no-store");
 
   return new Promise((resolve, reject) => {
     response.download(result.path, result.attachment.originalFilename, (error) => {

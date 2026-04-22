@@ -4,11 +4,11 @@ import env from "./env.js";
 const { Pool } = pg;
 
 function createPool() {
-  if (!env.DATABASE_URL) {
+  if (!env.RUNTIME_DATABASE_URL) {
     return null;
   }
 
-  const databaseUrl = new URL(env.DATABASE_URL);
+  const databaseUrl = new URL(env.RUNTIME_DATABASE_URL);
   const useSsl =
     env.ENABLE_DB_SSL ||
     databaseUrl.hostname.endsWith(".neon.tech") ||

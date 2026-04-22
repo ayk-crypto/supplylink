@@ -1,4 +1,5 @@
 import AppError from "../../core/errors/AppError.js";
+import logger from "../../core/logging/logger.js";
 import {
   countUnreadNotificationsForUser,
   createNotificationsForUsers,
@@ -199,7 +200,10 @@ async function notifySuperAdmins({
 
 function runNotificationTask(task) {
   task.catch((error) => {
-    console.error("Notification task failed", error);
+    logger.error("notifications.task.failed", {
+      message: error.message,
+      stack: error.stack
+    });
   });
 }
 

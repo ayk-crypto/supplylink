@@ -1,5 +1,6 @@
 import multer from "multer";
 import AppError from "../../core/errors/AppError.js";
+import { assertSafeUpload } from "../files/fileSecurity.js";
 import {
   SETTINGS_LOGO_ALLOWED_MIME_TYPES,
   SETTINGS_LOGO_MAX_BYTES
@@ -38,7 +39,12 @@ const upload = multer({
 function uploadSettingsLogo(request, response, next) {
   upload.single("file")(request, response, (error) => {
     if (!error) {
-      return next();
+      try {
+        assertSafeUpload(request.file, { codePrefix: "LOGO_FILE" });
+        return next();
+      } catch (validationError) {
+        return next(validationError);
+      }
     }
 
     if (error instanceof multer.MulterError && error.code === "LIMIT_FILE_SIZE") {

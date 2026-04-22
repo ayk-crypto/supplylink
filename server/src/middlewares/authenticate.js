@@ -50,11 +50,11 @@ async function authenticate(request, response, next) {
 
     return next();
   } catch (error) {
+    void error;
     return next(
       new AppError("Invalid or expired access token", {
         statusCode: 401,
-        code: "INVALID_ACCESS_TOKEN",
-        details: error instanceof Error ? [{ message: error.message }] : []
+        code: "INVALID_ACCESS_TOKEN"
       })
     );
   }

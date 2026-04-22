@@ -1,29 +1,57 @@
 import express from "express";
 import cors from "cors";
-import morgan from "morgan";
+import helmet from "helmet";
 import env from "./config/env.js";
 import { sendSuccess } from "./core/http/apiResponse.js";
 import asyncHandler from "./utils/asyncHandler.js";
 import requestContext from "./middlewares/requestContext.js";
+import requestLogger from "./middlewares/requestLogger.js";
 import tenantContext from "./middlewares/tenantContext.js";
 import v1Routes from "./api/v1/routes/index.js";
 import healthRoutes from "./routes/health.routes.js";
-import dbRoutes from "./routes/db.routes.js";
 import { buildSystemOverview } from "./modules/system/system.service.js";
 import notFound from "./middlewares/notFound.js";
 import errorHandler from "./middlewares/errorHandler.js";
+import createApiRateLimiter from "./middlewares/apiRateLimiter.js";
+import AppError from "./core/errors/AppError.js";
 
 const app = express();
 
+app.disable("x-powered-by");
+app.set("trust proxy", 1);
+app.use(requestContext);
+app.use(requestLogger);
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+  })
+);
 app.use(express.json());
 app.use(
   cors({
-    origin: env.CLIENT_URL,
+    origin(origin, callback) {
+      if (!origin || env.CORS_ALLOWED_ORIGINS.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(
+        new AppError("Origin is not allowed by CORS policy", {
+          statusCode: 403,
+          code: "CORS_ORIGIN_NOT_ALLOWED"
+        })
+      );
+    },
     credentials: true
   })
 );
-app.use(morgan("dev"));
-app.use(requestContext);
+app.use(
+  `${env.API_PREFIX}/${env.API_VERSION}`,
+  createApiRateLimiter({
+    windowMs: env.API_RATE_LIMIT_WINDOW_MS,
+    max: env.API_RATE_LIMIT_MAX
+  })
+);
 app.use(tenantContext);
 
 app.get("/", (request, response) => {
@@ -42,7 +70,6 @@ app.get("/", (request, response) => {
 
 app.use(`${env.API_PREFIX}/${env.API_VERSION}`, v1Routes);
 app.use("/api/health", healthRoutes);
-app.use("/api/db-test", dbRoutes);
 app.get(
   "/api/status",
   asyncHandler(async (request, response) => {

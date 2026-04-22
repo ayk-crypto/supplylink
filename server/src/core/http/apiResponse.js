@@ -17,12 +17,15 @@ function sendError(
     message = "Request failed",
     code = "REQUEST_FAILED",
     errors = [],
-    meta = {}
+    meta = {},
+    requestId = meta.requestId ?? null
   } = {}
 ) {
   return response.status(statusCode).json({
     success: false,
+    code,
     message,
+    requestId,
     error: {
       code,
       details: errors

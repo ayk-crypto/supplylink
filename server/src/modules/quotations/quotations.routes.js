@@ -29,6 +29,7 @@ import {
   quotationUpdateBodySchema
 } from "./quotations.schemas.js";
 import { documentEmailBodySchema } from "../documents/documents.schemas.js";
+import { emptyBodySchema } from "../../core/http/emptySchema.js";
 
 const quotationsRoutes = Router();
 
@@ -55,7 +56,11 @@ function quotationAction(handler) {
   return [
     authenticate,
     authorizeRoles("super_admin", "vendor_admin"),
-    validateRequest({ params: quotationIdParamsSchema, query: quotationQuerySchema }),
+    validateRequest({
+      params: quotationIdParamsSchema,
+      query: quotationQuerySchema,
+      body: emptyBodySchema
+    }),
     requireVendorAccess(),
     requireVendorWritable(),
     asyncHandler(handler)
@@ -66,7 +71,11 @@ function quotationShareAction(handler) {
   return [
     authenticate,
     authorizeRoles("super_admin", "vendor_admin", "vendor_staff"),
-    validateRequest({ params: quotationIdParamsSchema, query: quotationQuerySchema }),
+    validateRequest({
+      params: quotationIdParamsSchema,
+      query: quotationQuerySchema,
+      body: emptyBodySchema
+    }),
     requireVendorAccess(),
     asyncHandler(handler)
   ];

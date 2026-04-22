@@ -2,6 +2,7 @@ import multer from "multer";
 import env from "../../config/env.js";
 import AppError from "../../core/errors/AppError.js";
 import { ALLOWED_MIME_TYPES } from "./files.constants.js";
+import { assertSafeUpload } from "./fileSecurity.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -36,7 +37,12 @@ const upload = multer({
 function uploadSingleFile(request, response, next) {
   upload.single("file")(request, response, (error) => {
     if (!error) {
-      return next();
+      try {
+        assertSafeUpload(request.file, { codePrefix: "FILE" });
+        return next();
+      } catch (validationError) {
+        return next(validationError);
+      }
     }
 
     if (error instanceof multer.MulterError && error.code === "LIMIT_FILE_SIZE") {

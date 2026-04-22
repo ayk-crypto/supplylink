@@ -17,8 +17,6 @@ function mapAttachment(row) {
     entityType: row.entity_type,
     entityId: row.entity_id,
     originalFilename: row.original_filename,
-    storedFilename: row.stored_filename,
-    storageKey: row.storage_key,
     storageBackend: row.storage_backend,
     mimeType: row.mime_type,
     fileSize: Number(row.file_size),
