@@ -2,6 +2,24 @@ import { useState } from "react";
 import { useAuth } from "../../features/auth/useAuth.js";
 import { useAppSettings } from "../../features/system/settingsContext.js";
 
+function getInitials(value, fallback = "SL") {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+
+  const parts = value
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+
+  if (!parts.length) {
+    return fallback;
+  }
+
+  return parts.map((part) => part[0]?.toUpperCase() || "").join("");
+}
+
 function AppShell({
   activePath = "/dashboard",
   children,
@@ -10,12 +28,15 @@ function AppShell({
   onNavigate
 }) {
   const { logout, user } = useAuth();
-  const { settings } = useAppSettings();
+  useAppSettings();
   const [isNavOpen, setIsNavOpen] = useState(false);
   const activeVendor = user?.memberships?.find(
     (membership) => membership.vendorId === user.currentVendorId
   );
   const roleLabel = user?.roleCodes?.join(", ") || "Team member";
+  const vendorName = activeVendor?.vendorDisplayName || "Selected workspace";
+  const vendorSlug = activeVendor?.vendorSlug || user?.currentVendorId || "No workspace selected";
+  const userInitials = getInitials(user?.fullName, "SL");
 
   return (
     <div className="app-layout">
@@ -50,9 +71,9 @@ function AppShell({
         </div>
 
         <div className="sidebar-vendor">
-          <span>Current vendor</span>
-          <strong>{activeVendor?.vendorDisplayName || "Selected workspace"}</strong>
-          <small>{activeVendor?.vendorSlug || user?.currentVendorId}</small>
+          <span>Current workspace</span>
+          <strong>{vendorName}</strong>
+          <small>{vendorSlug}</small>
         </div>
 
         <nav className="side-nav" aria-label="Primary navigation">
@@ -67,7 +88,7 @@ function AppShell({
               }}
               type="button"
             >
-              {item.label}
+              <span>{item.label}</span>
             </button>
           ))}
         </nav>
@@ -85,15 +106,19 @@ function AppShell({
             Menu
           </button>
 
-          <div>
+          <div className="workspace-title-block">
             <p className="eyebrow">Workspace</p>
-            <h1>{activeVendor?.vendorDisplayName || user?.currentVendorId || "SupplyLink"}</h1>
+            <h1>{vendorName}</h1>
+            <p className="workspace-subtitle">{vendorSlug}</p>
           </div>
 
           <div className="topbar-actions">
             {headerExtras}
             <div className="session-chip">
-              <div>
+              <span className="session-chip-avatar" aria-hidden="true">
+                {userInitials}
+              </span>
+              <div className="session-chip-body">
                 <strong>{user?.fullName}</strong>
                 <span>{roleLabel}</span>
               </div>

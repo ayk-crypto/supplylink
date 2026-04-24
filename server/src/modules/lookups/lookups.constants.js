@@ -5,8 +5,7 @@ const LOOKUP_OPTION_GROUPS = {
   routeStatuses: ["draft", "planned", "in_progress", "completed", "cancelled"],
   routeStopStatuses: ["pending", "completed", "skipped"],
   paymentMethods: ["cash", "bank_transfer", "card", "check", "mobile_money", "other"],
-  subscriptionStatuses: ["trialing", "active", "past_due", "cancelled", "expired"],
-  billingCycles: ["monthly", "quarterly", "yearly"],
+  subscriptionStatuses: ["trial", "active", "expired", "cancelled"],
   vendorStatuses: ["draft", "active", "suspended", "archived"]
 };
 

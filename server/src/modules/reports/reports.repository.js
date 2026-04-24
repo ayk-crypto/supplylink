@@ -441,7 +441,7 @@ async function getAdminOverviewMetrics() {
        (
          SELECT COUNT(*)::int
          FROM subscriptions
-         WHERE status IN ('trialing', 'active', 'past_due')
+         WHERE status IN ('trial', 'active')
        ) AS live_subscriptions,
        (
          SELECT COUNT(*)::int

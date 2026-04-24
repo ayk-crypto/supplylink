@@ -71,10 +71,10 @@ const MODULES = [
     description: "Delivery route planning base."
   },
   {
-    key: "subscriptions",
-    scope: "platform",
-    path: `${API_INFO.basePath}/subscriptions`,
-    description: "Tenant subscription base."
+    key: "subscription",
+    scope: "vendor",
+    path: `${API_INFO.basePath}/subscription`,
+    description: "Hybrid plan, trial, and usage access controls."
   },
   {
     key: "reports",

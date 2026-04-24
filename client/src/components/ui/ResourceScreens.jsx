@@ -20,12 +20,23 @@ function Toolbar({ children, onSubmit }) {
 }
 
 function EmptyState({ children }) {
-  return <p className="empty-panel">{children}</p>;
+  return (
+    <div className="empty-panel" role="status">
+      <span className="empty-panel-mark" aria-hidden="true">
+        +
+      </span>
+      <div className="empty-panel-copy">
+        <strong>Nothing to show yet</strong>
+        <p>{children}</p>
+      </div>
+    </div>
+  );
 }
 
-function LoadingState({ children = "Loading…" }) {
+function LoadingState({ children = "Loading..." }) {
   return (
     <p aria-live="polite" className="surface-message loading">
+      <span className="surface-message-spinner" aria-hidden="true" />
       <span>{children}</span>
     </p>
   );
@@ -35,7 +46,13 @@ function ErrorState({ message, onRetry, retryLabel = "Try again" }) {
   if (!message) return null;
   return (
     <div className="error-state surface-message error" role="alert">
-      <span>{message}</span>
+      <span className="surface-message-mark" aria-hidden="true">
+        !
+      </span>
+      <div className="surface-message-copy">
+        <strong>Something needs attention</strong>
+        <span>{message}</span>
+      </div>
       {typeof onRetry === "function" ? (
         <button className="link-button" onClick={onRetry} type="button">
           {retryLabel}
@@ -100,7 +117,10 @@ function FormPanel({
     <div className="modal-backdrop">
       <form className="form-panel" onSubmit={onSubmit}>
         <div className="form-panel-heading">
-          <h3>{title}</h3>
+          <div>
+            <h3>{title}</h3>
+            <p>Review the details below and save when you are ready.</p>
+          </div>
           <button aria-label="Close form" onClick={onCancel} type="button">
             Close
           </button>
@@ -140,10 +160,10 @@ function Pagination({ pagination, onPageChange }) {
 
   return (
     <div className="pagination-bar">
-      <span>
+      <span className="pagination-summary">
         Page {pagination.page} of {pagination.totalPages || 1} / {pagination.totalItems} records
       </span>
-      <div>
+      <div className="pagination-actions">
         <button
           className="secondary-button"
           disabled={!canGoBack}

@@ -74,7 +74,7 @@ npm run db:seed
 
 The backend is organized around a versioned API entrypoint at `/api/v1`.
 Domain modules are split into `auth`, `vendors`, `customers`, `products`,
-`orders`, `invoices`, `quotations`, `ledger`, `routes`, `subscriptions`,
+`orders`, `invoices`, `quotations`, `ledger`, `routes`, `subscription`,
 `notifications`, and `files`, with lightweight placeholders ready for future
 services, controllers, and validators.
 
@@ -169,13 +169,10 @@ without leaking ledger, order, pricing, or route data across tenants.
 - `GET /api/v1/routes/:routeId/stops`
 - `POST /api/v1/routes/:routeId/stops`
 - `PATCH /api/v1/routes/:routeId/stops/:stopId`
-- `GET /api/v1/subscriptions`
-- `POST /api/v1/subscriptions`
-- `GET /api/v1/subscriptions/me`
-- `GET /api/v1/subscriptions/:subscriptionId`
-- `PATCH /api/v1/subscriptions/:subscriptionId`
-- `GET /api/v1/subscriptions/admin/vendors/:vendorId/overview`
-- `PATCH /api/v1/subscriptions/admin/vendors/:vendorId/status`
+- `GET /api/v1/subscription`
+- `POST /api/v1/subscription/upgrade`
+- `POST /api/v1/subscription/cancel`
+- `POST /api/v1/subscription/extend-trial`
 - `GET /api/v1/reports/summary`
 - `GET /api/v1/reports/orders`
 - `GET /api/v1/reports/invoices`
@@ -603,57 +600,50 @@ curl -X PATCH http://localhost:4000/api/v1/routes/%ROUTE_ID%/stops/%STOP_ID% ^
 Stop sequencing uses explicit `sequenceNumber` values and shifts neighboring
 stops when a new stop is inserted or an existing stop is moved.
 
-## Admin And Subscriptions
+## Subscription And Billing
 
-Module 11 replaces the subscriptions placeholder with platform subscription
-administration and a safe vendor self-view. Subscription management is
-`super_admin` only; vendor users can only read the current subscription for
-their selected vendor.
+Module 23 introduces a hybrid subscription model with hardcoded plan tiers,
+usage limits, and a 30-day trial that grants Pro-level access without wiring a
+payment gateway yet. Every new vendor now gets a default subscription row with
+`plan=free`, `status=trial`, and `trial_ends_at=NOW()+30 days`.
 
-Super admins can list, create, inspect, and update subscriptions:
+Business rules in this module:
 
-```bash
-curl "http://localhost:4000/api/v1/subscriptions?page=1&pageSize=20&status=active&search=acme" ^
-  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%"
+- trial vendors are treated as `pro`
+- after trial ends, access falls back to the `free` plan unless upgraded
+- `free` allows up to 30 customers and 50 invoices per month
+- `basic` allows up to 500 customers and unlimited invoices
+- `pro` is unlimited
+- `cancelled` and `expired` access falls back to free-plan enforcement
 
-curl -X POST http://localhost:4000/api/v1/subscriptions ^
-  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%" ^
-  -H "Content-Type: application/json" ^
-  -d "{\"vendorId\":\"%VENDOR_ID%\",\"planCode\":\"growth\",\"status\":\"trialing\",\"billingCycle\":\"monthly\",\"startsAt\":\"2026-04-11\",\"endsAt\":\"2026-05-11\",\"notes\":\"Initial trial\"}"
-
-curl http://localhost:4000/api/v1/subscriptions/%SUBSCRIPTION_ID% ^
-  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%"
-
-curl -X PATCH http://localhost:4000/api/v1/subscriptions/%SUBSCRIPTION_ID% ^
-  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%" ^
-  -H "Content-Type: application/json" ^
-  -d "{\"status\":\"active\",\"planCode\":\"growth\",\"notes\":\"Activated after onboarding\"}"
-```
-
-Vendor admins and staff can view only their own current subscription summary:
+The backend now enforces plan limits before customer and invoice creation with
+`PLAN_LIMIT_EXCEEDED`. Vendor admins and staff can read the current
+subscription; vendor admins can upgrade or cancel it; super admins can extend a
+trial for any vendor.
 
 ```bash
-curl http://localhost:4000/api/v1/subscriptions/me ^
+curl http://localhost:4000/api/v1/subscription ^
   -H "Authorization: Bearer %VENDOR_TOKEN%"
-```
 
-Super admins can review a lightweight vendor overview and change vendor account
-status using the existing vendor status values:
+curl -X POST http://localhost:4000/api/v1/subscription/upgrade ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"plan\":\"basic\"}"
 
-```bash
-curl http://localhost:4000/api/v1/subscriptions/admin/vendors/%VENDOR_ID%/overview ^
-  -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%"
+curl -X POST http://localhost:4000/api/v1/subscription/cancel ^
+  -H "Authorization: Bearer %VENDOR_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -d "{}"
 
-curl -X PATCH http://localhost:4000/api/v1/subscriptions/admin/vendors/%VENDOR_ID%/status ^
+curl -X POST http://localhost:4000/api/v1/subscription/extend-trial ^
   -H "Authorization: Bearer %SUPER_ADMIN_TOKEN%" ^
   -H "Content-Type: application/json" ^
-  -d "{\"status\":\"suspended\",\"reason\":\"Billing hold\"}"
+  -d "{\"vendorId\":\"%VENDOR_ID%\",\"days\":14}"
 ```
 
-The current schema supports subscription `planCode`, status, billing cycle,
-period dates, trial end, and metadata. Notes are stored inside subscription
-metadata because there is no dedicated `notes` column. Vendor account status
-uses the existing schema values: `draft`, `active`, `suspended`, and `archived`.
+The subscription response includes the effective plan, base plan, status,
+current limits, current usage, and remaining trial days so the frontend can
+surface billing state without additional calculations.
 
 ## Reports And Exports
 
@@ -744,9 +734,9 @@ curl -X PATCH http://localhost:4000/api/v1/notifications/read-all ^
 The first event hooks are in-app only and best-effort. Vendor admins receive key
 vendor events such as `quotation.created`, `quotation.sent`, `order.confirmed`,
 `invoice.issued`, `payment.received`, `route.created`, and `route.updated`.
-Super admins receive platform events such as `subscription.status_changed` and
-`vendor.status_changed`. A suspended vendor also creates a vendor-scoped
-`vendor.suspended` notification for that vendor's admins.
+Super admins receive platform events such as `vendor.status_changed`. A
+suspended vendor also creates a vendor-scoped `vendor.suspended` notification
+for that vendor's admins.
 
 ## File And Attachment Foundation
 
@@ -908,6 +898,7 @@ vendor.admin@supplylink.local / Password123!
 ```
 
 The client expects `VITE_API_BASE_URL=/api/v1` in `client/.env.development`.
+The default local Vite URL in this workspace is `http://localhost:5000`.
 
 ## API Hardening And Tests
 
@@ -983,7 +974,7 @@ configuration. It returns HTTP 503 when the API is not ready.
 
 ## Local URLs
 
-- Frontend: `http://localhost:5173`
+- Frontend: `http://localhost:5000`
 - Backend: `http://localhost:4000`
 - Foundation overview: `http://localhost:4000/api/v1/system/overview`
 - Readiness check: `http://localhost:4000/api/v1/system/readiness`

@@ -4,6 +4,7 @@ import authenticate from "../../middlewares/authenticate.js";
 import authorizeRoles from "../../middlewares/authorizeRoles.js";
 import requireVendorAccess from "../../middlewares/requireVendorAccess.js";
 import requireVendorWritable from "../../middlewares/requireVendorWritable.js";
+import requireSubscriptionAccess from "../../middlewares/requireSubscriptionAccess.js";
 import validateRequest from "../../middlewares/validateRequest.js";
 import { create, getById, list, update } from "./customers.controller.js";
 import {
@@ -31,6 +32,7 @@ customersRoutes.post(
   validateRequest({ query: paginationQuerySchema, body: customerCreateBodySchema }),
   requireVendorAccess(),
   requireVendorWritable(),
+  requireSubscriptionAccess("create_customer"),
   asyncHandler(create)
 );
 

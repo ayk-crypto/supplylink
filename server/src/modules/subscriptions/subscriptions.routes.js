@@ -5,21 +5,14 @@ import authorizeRoles from "../../middlewares/authorizeRoles.js";
 import requireVendorAccess from "../../middlewares/requireVendorAccess.js";
 import validateRequest from "../../middlewares/validateRequest.js";
 import {
-  create,
-  getById,
+  cancel,
+  extendTrial,
   getMe,
-  getVendorOverview,
-  list,
-  update,
-  updateVendorStatus
+  upgrade
 } from "./subscriptions.controller.js";
 import {
-  subscriptionCreateBodySchema,
-  subscriptionIdParamsSchema,
-  subscriptionQuerySchema,
-  subscriptionUpdateBodySchema,
-  vendorIdParamsSchema,
-  vendorStatusUpdateBodySchema
+  extendTrialBodySchema,
+  subscriptionUpgradeBodySchema,
 } from "./subscriptions.schemas.js";
 
 const subscriptionsRoutes = Router();
@@ -27,60 +20,34 @@ const subscriptionsRoutes = Router();
 subscriptionsRoutes.get(
   "/",
   authenticate,
-  authorizeRoles("super_admin"),
-  validateRequest({ query: subscriptionQuerySchema }),
-  asyncHandler(list)
-);
-
-subscriptionsRoutes.post(
-  "/",
-  authenticate,
-  authorizeRoles("super_admin"),
-  validateRequest({ body: subscriptionCreateBodySchema }),
-  asyncHandler(create)
-);
-
-subscriptionsRoutes.get(
-  "/me",
-  authenticate,
   authorizeRoles("super_admin", "vendor_admin", "vendor_staff"),
   requireVendorAccess(),
   asyncHandler(getMe)
 );
 
-subscriptionsRoutes.get(
-  "/admin/vendors/:vendorId/overview",
+subscriptionsRoutes.post(
+  "/upgrade",
   authenticate,
-  authorizeRoles("super_admin"),
-  validateRequest({ params: vendorIdParamsSchema }),
-  asyncHandler(getVendorOverview)
+  authorizeRoles("super_admin", "vendor_admin"),
+  validateRequest({ body: subscriptionUpgradeBodySchema }),
+  requireVendorAccess(),
+  asyncHandler(upgrade)
 );
 
-subscriptionsRoutes.patch(
-  "/admin/vendors/:vendorId/status",
+subscriptionsRoutes.post(
+  "/cancel",
   authenticate,
-  authorizeRoles("super_admin"),
-  validateRequest({ params: vendorIdParamsSchema, body: vendorStatusUpdateBodySchema }),
-  asyncHandler(updateVendorStatus)
+  authorizeRoles("super_admin", "vendor_admin"),
+  requireVendorAccess(),
+  asyncHandler(cancel)
 );
 
-subscriptionsRoutes.get(
-  "/:subscriptionId",
+subscriptionsRoutes.post(
+  "/extend-trial",
   authenticate,
   authorizeRoles("super_admin"),
-  validateRequest({ params: subscriptionIdParamsSchema }),
-  asyncHandler(getById)
-);
-
-subscriptionsRoutes.patch(
-  "/:subscriptionId",
-  authenticate,
-  authorizeRoles("super_admin"),
-  validateRequest({
-    params: subscriptionIdParamsSchema,
-    body: subscriptionUpdateBodySchema
-  }),
-  asyncHandler(update)
+  validateRequest({ body: extendTrialBodySchema }),
+  asyncHandler(extendTrial)
 );
 
 export default subscriptionsRoutes;

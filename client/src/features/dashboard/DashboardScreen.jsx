@@ -18,7 +18,7 @@ function SummaryCard({ accent, detail, icon, label, tone, value }) {
     >
       <div className="dashboard-summary-head">
         <span className="dashboard-summary-icon" aria-hidden="true">
-          {icon || "•"}
+          {icon || "."}
         </span>
         <span className="dashboard-summary-label">{label}</span>
       </div>
@@ -174,7 +174,7 @@ function TopCustomers({ formatDate, formatMoney, items, navigate }) {
             <strong>{customer.label}</strong>
             <p>{customer.secondaryText || `${customer.invoiceCount} invoices posted`}</p>
             <span>
-              Collected {formatMoney(customer.collectedTotal)} · Outstanding{" "}
+              Collected {formatMoney(customer.collectedTotal)} | Outstanding{" "}
               {formatMoney(customer.outstandingTotal)}
             </span>
             {customer.lastPaymentDate ? (
@@ -213,14 +213,22 @@ function PaymentsList({ formatDate, formatMoney, items, navigate }) {
         <article className="dashboard-payment-row" key={payment.id}>
           <div>
             <strong>{payment.customer?.label || payment.label}</strong>
-            <p>{payment.invoice?.invoiceNumber ? `Invoice ${payment.invoice.invoiceNumber}` : "General payment"}</p>
+            <p>
+              {payment.invoice?.invoiceNumber
+                ? `Invoice ${payment.invoice.invoiceNumber}`
+                : "General payment"}
+            </p>
             <span>{formatDate(payment.paymentDate)}</span>
           </div>
           <div className="dashboard-payment-meta">
             <strong>{formatMoney(payment.amount)}</strong>
             <small>{payment.paymentMethod || "Payment"}</small>
             {typeof navigate === "function" ? (
-              <button className="link-button" onClick={() => navigate("/reports/payments")} type="button">
+              <button
+                className="link-button"
+                onClick={() => navigate("/reports/payments")}
+                type="button"
+              >
                 View all
               </button>
             ) : null}
@@ -357,42 +365,42 @@ function DashboardScreen({ navigate }) {
       <section className="dashboard-summary-grid">
         <SummaryCard
           tone="success"
-          icon="↑"
+          icon="$"
           detail="Total revenue collected"
           label="Revenue collected"
           value={formatMoney(summary.revenueCollected || 0)}
         />
         <SummaryCard
           tone="warning"
-          icon="!"
+          icon="AR"
           detail="Unpaid issued invoice balance"
           label="Outstanding receivables"
           value={formatMoney(summary.outstandingReceivables || 0)}
         />
         <SummaryCard
           tone="info"
-          icon="◉"
+          icon="CU"
           detail="Linked customers"
           label="Customers"
           value={String(summary.totalCustomers || 0)}
         />
         <SummaryCard
           tone="violet"
-          icon="✎"
+          icon="QT"
           detail="Quotations created"
           label="Quotations"
           value={String(summary.totalQuotations || 0)}
         />
         <SummaryCard
           tone="teal"
-          icon="◆"
+          icon="OR"
           detail="Orders across all statuses"
           label="Orders"
           value={String(summary.totalOrders || 0)}
         />
         <SummaryCard
           tone="rose"
-          icon="₹"
+          icon="IV"
           detail="Invoices issued so far"
           label="Invoices"
           value={String(summary.totalInvoices || 0)}

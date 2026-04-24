@@ -53,6 +53,25 @@ if (!testDatabaseUrl) {
       };
     }
 
+    async function registerSuperAdmin(label) {
+      const email = `${label}.super.${suffix}@integration.supplylink.local`;
+      const result = await api.post("/auth/register", {
+        expectedStatus: 201,
+        body: {
+          fullName: `${label.toUpperCase()} Super Admin`,
+          email,
+          password,
+          roleCode: "super_admin"
+        }
+      });
+
+      return {
+        email,
+        token: result.payload.data.accessToken,
+        user: result.payload.data.user
+      };
+    }
+
     async function createVendorStaff(vendor, label) {
       const email = `${label}.staff.${suffix}@integration.supplylink.local`;
       const passwordHash = await bcrypt.hash(password, 4);
@@ -113,6 +132,170 @@ if (!testDatabaseUrl) {
       assert.equal(me.payload.data.currentVendorId, state.vendorA.vendor.id);
 
       state.vendorAStaff = await createVendorStaff(state.vendorA.vendor, "alpha");
+    });
+
+    await t.test("subscription trial, lifecycle actions, and plan limits work", async () => {
+      state.superAdmin = await registerSuperAdmin("platform");
+      state.vendorC = await registerVendorAdmin("charlie");
+
+      const initialSubscription = await api.get("/subscription", {
+        token: state.vendorC.token
+      });
+      assert.equal(initialSubscription.payload.data.basePlan, "free");
+      assert.equal(initialSubscription.payload.data.plan, "pro");
+      assert.equal(initialSubscription.payload.data.status, "trial");
+      assert.ok(initialSubscription.payload.data.trialRemainingDays > 0);
+
+      const extendedTrial = await api.post("/subscription/extend-trial", {
+        token: state.superAdmin.token,
+        body: {
+          vendorId: state.vendorC.vendor.id,
+          days: 10
+        }
+      });
+      assert.equal(extendedTrial.payload.data.status, "trial");
+      assert.ok(
+        extendedTrial.payload.data.trialRemainingDays >=
+          initialSubscription.payload.data.trialRemainingDays
+      );
+
+      const upgradedSubscription = await api.post("/subscription/upgrade", {
+        token: state.vendorC.token,
+        body: {
+          plan: "basic"
+        }
+      });
+      assert.equal(upgradedSubscription.payload.data.basePlan, "basic");
+      assert.equal(upgradedSubscription.payload.data.plan, "basic");
+      assert.equal(upgradedSubscription.payload.data.status, "active");
+
+      const cancelledSubscription = await api.post("/subscription/cancel", {
+        token: state.vendorC.token,
+        body: {}
+      });
+      assert.equal(cancelledSubscription.payload.data.status, "cancelled");
+      assert.equal(cancelledSubscription.payload.data.plan, "free");
+
+      state.vendorD = await registerVendorAdmin("delta");
+
+      await app.pool.query(
+        `UPDATE subscriptions
+         SET plan = 'free',
+             status = 'active',
+             started_at = NOW(),
+             expires_at = NULL,
+             trial_ends_at = NOW() - INTERVAL '1 day',
+             updated_at = NOW()
+         WHERE vendor_id = $1`,
+        [state.vendorD.vendor.id]
+      );
+
+      for (let index = 1; index <= 30; index += 1) {
+        const customerResult = await app.pool.query(
+          `INSERT INTO customers (full_name, company_name, email)
+           VALUES ($1, $2, $3)
+           RETURNING id`,
+          [
+            `Limit Customer ${index}`,
+            "Delta Limit Co",
+            `limit-customer-${index}.${suffix}@example.com`
+          ]
+        );
+
+        await app.pool.query(
+          `INSERT INTO vendor_customer_relationships (vendor_id, customer_id, account_code, status)
+           VALUES ($1, $2, $3, 'active')`,
+          [state.vendorD.vendor.id, customerResult.rows[0].id, `LIM-${index}`]
+        );
+      }
+
+      const blockedCustomer = await api.post("/customers", {
+        token: state.vendorD.token,
+        expectedStatus: 403,
+        body: {
+          customer: {
+            fullName: "Blocked Customer",
+            companyName: "Plan Limit"
+          },
+          relationship: {
+            status: "active"
+          }
+        }
+      });
+      assert.equal(blockedCustomer.payload.error.code, "PLAN_LIMIT_EXCEEDED");
+
+      const invoiceCustomerResult = await app.pool.query(
+        `INSERT INTO customers (full_name, company_name, email)
+         VALUES ($1, $2, $3)
+         RETURNING id`,
+        ["Invoice Limit Customer", "Delta Invoice Co", `invoice-limit.${suffix}@example.com`]
+      );
+      const invoiceCustomerId = invoiceCustomerResult.rows[0].id;
+      const relationshipResult = await app.pool.query(
+        `INSERT INTO vendor_customer_relationships (vendor_id, customer_id, account_code, status)
+         VALUES ($1, $2, $3, 'active')
+         RETURNING id`,
+        [state.vendorD.vendor.id, invoiceCustomerId, `INV-LIMIT-${suffix}`.slice(0, 100)]
+      );
+      const invoiceRelationshipId = relationshipResult.rows[0].id;
+      const categoryResult = await app.pool.query(
+        `INSERT INTO categories (vendor_id, name, slug)
+         VALUES ($1, $2, $3)
+         RETURNING id`,
+        [state.vendorD.vendor.id, "Limit Category", `limit-category-${suffix}`.slice(0, 150)]
+      );
+      const productResult = await app.pool.query(
+        `INSERT INTO products (vendor_id, category_id, sku, name, unit_price, status)
+         VALUES ($1, $2, $3, $4, 12, 'active')
+         RETURNING id`,
+        [
+          state.vendorD.vendor.id,
+          categoryResult.rows[0].id,
+          `LIMIT-PROD-${suffix}`.slice(0, 100),
+          "Limit Product"
+        ]
+      );
+
+      for (let index = 1; index <= 50; index += 1) {
+        await app.pool.query(
+          `INSERT INTO invoices (
+             vendor_id,
+             customer_id,
+             vendor_customer_relationship_id,
+             invoice_number,
+             status,
+             issue_date,
+             due_date,
+             created_by
+           )
+           VALUES ($1, $2, $3, $4, 'draft', CURRENT_DATE, CURRENT_DATE + INTERVAL '14 days', $5)`,
+          [
+            state.vendorD.vendor.id,
+            invoiceCustomerId,
+            invoiceRelationshipId,
+            `LIMIT-INV-${index}-${suffix}`.slice(0, 100),
+            state.vendorD.user.id
+          ]
+        );
+      }
+
+      const blockedInvoice = await api.post("/invoices", {
+        token: state.vendorD.token,
+        expectedStatus: 403,
+        body: {
+          customerId: invoiceCustomerId,
+          issueDate: "2026-04-24",
+          dueDate: "2026-05-08",
+          items: [
+            {
+              productId: productResult.rows[0].id,
+              quantity: 1,
+              unitPrice: 12
+            }
+          ]
+        }
+      });
+      assert.equal(blockedInvoice.payload.error.code, "PLAN_LIMIT_EXCEEDED");
     });
 
     await t.test("tenant settings default, update, validation, isolation, roles, and audit", async () => {

@@ -47,7 +47,18 @@ const DATA_TABLES = [
 ];
 
 function getTestDatabaseUrl() {
-  return process.env.TEST_DATABASE_URL || "";
+  const databaseUrl = process.env.TEST_DATABASE_URL || "";
+
+  if (!databaseUrl || databaseUrl.includes("<SET_YOUR_TEST_DATABASE_URL_HERE>")) {
+    return "";
+  }
+
+  try {
+    new URL(databaseUrl);
+    return databaseUrl;
+  } catch {
+    return "";
+  }
 }
 
 function assertSafeTestDatabaseUrl(databaseUrl) {

@@ -38,6 +38,7 @@ router.use("/ledger", ledgerRoutes);
 router.use("/payments", paymentsRoutes);
 router.use("/routes", routesRoutes);
 router.use("/route-templates", routeTemplatesRoutes);
+router.use("/subscription", subscriptionsRoutes);
 router.use("/subscriptions", subscriptionsRoutes);
 router.use("/reports", reportsRoutes);
 router.use("/notifications", notificationsRoutes);

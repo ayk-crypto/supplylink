@@ -1,68 +1,16 @@
 import { sendSuccess } from "../../core/http/apiResponse.js";
 import {
-  changeVendorStatus,
-  createVendorSubscription,
-  getAdminVendorOverview,
+  cancelCurrentVendorSubscription,
+  extendVendorTrial,
   getCurrentVendorSubscription,
-  getSubscriptionDetail,
-  getSubscriptionDirectory,
-  updateVendorSubscription
+  upgradeCurrentVendorSubscription
 } from "./subscriptions.service.js";
-
-async function list(request, response) {
-  const result = await getSubscriptionDirectory(request.query);
-
-  sendSuccess(response, {
-    message: "Subscriptions loaded",
-    data: result,
-    meta: {
-      requestId: request.context.requestId
-    }
-  });
-}
-
-async function getById(request, response) {
-  const result = await getSubscriptionDetail(request.params.subscriptionId);
-
-  sendSuccess(response, {
-    message: "Subscription loaded",
-    data: result,
-    meta: {
-      requestId: request.context.requestId
-    }
-  });
-}
-
-async function create(request, response) {
-  const result = await createVendorSubscription(request.body);
-
-  sendSuccess(response, {
-    statusCode: 201,
-    message: "Subscription created",
-    data: result,
-    meta: {
-      requestId: request.context.requestId
-    }
-  });
-}
-
-async function update(request, response) {
-  const result = await updateVendorSubscription(request.params.subscriptionId, request.body);
-
-  sendSuccess(response, {
-    message: "Subscription updated",
-    data: result,
-    meta: {
-      requestId: request.context.requestId
-    }
-  });
-}
 
 async function getMe(request, response) {
   const result = await getCurrentVendorSubscription(request.access.vendorId);
 
   sendSuccess(response, {
-    message: "Current vendor subscription loaded",
+    message: "Subscription loaded",
     data: result,
     meta: {
       requestId: request.context.requestId,
@@ -71,30 +19,43 @@ async function getMe(request, response) {
   });
 }
 
-async function updateVendorStatus(request, response) {
-  const result = await changeVendorStatus(request.params.vendorId, request.body);
+async function upgrade(request, response) {
+  const result = await upgradeCurrentVendorSubscription(request.access.vendorId, request.body.plan);
 
   sendSuccess(response, {
-    message: "Vendor status updated",
+    message: "Subscription upgraded",
     data: result,
     meta: {
       requestId: request.context.requestId,
-      vendorId: request.params.vendorId
+      vendorId: request.access.vendorId
     }
   });
 }
 
-async function getVendorOverview(request, response) {
-  const result = await getAdminVendorOverview(request.params.vendorId);
+async function cancel(request, response) {
+  const result = await cancelCurrentVendorSubscription(request.access.vendorId);
 
   sendSuccess(response, {
-    message: "Admin vendor overview loaded",
+    message: "Subscription cancelled",
     data: result,
     meta: {
       requestId: request.context.requestId,
-      vendorId: request.params.vendorId
+      vendorId: request.access.vendorId
     }
   });
 }
 
-export { create, getById, getMe, getVendorOverview, list, update, updateVendorStatus };
+async function extendTrial(request, response) {
+  const result = await extendVendorTrial(request.body.vendorId, request.body.days);
+
+  sendSuccess(response, {
+    message: "Trial extended",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: request.body.vendorId
+    }
+  });
+}
+
+export { cancel, extendTrial, getMe, upgrade };

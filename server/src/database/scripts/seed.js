@@ -488,7 +488,6 @@ async function seedDemoData(client) {
     `SELECT id
      FROM subscriptions
      WHERE vendor_id = $1
-       AND plan_code = 'demo_growth'
      ORDER BY created_at ASC
      LIMIT 1`,
     [vendor.id]
@@ -499,29 +498,28 @@ async function seedDemoData(client) {
       await client.query(
         `INSERT INTO subscriptions (
            vendor_id,
-           plan_code,
+           plan,
            status,
-           billing_cycle,
-           current_period_start,
-           current_period_end,
-           metadata
+           started_at,
+           expires_at,
+           trial_ends_at
          )
-         VALUES ($1, 'demo_growth', 'trialing', 'monthly', CURRENT_DATE, CURRENT_DATE + INTERVAL '30 days', $2)
+         VALUES ($1, 'free', 'trial', NOW(), NULL, NOW() + INTERVAL '30 days')
          RETURNING id`,
-        [vendor.id, { demo: true, notes: DEMO_MARKER }]
+        [vendor.id]
       )
     ).rows[0];
 
   await client.query(
     `UPDATE subscriptions
-     SET status = 'trialing',
-         billing_cycle = 'monthly',
-         current_period_start = CURRENT_DATE,
-         current_period_end = CURRENT_DATE + INTERVAL '30 days',
-         metadata = $2,
+     SET plan = 'free',
+         status = 'trial',
+         started_at = NOW(),
+         expires_at = NULL,
+         trial_ends_at = NOW() + INTERVAL '30 days',
          updated_at = NOW()
      WHERE id = $1`,
-    [subscription.id, { demo: true, notes: DEMO_MARKER }]
+    [subscription.id]
   );
 
   return {

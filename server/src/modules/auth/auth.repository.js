@@ -61,14 +61,31 @@ async function getRoleByCode(roleCode) {
 }
 
 async function createVendor({ legalName, displayName, slug, contactEmail }) {
-  const result = await query(
-    `INSERT INTO vendors (legal_name, display_name, slug, contact_email)
-     VALUES ($1, $2, $3, $4)
-     RETURNING id, legal_name, display_name, slug, status`,
-    [legalName, displayName, slug, contactEmail || null]
-  );
+  return withTransaction(async (client) => {
+    const result = await client.query(
+      `INSERT INTO vendors (legal_name, display_name, slug, contact_email)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, legal_name, display_name, slug, status`,
+      [legalName, displayName, slug, contactEmail || null]
+    );
 
-  return result.rows[0];
+    const vendor = result.rows[0];
+
+    await client.query(
+      `INSERT INTO subscriptions (
+         vendor_id,
+         plan,
+         status,
+         started_at,
+         trial_ends_at
+       )
+       VALUES ($1, 'free', 'trial', NOW(), NOW() + INTERVAL '30 days')
+       ON CONFLICT (vendor_id) DO NOTHING`,
+      [vendor.id]
+    );
+
+    return vendor;
+  });
 }
 
 async function createUserWithRole({

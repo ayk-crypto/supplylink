@@ -1,73 +1,31 @@
 import AppError from "../../core/errors/AppError.js";
 import {
+  countCustomersForVendor,
+  countInvoicesForVendorCurrentMonth,
   createSubscription,
-  findConflictingLiveSubscription,
-  findCurrentSubscriptionByVendorId,
-  findSubscriptionById,
+  findSubscriptionByVendorId,
   findVendorById,
-  getVendorOverview,
-  listSubscriptions,
-  updateSubscription,
-  updateVendorStatus
+  updateSubscriptionByVendorId
 } from "./subscriptions.repository.js";
 import {
-  notifySuperAdmins,
-  notifyVendorUsers,
-  runNotificationTask
-} from "../notifications/notifications.service.js";
+  getPlanConfig,
+  SUBSCRIPTION_PLANS,
+  TRIAL_LENGTH_DAYS,
+  UPGRADE_LENGTH_DAYS
+} from "./subscriptionPlans.js";
 
-const SUBSCRIPTION_FIELDS = {
-  vendorId: "vendor_id",
-  planCode: "plan_code",
-  status: "status",
-  startsAt: "current_period_start",
-  endsAt: "current_period_end",
-  currentPeriodStart: "current_period_start",
-  currentPeriodEnd: "current_period_end",
-  trialEndsAt: "trial_ends_at",
-  billingCycle: "billing_cycle",
-  metadata: "metadata"
+const ACTION_LIMITS = {
+  create_customer: {
+    usageKey: "customers",
+    limitKey: "maxCustomers",
+    message: "Customer limit reached for the current plan."
+  },
+  create_invoice: {
+    usageKey: "invoicesThisMonth",
+    limitKey: "maxInvoicesPerMonth",
+    message: "Monthly invoice limit reached for the current plan."
+  }
 };
-
-function withNotesInMetadata(payload = {}) {
-  if (!Object.prototype.hasOwnProperty.call(payload, "notes")) {
-    return payload.metadata || {};
-  }
-
-  return {
-    ...(payload.metadata || {}),
-    notes: payload.notes
-  };
-}
-
-function buildUpdatedMetadata(existingMetadata = {}, payload = {}) {
-  const hasMetadata = Object.prototype.hasOwnProperty.call(payload, "metadata");
-  const hasNotes = Object.prototype.hasOwnProperty.call(payload, "notes");
-
-  if (!hasMetadata && !hasNotes) {
-    return undefined;
-  }
-
-  return withNotesInMetadata({
-    metadata: {
-      ...(existingMetadata || {}),
-      ...(payload.metadata || {})
-    },
-    ...(hasNotes ? { notes: payload.notes } : {})
-  });
-}
-
-function toColumnPayload(input = {}, fieldMap) {
-  const payload = {};
-
-  Object.entries(fieldMap).forEach(([inputKey, column]) => {
-    if (Object.prototype.hasOwnProperty.call(input, inputKey)) {
-      payload[column] = input[inputKey];
-    }
-  });
-
-  return payload;
-}
 
 function mapVendor(row) {
   return {
@@ -85,69 +43,6 @@ function mapVendor(row) {
   };
 }
 
-function mapSubscription(row) {
-  if (!row) {
-    return null;
-  }
-
-  return {
-    id: row.id,
-    vendorId: row.vendor_id,
-    planCode: row.plan_code,
-    status: row.status,
-    billingCycle: row.billing_cycle,
-    startsAt: row.current_period_start,
-    endsAt: row.current_period_end,
-    currentPeriodStart: row.current_period_start,
-    currentPeriodEnd: row.current_period_end,
-    trialEndsAt: row.trial_ends_at,
-    metadata: row.metadata || {},
-    notes: row.metadata?.notes || null,
-    vendor: mapVendor(row),
-    createdAt: row.created_at,
-    updatedAt: row.updated_at
-  };
-}
-
-function mapVendorOverview(row, subscription) {
-  return {
-    vendor: {
-      id: row.id,
-      legalName: row.legal_name,
-      displayName: row.display_name,
-      slug: row.slug,
-      status: row.status,
-      contactEmail: row.contact_email,
-      createdAt: row.created_at
-    },
-    currentSubscription: mapSubscription(subscription),
-    counts: {
-      members: row.member_count,
-      customers: row.customer_count,
-      products: row.product_count,
-      orders: row.order_count,
-      invoices: row.invoice_count
-    }
-  };
-}
-
-function assertSubscriptionFound(row, subscriptionId) {
-  if (!row) {
-    throw new AppError("Subscription not found", {
-      statusCode: 404,
-      code: "SUBSCRIPTION_NOT_FOUND",
-      details: subscriptionId
-        ? [
-            {
-              path: "subscriptionId",
-              message: `No subscription was found for ${subscriptionId}`
-            }
-          ]
-        : []
-    });
-  }
-}
-
 function assertVendorFound(row, vendorId) {
   if (!row) {
     throw new AppError("Vendor not found", {
@@ -163,191 +58,220 @@ function assertVendorFound(row, vendorId) {
   }
 }
 
-async function assertNoConflictingLiveSubscription(vendorId, status, excludeSubscriptionId = null) {
-  if (!["trialing", "active", "past_due"].includes(status)) {
-    return;
-  }
-
-  const conflict = await findConflictingLiveSubscription(vendorId, excludeSubscriptionId);
-
-  if (conflict) {
-    throw new AppError("Vendor already has a live subscription", {
-      statusCode: 409,
-      code: "LIVE_SUBSCRIPTION_EXISTS",
-      details: [
-        {
-          path: "vendorId",
-          message: "Cancel or expire the existing live subscription before creating another live one"
-        }
-      ]
-    });
-  }
+function addDays(date, days) {
+  return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
 }
 
-async function getSubscriptionDirectory(query) {
-  const page = query.page || 1;
-  const pageSize = query.pageSize || 20;
-  const result = await listSubscriptions({
-    vendorId: query.vendorId || null,
-    status: query.status || null,
-    planCode: query.planCode || null,
-    search: query.search || null,
-    periodStartFrom: query.periodStartFrom || null,
-    periodStartTo: query.periodStartTo || null,
-    periodEndFrom: query.periodEndFrom || null,
-    periodEndTo: query.periodEndTo || null,
-    limit: pageSize,
-    offset: (page - 1) * pageSize
+function diffDays(now, futureDate) {
+  if (!futureDate) {
+    return 0;
+  }
+
+  const difference = futureDate.getTime() - now.getTime();
+  return difference <= 0 ? 0 : Math.ceil(difference / (24 * 60 * 60 * 1000));
+}
+
+async function ensureSubscriptionRecord(vendorId) {
+  let subscription = await findSubscriptionByVendorId(vendorId);
+
+  if (subscription) {
+    return subscription;
+  }
+
+  const now = new Date();
+  subscription = await createSubscription({
+    vendor_id: vendorId,
+    plan: "free",
+    status: "trial",
+    started_at: now.toISOString(),
+    trial_ends_at: addDays(now, TRIAL_LENGTH_DAYS).toISOString(),
+    expires_at: null
   });
 
+  return subscription;
+}
+
+function resolveSubscriptionState(subscription) {
+  const now = new Date();
+  const trialEndsAt = subscription?.trial_ends_at ? new Date(subscription.trial_ends_at) : null;
+  const expiresAt = subscription?.expires_at ? new Date(subscription.expires_at) : null;
+  const isTrialActive =
+    subscription?.status === "trial" &&
+    trialEndsAt instanceof Date &&
+    !Number.isNaN(trialEndsAt.valueOf()) &&
+    trialEndsAt > now;
+
+  let effectivePlan = subscription?.plan || "free";
+  let effectiveStatus = subscription?.status || "expired";
+
+  if (isTrialActive) {
+    effectivePlan = "pro";
+    effectiveStatus = "trial";
+  } else if (subscription?.status === "trial") {
+    effectivePlan = "free";
+    effectiveStatus = "active";
+  } else if (
+    subscription?.status === "active" &&
+    expiresAt instanceof Date &&
+    !Number.isNaN(expiresAt.valueOf()) &&
+    expiresAt <= now
+  ) {
+    effectivePlan = "free";
+    effectiveStatus = "expired";
+  } else if (["cancelled", "expired"].includes(subscription?.status)) {
+    effectivePlan = "free";
+    effectiveStatus = subscription.status;
+  }
+
   return {
-    items: result.rows.map(mapSubscription),
-    pagination: {
-      page,
-      pageSize,
-      totalItems: result.total,
-      totalPages: result.total === 0 ? 0 : Math.ceil(result.total / pageSize)
-    },
-    filters: {
-      vendorId: query.vendorId || null,
-      status: query.status || null,
-      planCode: query.planCode || null,
-      search: query.search || null,
-      periodStartFrom: query.periodStartFrom || null,
-      periodStartTo: query.periodStartTo || null,
-      periodEndFrom: query.periodEndFrom || null,
-      periodEndTo: query.periodEndTo || null
-    }
+    now,
+    effectivePlan,
+    effectiveStatus,
+    isTrialActive,
+    trialEndsAt,
+    expiresAt,
+    trialRemainingDays: diffDays(now, trialEndsAt)
   };
 }
 
-async function getSubscriptionDetail(subscriptionId) {
-  const subscription = await findSubscriptionById(subscriptionId);
+async function getSubscriptionUsage(vendorId) {
+  const [customers, invoicesThisMonth] = await Promise.all([
+    countCustomersForVendor(vendorId),
+    countInvoicesForVendorCurrentMonth(vendorId)
+  ]);
 
-  assertSubscriptionFound(subscription, subscriptionId);
-
-  return mapSubscription(subscription);
+  return {
+    customers,
+    invoicesThisMonth
+  };
 }
 
-async function createVendorSubscription(payload) {
-  const vendor = await findVendorById(payload.vendorId);
+function buildLimitResponse(planCode) {
+  const plan = getPlanConfig(planCode);
 
-  assertVendorFound(vendor, payload.vendorId);
-  await assertNoConflictingLiveSubscription(payload.vendorId, payload.status || "trialing");
-
-  const subscription = await createSubscription({
-    ...toColumnPayload(payload, SUBSCRIPTION_FIELDS),
-    metadata: withNotesInMetadata(payload)
-  });
-
-  return mapSubscription(subscription);
+  return {
+    maxCustomers: plan.maxCustomers,
+    maxInvoicesPerMonth: plan.maxInvoicesPerMonth
+  };
 }
 
-async function updateVendorSubscription(subscriptionId, payload) {
-  const existing = await findSubscriptionById(subscriptionId);
-
-  assertSubscriptionFound(existing, subscriptionId);
-
-  if (payload.status) {
-    await assertNoConflictingLiveSubscription(existing.vendor_id, payload.status, subscriptionId);
-  }
-
-  const subscription = await updateSubscription(subscriptionId, {
-    ...toColumnPayload(payload, SUBSCRIPTION_FIELDS),
-    metadata: buildUpdatedMetadata(existing.metadata, payload)
-  });
-
-  assertSubscriptionFound(subscription, subscriptionId);
-
-  if (payload.status && existing.status !== subscription.status) {
-    runNotificationTask(
-      notifySuperAdmins({
-        eventCode: "subscription.status_changed",
-        title: "Subscription status changed",
-        message: `Subscription ${subscription.plan_code} changed from ${existing.status} to ${subscription.status}.`,
-        metadata: {
-          subscriptionId: subscription.id,
-          vendorId: subscription.vendor_id,
-          previousStatus: existing.status,
-          nextStatus: subscription.status,
-          planCode: subscription.plan_code
-        }
-      })
-    );
-  }
-
-  return mapSubscription(subscription);
-}
-
-async function getCurrentVendorSubscription(vendorId) {
+async function buildSubscriptionSummary(vendorId) {
   const vendor = await findVendorById(vendorId);
 
   assertVendorFound(vendor, vendorId);
 
+  const subscription = await ensureSubscriptionRecord(vendorId);
+  const state = resolveSubscriptionState(subscription);
+  const usage = await getSubscriptionUsage(vendorId);
+
   return {
+    id: subscription.id,
     vendor: mapVendor(vendor),
-    subscription: mapSubscription(await findCurrentSubscriptionByVendorId(vendorId))
+    basePlan: subscription.plan,
+    plan: state.effectivePlan,
+    status: state.effectiveStatus,
+    startedAt: subscription.started_at,
+    expiresAt: subscription.expires_at,
+    trialEndsAt: subscription.trial_ends_at,
+    trialRemainingDays: state.trialRemainingDays,
+    limits: buildLimitResponse(state.effectivePlan),
+    usage
   };
 }
 
-async function changeVendorStatus(vendorId, payload) {
-  const existing = await findVendorById(vendorId);
+async function getCurrentVendorSubscription(vendorId) {
+  return buildSubscriptionSummary(vendorId);
+}
 
-  assertVendorFound(existing, vendorId);
+async function upgradeCurrentVendorSubscription(vendorId, plan) {
+  const vendor = await findVendorById(vendorId);
 
-  const vendor = await updateVendorStatus(vendorId, payload.status);
-  const statusChange = {
-    previousStatus: existing.status,
-    nextStatus: vendor.status,
-    reason: payload.reason || null
-  };
+  assertVendorFound(vendor, vendorId);
+  await ensureSubscriptionRecord(vendorId);
 
-  runNotificationTask(
-    notifySuperAdmins({
-      eventCode: "vendor.status_changed",
-      title: "Vendor status changed",
-      message: `Vendor ${vendor.display_name} changed from ${existing.status} to ${vendor.status}.`,
-      metadata: {
-        vendorId,
-        ...statusChange
-      }
-    })
-  );
+  const now = new Date();
 
-  if (vendor.status === "suspended") {
-    runNotificationTask(
-      notifyVendorUsers({
-        vendorId,
-        type: "account",
-        eventCode: "vendor.suspended",
-        title: "Vendor account suspended",
-        message: "This vendor account has been suspended by a platform administrator.",
-        metadata: statusChange
-      })
-    );
+  await updateSubscriptionByVendorId(vendorId, {
+    plan,
+    status: "active",
+    started_at: now.toISOString(),
+    expires_at: addDays(now, UPGRADE_LENGTH_DAYS).toISOString()
+  });
+
+  return buildSubscriptionSummary(vendorId);
+}
+
+async function cancelCurrentVendorSubscription(vendorId) {
+  const vendor = await findVendorById(vendorId);
+
+  assertVendorFound(vendor, vendorId);
+  await ensureSubscriptionRecord(vendorId);
+
+  await updateSubscriptionByVendorId(vendorId, {
+    status: "cancelled",
+    expires_at: new Date().toISOString()
+  });
+
+  return buildSubscriptionSummary(vendorId);
+}
+
+async function extendVendorTrial(vendorId, days) {
+  const vendor = await findVendorById(vendorId);
+
+  assertVendorFound(vendor, vendorId);
+
+  const subscription = await ensureSubscriptionRecord(vendorId);
+  const currentTrialEnd = subscription.trial_ends_at ? new Date(subscription.trial_ends_at) : new Date();
+  const anchor = currentTrialEnd > new Date() ? currentTrialEnd : new Date();
+
+  await updateSubscriptionByVendorId(vendorId, {
+    status: "trial",
+    trial_ends_at: addDays(anchor, days).toISOString()
+  });
+
+  return buildSubscriptionSummary(vendorId);
+}
+
+async function assertSubscriptionAccess(vendorId, actionType) {
+  const action = ACTION_LIMITS[actionType];
+
+  if (!action) {
+    throw new AppError("Unsupported subscription access action", {
+      statusCode: 500,
+      code: "SUBSCRIPTION_ACTION_NOT_CONFIGURED"
+    });
   }
 
-  return {
-    vendor: mapVendor(vendor),
-    statusChange,
-    note: "Vendor status is a platform control. Broad enforcement across vendor workflows can be layered in a future policy module."
-  };
-}
+  const summary = await buildSubscriptionSummary(vendorId);
+  const limit = summary.limits[action.limitKey];
+  const usageValue = summary.usage[action.usageKey];
 
-async function getAdminVendorOverview(vendorId) {
-  const overview = await getVendorOverview(vendorId);
+  if (limit === null || limit === undefined) {
+    return summary;
+  }
 
-  assertVendorFound(overview, vendorId);
+  if (usageValue < limit) {
+    return summary;
+  }
 
-  return mapVendorOverview(overview, await findCurrentSubscriptionByVendorId(vendorId));
+  throw new AppError(action.message, {
+    statusCode: 403,
+    code: "PLAN_LIMIT_EXCEEDED",
+    details: [
+      {
+        path: action.usageKey,
+        message: `${action.message} Current usage: ${usageValue}/${limit}.`
+      }
+    ]
+  });
 }
 
 export {
-  changeVendorStatus,
-  createVendorSubscription,
-  getAdminVendorOverview,
+  assertSubscriptionAccess,
+  buildSubscriptionSummary,
+  cancelCurrentVendorSubscription,
   getCurrentVendorSubscription,
-  getSubscriptionDetail,
-  getSubscriptionDirectory,
-  updateVendorSubscription
+  SUBSCRIPTION_PLANS,
+  extendVendorTrial,
+  upgradeCurrentVendorSubscription
 };

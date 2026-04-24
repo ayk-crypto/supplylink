@@ -4,6 +4,7 @@ import authenticate from "../../middlewares/authenticate.js";
 import authorizeRoles from "../../middlewares/authorizeRoles.js";
 import requireVendorAccess from "../../middlewares/requireVendorAccess.js";
 import requireVendorWritable from "../../middlewares/requireVendorWritable.js";
+import requireSubscriptionAccess from "../../middlewares/requireSubscriptionAccess.js";
 import validateRequest from "../../middlewares/validateRequest.js";
 import {
   create,
@@ -46,6 +47,7 @@ invoicesRoutes.post(
   validateRequest({ query: invoiceQuerySchema, body: invoiceCreateBodySchema }),
   requireVendorAccess(),
   requireVendorWritable(),
+  requireSubscriptionAccess("create_invoice"),
   asyncHandler(create)
 );
 

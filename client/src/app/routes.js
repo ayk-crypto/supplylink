@@ -68,6 +68,11 @@ const appRoutes = [
     id: "settings",
     label: "Settings",
     path: "/settings"
+  },
+  {
+    id: "subscription",
+    label: "Subscription",
+    path: "/subscription"
   }
 ];
 

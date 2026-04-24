@@ -30,6 +30,7 @@ import ReportsHomeScreen from "../features/reports/ReportsHomeScreen.jsx";
 import StatementsReportScreen from "../features/reports/StatementsReportScreen.jsx";
 import SettingsScreen from "../features/system/SettingsScreen.jsx";
 import SettingsProvider from "../features/system/SettingsProvider.jsx";
+import SubscriptionScreen from "../features/subscription/SubscriptionScreen.jsx";
 import TransactionCreateScreen from "../features/transactions/TransactionCreateScreen.jsx";
 import TransactionDetailScreen from "../features/transactions/TransactionDetailScreen.jsx";
 import TransactionListScreen from "../features/transactions/TransactionListScreens.jsx";
@@ -69,6 +70,7 @@ const screens = {
   "report-statements": StatementsReportScreen,
   audit: AuditScreen,
   settings: SettingsScreen,
+  subscription: SubscriptionScreen,
   "audit-entity": (props) => (
     <EntityAuditScreen
       entityId={props.entityId}
