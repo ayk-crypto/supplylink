@@ -3,6 +3,7 @@ import env, { assertRequiredEnvVars } from "./config/env.js";
 import { pool } from "./config/db.js";
 import logger from "./core/logging/logger.js";
 
+
 assertRequiredEnvVars();
 
 const server = app.listen(env.PORT, () => {

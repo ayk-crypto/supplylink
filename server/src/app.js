@@ -29,21 +29,30 @@ app.use(
 app.use(express.json());
 app.use(
   cors({
-    origin(origin, callback) {
-      if (!origin || env.CORS_ALLOWED_ORIGINS.includes(origin)) {
-        callback(null, true);
-        return;
-      }
+  origin(origin, callback) {
+    if (!origin) return callback(null, true);
 
-      callback(
-        new AppError("Origin is not allowed by CORS policy", {
-          statusCode: 403,
-          code: "CORS_ORIGIN_NOT_ALLOWED"
-        })
-      );
-    },
-    credentials: true
-  })
+    const allowedOrigins = Array.isArray(env.CORS_ALLOWED_ORIGINS)
+  ? env.CORS_ALLOWED_ORIGINS
+  : String(env.CORS_ALLOWED_ORIGINS || "")
+      .split(",")
+      .map(o => o.trim());
+
+    if (allowedOrigins.some(o => origin.startsWith(o))) {
+      return callback(null, true);
+    }
+
+    console.log("Blocked CORS origin:", origin); // debug
+
+    return callback(
+      new AppError("Origin is not allowed by CORS policy", {
+        statusCode: 403,
+        code: "CORS_ORIGIN_NOT_ALLOWED"
+      })
+    );
+  },
+  credentials: true
+})
 );
 app.use(
   `${env.API_PREFIX}/${env.API_VERSION}`,
