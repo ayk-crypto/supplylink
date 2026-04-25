@@ -22,6 +22,7 @@ import uiRoutes from "../../../modules/ui/ui.routes.js";
 import auditRoutes from "../../../modules/audit/audit.routes.js";
 import settingsRoutes from "../../../modules/settings/settings.routes.js";
 import documentsRoutes from "../../../modules/documents/documents.routes.js";
+import adminBillingRoutes from "../../../modules/admin-billing/adminBilling.routes.js";
 
 const router = Router();
 
@@ -49,5 +50,6 @@ router.use("/ui", uiRoutes);
 router.use("/audit", auditRoutes);
 router.use("/settings", settingsRoutes);
 router.use("/public/documents", documentsRoutes);
+router.use("/admin/billing", adminBillingRoutes);
 
 export default router;

@@ -40,6 +40,18 @@ function formatStatus(subscription) {
   return subscription.status.toUpperCase();
 }
 
+function formatMoney(value, currency = "USD") {
+  if (value === null || value === undefined) {
+    return "Not recorded";
+  }
+
+  return `${currency} ${Number(value).toLocaleString()}`;
+}
+
+function formatBillingCycle(value) {
+  return value === "annual" ? "Annual" : "Monthly";
+}
+
 function formatUsageCount(value, limit) {
   return `${value} used / ${formatLimit(limit)}`;
 }
@@ -142,23 +154,23 @@ function SubscriptionScreen() {
             <div className="subscription-summary-grid">
               <article className="subscription-stat">
                 <span>Current access</span>
-                <strong>{subscription.plan.toUpperCase()}</strong>
+                <strong>{subscription.effectiveAccess?.toUpperCase() || subscription.plan.toUpperCase()}</strong>
                 <small>Base Plan: {subscription.basePlan.toUpperCase()}</small>
               </article>
               <article className="subscription-stat">
                 <span>Status</span>
                 <strong>{formatStatus(subscription)}</strong>
-                <small>{subscription.trialRemainingDays} trial day(s) remaining</small>
+                <small>{formatBillingCycle(subscription.billingCycle)} billing cycle</small>
               </article>
               <article className="subscription-stat">
                 <span>Trial ends</span>
                 <strong>{formatDate(subscription.trialEndsAt)}</strong>
-                <small>Started {formatDate(subscription.startedAt)}</small>
+                <small>{subscription.trialRemainingDays} trial day(s) remaining</small>
               </article>
               <article className="subscription-stat">
-                <span>Access ends</span>
-                <strong>{formatDate(subscription.expiresAt)}</strong>
-                <small>Your current access ends on this date.</small>
+                <span>Period ends</span>
+                <strong>{formatDate(subscription.currentPeriodEnd || subscription.expiresAt)}</strong>
+                <small>{subscription.annualBenefit?.label || "Annual plan includes 3 free months"}</small>
               </article>
             </div>
           </section>
@@ -173,6 +185,22 @@ function SubscriptionScreen() {
               <article className="subscription-usage-card">
                 <span>Invoices this month</span>
                 <strong>{formatUsageCount(subscription.usage.invoicesThisMonth, subscription.limits.maxInvoicesPerMonth)}</strong>
+              </article>
+            </div>
+          </section>
+
+          <section className="transaction-panel">
+            <SectionHeader title="Latest payment" hint="Manual payments are recorded by the platform admin." />
+            <div className="subscription-usage-grid">
+              <article className="subscription-usage-card">
+                <span>Last payment</span>
+                <strong>
+                  {formatMoney(subscription.latestPayment?.amount, subscription.latestPayment?.currency)}
+                </strong>
+              </article>
+              <article className="subscription-usage-card">
+                <span>Payment date</span>
+                <strong>{formatDate(subscription.latestPayment?.paidAt)}</strong>
               </article>
             </div>
           </section>

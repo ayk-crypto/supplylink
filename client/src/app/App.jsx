@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import AppShell from "../components/layout/AppShell.jsx";
 import { ToastProvider } from "../features/feedback/ToastProvider.jsx";
+import AdminBillingScreen from "../features/admin-billing/AdminBillingScreen.jsx";
 import AuthProvider from "../features/auth/AuthProvider.jsx";
 import ProtectedRoute from "../features/auth/ProtectedRoute.jsx";
 import AuditScreen from "../features/audit/AuditScreen.jsx";
@@ -36,8 +38,43 @@ import TransactionDetailScreen from "../features/transactions/TransactionDetailS
 import TransactionListScreen from "../features/transactions/TransactionListScreens.jsx";
 import { appRoutes, findRoute } from "./routes.js";
 import { useBrowserRoute } from "./useBrowserRoute.js";
+import { useAuth } from "../features/auth/useAuth.js";
+
+function AdminDashboardScreen({ navigate }) {
+  return (
+    <div className="resource-page">
+      <section className="page-header">
+        <div>
+          <p className="eyebrow">Admin</p>
+          <h2>Platform Dashboard</h2>
+          <p>Use the platform tools to manage billing and vendor subscription access.</p>
+        </div>
+        <div className="page-header-action">
+          <button className="primary-button" onClick={() => navigate("/admin/billing")} type="button">
+            Open Admin Billing
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function VendorWorkspaceOnlyScreen() {
+  return (
+    <div className="resource-page">
+      <section className="page-header">
+        <div>
+          <p className="eyebrow">Vendor workspace</p>
+          <h2>This section is available only for vendor workspaces.</h2>
+          <p>Platform admins can use the admin navigation to manage SupplyLink.</p>
+        </div>
+      </section>
+    </div>
+  );
+}
 
 const screens = {
+  "admin-dashboard": AdminDashboardScreen,
   categories: CategoriesScreen,
   customers: CustomersScreen,
   "customer-detail": CustomerDetailScreen,
@@ -71,6 +108,7 @@ const screens = {
   audit: AuditScreen,
   settings: SettingsScreen,
   subscription: SubscriptionScreen,
+  "admin-billing": AdminBillingScreen,
   "audit-entity": (props) => (
     <EntityAuditScreen
       entityId={props.entityId}
@@ -100,8 +138,34 @@ function NotFoundScreen({ onGoHome }) {
 }
 
 function AuthenticatedApp({ navigate, path }) {
+  const { user } = useAuth();
   const route = findRoute(path);
   const ActiveScreen = route ? screens[route.id] : null;
+  const isSuperAdmin = user?.roleCodes?.includes("super_admin");
+  const isVendorRouteForPlatformAdmin = isSuperAdmin && route?.scope === "vendor";
+  const isForbiddenPlatformRoute =
+    route?.scope === "platform" &&
+    !route.allowedRoles?.some((roleCode) => user?.roleCodes?.includes(roleCode));
+  const navItems = appRoutes.filter((item) => {
+    if (isSuperAdmin) {
+      return item.scope === "platform";
+    }
+
+    if (item.scope === "platform") {
+      return false;
+    }
+
+    return (
+      !item.allowedRoles ||
+      item.allowedRoles.some((roleCode) => user?.roleCodes?.includes(roleCode))
+    );
+  });
+
+  useEffect(() => {
+    if (isSuperAdmin && path === "/") {
+      navigate("/admin", { replace: true });
+    }
+  }, [isSuperAdmin, navigate, path]);
 
   return (
     <ProtectedRoute>
@@ -109,11 +173,15 @@ function AuthenticatedApp({ navigate, path }) {
       <NotificationsProvider>
         <AppShell
           activePath={route?.navPath || route?.path || ""}
-          headerExtras={<NotificationBell onNavigate={navigate} />}
-          navItems={appRoutes}
+          headerExtras={isSuperAdmin ? null : <NotificationBell onNavigate={navigate} />}
+          navItems={navItems}
           onNavigate={(nextPath) => navigate(nextPath)}
         >
-          {ActiveScreen ? (
+          {isVendorRouteForPlatformAdmin ? (
+            <VendorWorkspaceOnlyScreen />
+          ) : isForbiddenPlatformRoute ? (
+            <NotFoundScreen onGoHome={() => navigate("/dashboard", { replace: true })} />
+          ) : ActiveScreen ? (
             <ActiveScreen
               entityId={route.params?.entityId}
               entityType={route.params?.entityType}
