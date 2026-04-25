@@ -17,6 +17,10 @@ import AppError from "./core/errors/AppError.js";
 
 const app = express();
 
+function normalizeOrigin(value) {
+  return String(value || "").trim().replace(/\/+$/, "");
+}
+
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
 app.use(requestContext);
@@ -29,30 +33,30 @@ app.use(
 app.use(express.json());
 app.use(
   cors({
-  origin(origin, callback) {
-    if (!origin) return callback(null, true);
+    origin(origin, callback) {
+      if (!origin) return callback(null, true);
 
-    const allowedOrigins = Array.isArray(env.CORS_ALLOWED_ORIGINS)
-  ? env.CORS_ALLOWED_ORIGINS
-  : String(env.CORS_ALLOWED_ORIGINS || "")
-      .split(",")
-      .map(o => o.trim());
+      const requestOrigin = normalizeOrigin(origin);
+      const allowedOrigins = Array.isArray(env.CORS_ALLOWED_ORIGINS)
+        ? env.CORS_ALLOWED_ORIGINS.map(normalizeOrigin)
+        : String(env.CORS_ALLOWED_ORIGINS || "")
+            .split(",")
+            .map(normalizeOrigin)
+            .filter(Boolean);
 
-    if (allowedOrigins.some(o => origin.startsWith(o))) {
-      return callback(null, true);
-    }
+      if (allowedOrigins.includes(requestOrigin)) {
+        return callback(null, true);
+      }
 
-    console.log("Blocked CORS origin:", origin); // debug
-
-    return callback(
-      new AppError("Origin is not allowed by CORS policy", {
-        statusCode: 403,
-        code: "CORS_ORIGIN_NOT_ALLOWED"
-      })
-    );
-  },
-  credentials: true
-})
+      return callback(
+        new AppError("Origin is not allowed by CORS policy", {
+          statusCode: 403,
+          code: "CORS_ORIGIN_NOT_ALLOWED"
+        })
+      );
+    },
+    credentials: true
+  })
 );
 app.use(
   `${env.API_PREFIX}/${env.API_VERSION}`,

@@ -6,12 +6,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "../..");
 const nodeEnv = process.env.NODE_ENV || "development";
-const envFile =
-  nodeEnv === "production"
-    ? ".env.production"
-    : nodeEnv === "test"
-      ? ".env.test"
-      : ".env.development";
+const ENV_FILES = {
+  development: ".env.development",
+  staging: ".env.staging",
+  production: ".env.production",
+  test: ".env.test"
+};
+const envFile = ENV_FILES[nodeEnv] || ENV_FILES.development;
 const envPath = path.join(rootDir, envFile);
 
 dotenv.config({

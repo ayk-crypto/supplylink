@@ -31,12 +31,21 @@ management endpoints for platform and vendor-level administration.
    copy client\.env.example client\.env.development
    ```
 
+   Staging templates are also included:
+
+   ```bash
+   copy server\.env.staging.example server\.env.staging
+   copy client\.env.staging.example client\.env.staging
+   ```
+
    Backend runtime notes:
 
    - `DATABASE_URL` is required for development and production.
+   - `DATABASE_URL` is also required for staging.
    - `TEST_DATABASE_URL` is required for integration tests and must point to an isolated database whose name includes `test`.
-   - `CORS_ALLOWED_ORIGINS` should be a comma-separated allowlist such as `http://localhost:5173,https://app.example.com`.
+   - `CORS_ALLOWED_ORIGINS` should be a comma-separated allowlist such as `http://localhost:5173,https://staging-app.example.com,https://app.example.com`.
    - SMTP-backed document email sending requires `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT`, `EMAIL_FROM_ADDRESS`, and optionally `EMAIL_SMTP_USER` plus `EMAIL_SMTP_PASS`.
+   - Supported backend environments are `development`, `staging`, `production`, and `test`.
    - In `NODE_ENV=test`, the server uses `TEST_DATABASE_URL` only. It will not silently fall back to `DATABASE_URL`.
 
 3. Apply migrations and seed a demo dataset:
@@ -70,6 +79,13 @@ npm run db:seed
 - `npm run db:seed` creates a small local/demo dataset.
 - `npm run db:bootstrap` runs migrations and then seeds demo data.
 
+Workspace script checks:
+
+- Server: `npm run dev --workspace server` runs with `NODE_ENV=development`.
+- Server: `npm run start --workspace server` runs with `NODE_ENV=production`.
+- Client: `npm run build --workspace client` builds the staging or production bundle based on the selected Vite mode and env file.
+- Client: `npm run preview --workspace client` serves the built frontend locally for smoke testing.
+
 ## Architecture
 
 The backend is organized around a versioned API entrypoint at `/api/v1`.
@@ -97,7 +113,36 @@ Shared backend patterns now include:
 - `TEST_DATABASE_URL`: required for integration tests and test runtime.
 - `JWT_SECRET`: required in every environment.
 - `CORS_ALLOWED_ORIGINS`: comma-separated allowed browser origins.
+- `API_PREFIX`: API path prefix such as `/api`.
+- `API_VERSION`: API version segment such as `v1`.
 - `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT`, `EMAIL_FROM_ADDRESS`: required only when document email sending is enabled.
+
+## Staging Preparation
+
+Backend:
+
+- Create `server/.env.staging` from [server/.env.staging.example](/d:/supplylink/server/.env.staging.example).
+- Set `NODE_ENV=staging` in the staging runtime.
+- Provide `DATABASE_URL`, `JWT_SECRET`, `CORS_ALLOWED_ORIGINS`, `API_PREFIX`, and `API_VERSION`.
+- Start the API with `npm run start --workspace server` after staging variables are supplied by the host platform.
+
+Frontend:
+
+- Create `client/.env.staging` from [client/.env.staging.example](/d:/supplylink/client/.env.staging.example).
+- Set `VITE_API_BASE_URL` to the public staging API base URL, for example `https://staging-api.example.com/api/v1`.
+- Build the frontend for staging with `npm run build --workspace client -- --mode staging`.
+- Smoke test the bundle locally with `npm run preview --workspace client`.
+
+Health check:
+
+- `GET /api/health` remains available for platform probes.
+- `GET /api/v1/system/health` remains available for richer API health details.
+
+Deployment targets:
+
+- Backend can be hosted on Render, Railway, or a VPS by setting runtime env vars and starting the server workspace.
+- Frontend can be hosted on Vercel or Netlify by supplying `VITE_API_BASE_URL` and building with Vite.
+- This repo is prepared for those targets, but no deployment is performed by these changes.
 
 ## Production Readiness Notes
 

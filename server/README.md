@@ -16,11 +16,14 @@ Express API for SupplyLink with a modular multi-tenant foundation.
 ## Environment Files
 
 - Use `.env.development` for local development
+- Use `.env.staging` for staging deployments; [server/.env.staging.example](/d:/supplylink/server/.env.staging.example) provides a template
 - Use `.env.test` for DB-backed integration tests; [server/.env.test.example](/d:/supplylink/server/.env.test.example) provides a template
 - Use `.env.production` for production deployments
 - If `NODE_ENV` is not set, the server defaults to `development`
+- Supported runtime environments are `development`, `staging`, `production`, and `test`
 - `DATABASE_URL` is only required for database-backed work such as migrations or DB health checks
 - `JWT_SECRET` must be set to a long random value outside local throwaway development
+- `CORS_ALLOWED_ORIGINS` should list the exact browser origins allowed for the current environment, including the staging frontend origin when applicable
 - `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT`, `EMAIL_SMTP_SECURE`, `EMAIL_FROM_ADDRESS`, and optional SMTP auth credentials enable quotation/invoice email sending
 - `DEMO_SEED_PASSWORD` controls the password used by the demo seed script
 - `ALLOW_DEMO_SEED_IN_PRODUCTION` defaults to `false` and should stay false for normal deployments
