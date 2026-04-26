@@ -9097,14 +9097,32 @@ body {
   gap: 16px;
 }
 
-/* Anchor the "+ Create Vendor" action to top-right of the header card */
+/* Anchor the "+ Create Vendor" action to the right of the header card,
+   vertically centered with the title block (avoids the small compact
+   button floating awkwardly in the very top-right corner). */
 .admin-vendors-page .page-header {
-  align-items: flex-start;
+  align-items: center;
+  flex-wrap: nowrap;
 }
 
 .admin-vendors-page .page-header-action {
-  align-self: flex-start;
-  margin-left: auto;
+  align-self: center;
+  flex: 0 0 auto;
+}
+
+.admin-vendors-page .page-header-action .primary-button {
+  white-space: nowrap;
+}
+
+/* On narrow screens, let the header stack and the button span full width */
+@media (max-width: 720px) {
+  .admin-vendors-page .page-header {
+    align-items: stretch;
+  }
+  .admin-vendors-page .page-header-action,
+  .admin-vendors-page .page-header-action .primary-button {
+    width: 100%;
+  }
 }
 
 /* KPI strip */
