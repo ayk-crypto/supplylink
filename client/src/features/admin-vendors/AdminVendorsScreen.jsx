@@ -234,8 +234,15 @@ function VendorDetailModal({ vendor, onClose }) {
         aria-label={`Vendor details for ${vendorLabel}`}
       >
         <header className="admin-vendors-detail-head">
-          <div>
-            <h2>{vendor.displayName || vendor.legalName || "Vendor"}</h2>
+          <div className="admin-vendors-detail-head-main">
+            <div className="admin-vendors-detail-head-title">
+              <h2>{vendor.displayName || vendor.legalName || "Vendor"}</h2>
+              <StatusPill
+                label={formatToken(vendor.status)}
+                status={vendor.status}
+                tone={VENDOR_STATUS_TONES[vendor.status] || "neutral"}
+              />
+            </div>
             <p>{vendor.slug || "—"}</p>
           </div>
           <button
@@ -291,6 +298,23 @@ function VendorDetailModal({ vendor, onClose }) {
               <div className="admin-vendors-detail-row">
                 <dt>Contact email</dt>
                 <dd>{vendor.contactEmail || "—"}</dd>
+              </div>
+              <div className="admin-vendors-detail-row">
+                <dt>Contact phone</dt>
+                <dd>
+                  {vendor.contactPhone ? (
+                    <a
+                      className="admin-vendors-detail-link"
+                      href={`tel:${encodeURIComponent(
+                        vendor.contactPhone.trim()
+                      )}`}
+                    >
+                      {vendor.contactPhone}
+                    </a>
+                  ) : (
+                    <span className="admin-vendors-detail-empty">Not set</span>
+                  )}
+                </dd>
               </div>
             </dl>
           </section>

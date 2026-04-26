@@ -9719,56 +9719,166 @@ body {
    (secondary), and Suspend Vendor (danger). All selectors are scoped
    under `.admin-vendors-detail-panel` so nothing leaks elsewhere. */
 
+/* Wider, more breathable modal so two-line content (Apr 26, 2026 etc.)
+   doesn't crowd the label column on this denser layout. */
+.admin-vendors-detail-panel {
+  width: min(580px, 100%);
+}
+
+/* Sticky, slightly elevated header so the vendor name and status pill
+   stay visible while the body scrolls. */
+.admin-vendors-detail-panel .admin-vendors-detail-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #fff;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.admin-vendors-detail-panel .admin-vendors-detail-head h2 {
+  font-size: 19px;
+  letter-spacing: -0.01em;
+}
+
+.admin-vendors-detail-head-main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.admin-vendors-detail-head-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
 .admin-vendors-detail-panel .admin-vendors-detail-body {
   display: grid;
-  gap: 18px;
-  padding: 18px 22px 22px;
+  gap: 14px;
+  padding: 18px 24px 24px;
   margin: 0;
+  background: #f8fafc;
 }
 
 .admin-vendors-detail-section {
   display: grid;
-  gap: 10px;
-  padding: 14px 16px 16px;
-  border: 1px solid rgba(15, 23, 42, 0.07);
+  gap: 12px;
+  padding: 16px 18px 18px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
   border-radius: 12px;
-  background: #fafbfc;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
 }
 
 .admin-vendors-detail-section-title {
-  margin: 0 0 2px;
+  margin: 0;
+  padding-left: 10px;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #475569;
+  position: relative;
+}
+
+/* Subtle accent bar before each section title for stronger visual anchor */
+.admin-vendors-detail-section-title::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 12px;
+  border-radius: 2px;
+  background: #15803d;
 }
 
 .admin-vendors-detail-grid {
   display: grid;
-  gap: 10px;
+  gap: 4px;
   margin: 0;
 }
 
-/* Inherits the existing `.admin-vendors-detail-row` rule (130px label
-   column + value column). No override needed — keeps spacing parity
-   with the previous flat dl layout. */
+/* Override the base `.admin-vendors-detail-row` (130px / 1fr) to give a
+   tighter label column and a touch more vertical rhythm. Hover halo on
+   the value side improves scannability without feeling clickable. */
+.admin-vendors-detail-section .admin-vendors-detail-row {
+  grid-template-columns: 116px 1fr;
+  gap: 14px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  align-items: center;
+  transition: background-color 120ms ease;
+  margin: 0 -8px;
+}
 
-/* Actions section — slightly different background to draw the eye and
-   group the destructive button visually away from the read-only data. */
+.admin-vendors-detail-section .admin-vendors-detail-row:hover {
+  background: rgba(15, 23, 42, 0.03);
+}
+
+.admin-vendors-detail-section .admin-vendors-detail-row dt {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #64748b;
+}
+
+.admin-vendors-detail-section .admin-vendors-detail-row dd {
+  font-size: 13.5px;
+  color: #0f172a;
+}
+
+/* Subdued treatment for "Not set" placeholders so real data stands out */
+.admin-vendors-detail-empty {
+  color: #94a3b8;
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* Phone link in the Admin Info section — inherits color, only underlines
+   on hover so it doesn't compete with the rest of the readable values. */
+.admin-vendors-detail-link {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(15, 23, 42, 0.2);
+  transition: border-color 120ms ease, color 120ms ease;
+}
+
+.admin-vendors-detail-link:hover,
+.admin-vendors-detail-link:focus-visible {
+  color: #15803d;
+  border-bottom-color: #15803d;
+  outline: none;
+}
+
+/* Actions section — sticky-ish footer feel with a clean white surface
+   so the destructive choice stays grouped but visually separated. */
 .admin-vendors-detail-actions-section {
-  background: #f8fafc;
+  background: #ffffff;
   border-color: rgba(15, 23, 42, 0.08);
+  gap: 14px;
 }
 
 .admin-vendors-detail-action-row {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  align-items: center;
 }
 
 .admin-vendors-detail-action-row > button {
   flex: 0 1 auto;
+}
+
+/* Push the destructive Suspend button to the right edge so the
+   primary/safe actions cluster on the left and the dangerous action
+   reads as deliberately separated. */
+.admin-vendors-detail-action-row > .admin-vendors-detail-danger-button {
+  margin-left: auto;
 }
 
 /* Reset-password reveal callout — neutral surface with monospaced
