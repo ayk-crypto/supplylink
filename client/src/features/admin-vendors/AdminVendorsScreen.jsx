@@ -430,13 +430,11 @@ function AdminVendorsScreen() {
     <div className="resource-page admin-vendors-page">
       <PageHeader
         action={
-          <button
-            className="primary-button admin-vendors-create-button"
-            onClick={openCreateForm}
-            type="button"
-          >
-            + Create Vendor
-          </button>
+          <div className="button-row">
+            <button className="primary-button compact" onClick={openCreateForm} type="button">
+              + Create Vendor
+            </button>
+          </div>
         }
         description="Manage your client workspaces, subscriptions, and access."
         eyebrow="Admin"

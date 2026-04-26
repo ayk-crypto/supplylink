@@ -9096,68 +9096,52 @@ body {
   gap: 16px;
 }
 
-/* Header layout — keep the "+ Create Vendor" button pinned to the
-   top-right of the header card on every reasonable viewport. The
-   copy block is allowed to shrink (min-width: 0) so it never pushes
-   the action onto a second row. The global `.page-header` rule at
-   line ~3026 sets `flex-wrap: wrap`, so we explicitly override it
-   with `nowrap` here and only re-enable wrapping on phones, where
-   the button stretches full-width as a comfortable tap target. */
+/* Header layout — mirrors the Admin Billing page header so the
+   "+ Create Vendor" button sits pinned to the top-right of the
+   card with comfortable breathing room from the title. The copy
+   block reserves a 360px basis (≥ the title's intrinsic width)
+   so the heading stays on a single line, and `margin-left: auto`
+   on the action consumes all remaining free space to push the
+   button flush right. Width: auto overrides on the action and
+   inner button defeat the global @media (max-width: 768px) rule
+   that would otherwise force them full-width in the 721–767 band.
+   On phones (≤720px) we restore full-width for a tappable target. */
 .admin-vendors-page .page-header {
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 16px 24px;
   row-gap: 16px;
 }
 
 .admin-vendors-page .page-header-copy {
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 1 1 360px;
+  min-width: min(360px, 100%);
 }
 
 .admin-vendors-page .page-header-action {
-  flex: 0 0 auto;
-  align-self: center;
   margin-left: auto;
-  /* Defend against the global @media (max-width: 768px) rule that
-     forces `.page-header-action` and its button to `width: 100%` —
-     we want the action to stay top-right at every width above the
-     phone breakpoint (721px+). The phone breakpoint below restores
-     full-width for tap-friendly mobile UX. */
+  display: flex;
+  justify-content: flex-end;
   width: auto;
 }
 
-.admin-vendors-page .page-header-action .primary-button,
-.admin-vendors-page .admin-vendors-create-button {
+.admin-vendors-page .page-header-action .button-row {
   width: auto;
 }
 
-.admin-vendors-page .admin-vendors-create-button {
-  white-space: nowrap;
-  padding: 12px 22px;
-  font-size: 14px;
-  font-weight: 600;
-  border-radius: 10px;
-  box-shadow: 0 6px 16px rgba(15, 123, 99, 0.18);
+.admin-vendors-page .page-header-action .button-row .primary-button.compact {
+  width: auto;
 }
 
-.admin-vendors-page .admin-vendors-create-button:hover:not(:disabled) {
-  box-shadow: 0 8px 20px rgba(15, 123, 99, 0.24);
-  transform: translateY(-1px);
-}
-
-/* On phones, allow the header to wrap so the button drops onto its
-   own row and spans full width as a comfortable tap target. */
 @media (max-width: 720px) {
-  .admin-vendors-page .page-header {
-    flex-wrap: wrap;
-  }
   .admin-vendors-page .page-header-action {
     width: 100%;
     margin-left: 0;
   }
-  .admin-vendors-page .page-header-action .primary-button,
-  .admin-vendors-page .admin-vendors-create-button {
+  .admin-vendors-page .page-header-action .button-row {
+    width: 100%;
+  }
+  .admin-vendors-page .page-header-action .button-row .primary-button.compact {
     width: 100%;
   }
 }
