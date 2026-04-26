@@ -124,29 +124,34 @@ function LoginScreen() {
                 aria-controls="auth-vendor-id-field"
                 onClick={toggleVendorId}
               >
-                <span className="auth-toggle-icon" aria-hidden="true">
-                  {showVendorId ? "−" : "+"}
-                </span>
+                <span className="auth-toggle-chevron" aria-hidden="true">▶</span>
                 {showVendorId ? "Hide Vendor ID" : "Use Vendor ID (advanced)"}
               </button>
               <small>Only required if your account has access to multiple workspaces.</small>
             </div>
 
-            {showVendorId ? (
-              <label className="auth-field" id="auth-vendor-id-field">
-                <span className="auth-field-label">Vendor ID</span>
-                <input
-                  autoComplete="off"
-                  onChange={(event) => {
-                    clearError();
-                    setVendorId(event.target.value);
-                  }}
-                  placeholder="e.g. acme-distribution"
-                  type="text"
-                  value={vendorId}
-                />
-              </label>
-            ) : null}
+            <div
+              className={`auth-vendor-collapse${showVendorId ? " is-open" : ""}`}
+              id="auth-vendor-id-field"
+              aria-hidden={!showVendorId}
+            >
+              <div className="auth-vendor-collapse-inner">
+                <label className="auth-field">
+                  <span className="auth-field-label">Vendor ID</span>
+                  <input
+                    autoComplete="off"
+                    onChange={(event) => {
+                      clearError();
+                      setVendorId(event.target.value);
+                    }}
+                    placeholder="e.g. acme-distribution"
+                    tabIndex={showVendorId ? undefined : -1}
+                    type="text"
+                    value={vendorId}
+                  />
+                </label>
+              </div>
+            </div>
 
             {error ? (
               <div className="form-error" role="alert">

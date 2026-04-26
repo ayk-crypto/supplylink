@@ -8505,6 +8505,57 @@ body {
   line-height: 1;
 }
 
+.auth-toggle-chevron {
+  display: inline-block;
+  width: 10px;
+  text-align: center;
+  font-size: 0.62rem;
+  line-height: 1;
+  color: #1d7a46;
+  transform: rotate(0deg);
+  transform-origin: center;
+  transition: transform 0.25s ease;
+}
+
+.auth-link-button[aria-expanded="true"] .auth-toggle-chevron {
+  transform: rotate(90deg);
+}
+
+.auth-vendor-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.28s ease;
+}
+
+.auth-vendor-collapse.is-open {
+  grid-template-rows: 1fr;
+}
+
+.auth-vendor-collapse-inner {
+  min-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 0.22s ease 0.04s, transform 0.22s ease 0.04s;
+}
+
+.auth-vendor-collapse.is-open .auth-vendor-collapse-inner {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.auth-vendor-collapse-inner > .auth-field {
+  padding-top: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-toggle-chevron,
+  .auth-vendor-collapse,
+  .auth-vendor-collapse-inner {
+    transition: none;
+  }
+}
+
 .auth-page-v2 .auth-submit {
   margin-top: 4px;
   min-height: 48px;
