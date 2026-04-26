@@ -17,6 +17,7 @@ import { useAppSettings } from "../system/settingsContext.js";
 import { formatDateWith, formatMoneyWith } from "../system/settingsFormat.js";
 import { getApiErrorMessage } from "../master-data/resourceUtils.js";
 
+const VENDORS_PAGE_SIZE = 25;
 const SUBS_PAGE_SIZE = 100;
 const PAYMENTS_PAGE_SIZE = 100;
 
@@ -67,15 +68,10 @@ const ICONS = {
       <path d="M7 13h3" />
     </svg>
   ),
-  mrr: (
+  payments: (
     <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M10 3v14" />
       <path d="M13.5 6.5c-.7-1-2.1-1.5-3.5-1.5s-3 .7-3 2.2c0 1.5 1.5 2 3.3 2.4 1.7.4 3.2 1 3.2 2.5 0 1.5-1.6 2.4-3.5 2.4-1.5 0-3-.6-3.5-1.7" />
-    </svg>
-  ),
-  revenue: (
-    <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M3 16V8m4 8V5m4 11v-9m4 9v-6" />
     </svg>
   )
 };
@@ -106,32 +102,7 @@ function getSubscriptionPlan(sub) {
   return sub?.currentPlan || sub?.basePlan || null;
 }
 
-function getPlanByCode(plans, code) {
-  if (!code || !Array.isArray(plans)) return null;
-  return plans.find((p) => p.code === code) || null;
-}
-
-function monthlyEquivalentForSub(sub, plans) {
-  const planCode = getSubscriptionPlan(sub);
-  if (!planCode || planCode === "free" || planCode === "custom") return 0;
-  const plan = getPlanByCode(plans, planCode);
-  if (!plan) return 0;
-  if (sub.billingCycle === "annual") {
-    const annual = Number(plan.annualPrice) || 0;
-    return annual > 0 ? annual / 12 : 0;
-  }
-  return Number(plan.monthlyPrice) || 0;
-}
-
-function isInCurrentMonth(iso) {
-  if (!iso) return false;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return false;
-  const now = new Date();
-  return d.getUTCFullYear() === now.getUTCFullYear() && d.getUTCMonth() === now.getUTCMonth();
-}
-
-function KpiCard({ tone, label, value, hint, meta, icon }) {
+function KpiCard({ tone, label, value, hint, icon }) {
   return (
     <article className="kpi-card" data-tone={tone || "neutral"}>
       <div className="kpi-card-head">
@@ -141,7 +112,6 @@ function KpiCard({ tone, label, value, hint, meta, icon }) {
         <span className="kpi-card-label">{label}</span>
       </div>
       <strong className="kpi-card-value">{value}</strong>
-      {meta ? <div className="kpi-card-meta">{meta}</div> : null}
       <div className="kpi-card-foot">{hint ? <small>{hint}</small> : null}</div>
     </article>
   );
@@ -172,7 +142,7 @@ function HeaderActions({ navigate }) {
 function QuickActions({ navigate }) {
   if (typeof navigate !== "function") return null;
   return (
-    <div className="admin-dashboard-quick-actions">
+    <div className="admin-dashboard-quick-actions admin-dashboard-quick-actions-stack">
       <button
         className="admin-dashboard-quick-action"
         data-tone="primary"
@@ -209,23 +179,6 @@ function QuickActions({ navigate }) {
           <small>Plans, subscriptions, manual payments</small>
         </span>
       </button>
-      <button
-        className="admin-dashboard-quick-action"
-        data-tone="neutral"
-        onClick={() => navigate("/admin/vendors")}
-        type="button"
-      >
-        <span className="admin-dashboard-quick-icon" aria-hidden="true">
-          <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3.5 17V8.5l6.5-4 6.5 4V17" />
-            <path d="M3.5 17h13" />
-          </svg>
-        </span>
-        <span className="admin-dashboard-quick-body">
-          <strong>All Vendors</strong>
-          <small>Search, filter, and review tenants</small>
-        </span>
-      </button>
     </div>
   );
 }
@@ -247,7 +200,7 @@ function RecentSignups({ formatDate, items, navigate }) {
           ) : null
         }
       >
-        New vendor workspaces will appear here as soon as you onboard one.
+        New vendors will appear here as soon as you onboard one.
       </EmptyState>
     );
   }
@@ -281,15 +234,6 @@ function RecentSignups({ formatDate, items, navigate }) {
                 status={vendor.status}
                 tone={statusTone}
               />
-              {typeof navigate === "function" ? (
-                <button
-                  className="link-button"
-                  onClick={() => navigate("/admin/vendors")}
-                  type="button"
-                >
-                  View
-                </button>
-              ) : null}
             </div>
           </article>
         );
@@ -355,6 +299,81 @@ function RecentPayments({ formatDate, formatMoney, items, navigate }) {
   );
 }
 
+function VendorTable({ formatDate, rows, navigate, totalVendors }) {
+  if (!rows?.length) {
+    return (
+      <EmptyState title="No vendors to show">
+        Once vendors are onboarded they will appear in this list with their current plan and
+        billing cycle.
+      </EmptyState>
+    );
+  }
+  return (
+    <div className="admin-dashboard-vendor-table-wrapper">
+      <table className="admin-dashboard-vendor-table">
+        <thead>
+          <tr>
+            <th scope="col">Vendor</th>
+            <th scope="col">Plan</th>
+            <th scope="col">Status</th>
+            <th scope="col">Billing cycle</th>
+            <th scope="col">Period end</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => {
+            const planCode = row.plan || "free";
+            const statusTone = VENDOR_STATUS_TONES[row.status] || "neutral";
+            return (
+              <tr key={row.id}>
+                <td>
+                  <div className="admin-dashboard-vendor-cell">
+                    <div className="admin-dashboard-signup-avatar" aria-hidden="true">
+                      {(row.name || "?").trim().charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <strong>{row.name || "Untitled vendor"}</strong>
+                      {row.slug ? <small>{row.slug}</small> : null}
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span
+                    className="admin-dashboard-plan-pill"
+                    data-tone={PLAN_TONES[planCode] || "neutral"}
+                  >
+                    {planLabel(planCode)}
+                  </span>
+                </td>
+                <td>
+                  <StatusPill
+                    label={formatToken(row.status)}
+                    status={row.status}
+                    tone={statusTone}
+                  />
+                </td>
+                <td>{billingCycleLabel(row.billingCycle)}</td>
+                <td>{row.periodEnd ? formatDate(row.periodEnd) : "—"}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      {totalVendors > rows.length && typeof navigate === "function" ? (
+        <div className="admin-dashboard-vendor-table-foot">
+          <button
+            className="link-button"
+            onClick={() => navigate("/admin/vendors")}
+            type="button"
+          >
+            View all {totalVendors} vendors →
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function AdminDashboardScreen({ navigate }) {
   const { settings } = useAppSettings();
   const formatMoney = (value) => formatMoneyWith(settings, value);
@@ -365,7 +384,7 @@ function AdminDashboardScreen({ navigate }) {
   const [data, setData] = useState({
     totalVendors: 0,
     activeVendors: 0,
-    recentVendors: [],
+    vendors: [],
     plans: [],
     subscriptions: [],
     subsTotal: 0,
@@ -384,15 +403,15 @@ function AdminDashboardScreen({ navigate }) {
         paymentsResp,
         plansResp
       ] = await Promise.all([
-        listAdminVendors({ page: 1, pageSize: 5 }),
+        listAdminVendors({ page: 1, pageSize: VENDORS_PAGE_SIZE }),
         listAdminVendors({ page: 1, pageSize: 1, status: "active" }),
         listAdminSubscriptions({ page: 1, pageSize: SUBS_PAGE_SIZE }),
         listBillingPayments({ page: 1, pageSize: PAYMENTS_PAGE_SIZE }),
         listBillingPlans()
       ]);
 
-      const recentVendors = vendorsResp?.data?.items || [];
-      const totalVendors = vendorsResp?.data?.pagination?.totalItems ?? recentVendors.length;
+      const vendors = vendorsResp?.data?.items || [];
+      const totalVendors = vendorsResp?.data?.pagination?.totalItems ?? vendors.length;
       const activeVendors =
         activeVendorsResp?.data?.pagination?.totalItems ??
         (activeVendorsResp?.data?.items || []).length;
@@ -405,7 +424,7 @@ function AdminDashboardScreen({ navigate }) {
       setData({
         totalVendors,
         activeVendors,
-        recentVendors,
+        vendors,
         plans,
         subscriptions,
         subsTotal,
@@ -427,23 +446,38 @@ function AdminDashboardScreen({ navigate }) {
     const subs = data.subscriptions || [];
     let trialCount = 0;
     let paidCount = 0;
-    let mrr = 0;
 
     subs.forEach((sub) => {
       const status = getSubscriptionStatus(sub);
       if (status === "trial") trialCount += 1;
       if (status === "active" || status === "past_due") paidCount += 1;
-      if (status === "active") {
-        mrr += monthlyEquivalentForSub(sub, data.plans);
-      }
     });
 
     const payments = data.payments || [];
-    const monthlyManualRevenue = payments
-      .filter(
-        (p) => p.paymentStatus === "received" && isInCurrentMonth(p.paidAt || p.createdAt)
-      )
+    const totalPaymentsAmount = payments
+      .filter((p) => p.paymentStatus === "received")
       .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+
+    const subscriptionByVendorId = new Map();
+    subs.forEach((sub) => {
+      const vendorId = sub?.vendor?.id;
+      if (vendorId && !subscriptionByVendorId.has(vendorId)) {
+        subscriptionByVendorId.set(vendorId, sub);
+      }
+    });
+
+    const vendorRows = (data.vendors || []).map((vendor) => {
+      const sub = subscriptionByVendorId.get(vendor.id);
+      return {
+        id: vendor.id,
+        name: vendor.displayName || vendor.legalName || "Untitled vendor",
+        slug: vendor.slug || null,
+        plan: getSubscriptionPlan(sub) || vendor.plan || "free",
+        status: vendor.status,
+        billingCycle: sub?.billingCycle || null,
+        periodEnd: sub?.currentPeriodEnd || sub?.expiresAt || null
+      };
+    });
 
     const subsTruncated = data.subsTotal > subs.length;
     const paymentsTruncated = data.paymentsTotal > payments.length;
@@ -451,8 +485,8 @@ function AdminDashboardScreen({ navigate }) {
     return {
       trialCount,
       paidCount,
-      mrr,
-      monthlyManualRevenue,
+      totalPaymentsAmount,
+      vendorRows,
       subsTruncated,
       paymentsTruncated
     };
@@ -463,7 +497,7 @@ function AdminDashboardScreen({ navigate }) {
       <div className="dashboard-page dashboard-v2 admin-dashboard-page">
         <PageHeader eyebrow="Platform" title="Loading platform dashboard" />
         <section className="dashboard-kpi-grid">
-          {Array.from({ length: 6 }).map((_, index) => (
+          {Array.from({ length: 5 }).map((_, index) => (
             <article className="kpi-card kpi-card-skeleton" key={index}>
               <LoadingSkeleton rows={2} />
             </article>
@@ -492,16 +526,13 @@ function AdminDashboardScreen({ navigate }) {
     ? `Active or past-due in the first ${data.subscriptions.length}`
     : "Active or past-due subscriptions";
 
-  const mrrPrefix = derived.subsTruncated ? "≈ " : "";
-  const mrrHint = derived.mrr > 0
-    ? `${derived.paidCount} active subscription${derived.paidCount === 1 ? "" : "s"}`
-    : data.plans.length === 0
-      ? "Plan pricing unavailable"
-      : "No paid subscriptions yet";
-
-  const monthlyRevenueHint = derived.paymentsTruncated
+  const paymentsHintBase = derived.paymentsTruncated
     ? `From the first ${data.payments.length} of ${data.paymentsTotal} payments`
-    : "Received payments this calendar month";
+    : data.paymentsTotal === 0
+      ? "No payments recorded yet"
+      : `Across ${data.paymentsTotal} payment${data.paymentsTotal === 1 ? "" : "s"}`;
+
+  const paymentsValuePrefix = derived.paymentsTruncated ? "≈ " : "";
 
   const activeVendorPercent = data.totalVendors > 0
     ? Math.round((data.activeVendors / data.totalVendors) * 100)
@@ -512,11 +543,11 @@ function AdminDashboardScreen({ navigate }) {
       <PageHeader
         eyebrow="Platform"
         title="Platform Dashboard"
-        description="Tenant health, subscription mix, and recent revenue across all SupplyLink workspaces."
+        description="Manage vendors, subscriptions, and billing activity."
         action={<HeaderActions navigate={navigate} />}
       />
 
-      <section className="dashboard-kpi-grid" aria-label="Platform metrics">
+      <section className="dashboard-kpi-grid admin-dashboard-kpi-grid" aria-label="Platform metrics">
         <KpiCard
           tone="info"
           icon={ICONS.vendors}
@@ -551,76 +582,95 @@ function AdminDashboardScreen({ navigate }) {
         />
         <KpiCard
           tone="success"
-          icon={ICONS.mrr}
-          label="Monthly recurring revenue"
-          value={`${mrrPrefix}${formatMoney(derived.mrr)}`}
-          hint={mrrHint}
-        />
-        <KpiCard
-          tone="info"
-          icon={ICONS.revenue}
-          label="Manual revenue (this month)"
-          value={formatMoney(derived.monthlyManualRevenue)}
-          hint={monthlyRevenueHint}
+          icon={ICONS.payments}
+          label="Total payments"
+          value={`${paymentsValuePrefix}${formatMoney(derived.totalPaymentsAmount)}`}
+          hint={paymentsHintBase}
         />
       </section>
 
-      <section className="panel-block admin-dashboard-quick-panel">
-        <SectionHeader hint="Jump straight into the workflow" title="Quick actions" />
-        <QuickActions navigate={navigate} />
+      <section className="admin-dashboard-activity-grid">
+        <div className="panel-block dashboard-wide-panel admin-dashboard-activity-panel">
+          <SectionHeader
+            hint="Latest vendors and payments across the platform"
+            title="Recent activity"
+          />
+          <div className="admin-dashboard-activity-stack">
+            <div className="admin-dashboard-activity-block">
+              <div className="admin-dashboard-activity-block-head">
+                <h3>Recent vendors</h3>
+                {typeof navigate === "function" ? (
+                  <button
+                    className="link-button"
+                    onClick={() => navigate("/admin/vendors")}
+                    type="button"
+                  >
+                    All vendors
+                  </button>
+                ) : null}
+              </div>
+              <RecentSignups
+                formatDate={formatDate}
+                items={(data.vendors || []).slice(0, 5)}
+                navigate={navigate}
+              />
+            </div>
+
+            <div className="admin-dashboard-activity-block">
+              <div className="admin-dashboard-activity-block-head">
+                <h3>Recent payments</h3>
+                {typeof navigate === "function" ? (
+                  <button
+                    className="link-button"
+                    onClick={() => navigate("/admin/billing")}
+                    type="button"
+                  >
+                    Open billing
+                  </button>
+                ) : null}
+              </div>
+              <RecentPayments
+                formatDate={formatDate}
+                formatMoney={formatMoney}
+                items={(data.payments || []).slice(0, 5)}
+                navigate={navigate}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="panel-block admin-dashboard-quick-panel admin-dashboard-quick-panel-side">
+          <SectionHeader hint="Jump straight into the workflow" title="Quick actions" />
+          <QuickActions navigate={navigate} />
+        </div>
       </section>
 
-      <section className="dashboard-insights-grid">
-        <div className="panel-block dashboard-wide-panel">
-          <SectionHeader
-            action={
-              typeof navigate === "function" ? (
-                <button
-                  className="link-button"
-                  onClick={() => navigate("/admin/vendors")}
-                  type="button"
-                >
-                  All vendors
-                </button>
-              ) : null
-            }
-            hint={`Latest ${Math.min(data.recentVendors.length, 5)} of ${data.totalVendors}`}
-            title="Recent vendor signups"
-          />
-          <RecentSignups
-            formatDate={formatDate}
-            items={data.recentVendors.slice(0, 5)}
-            navigate={navigate}
-          />
-        </div>
-
-        <div className="panel-block dashboard-wide-panel">
-          <SectionHeader
-            action={
-              typeof navigate === "function" ? (
-                <button
-                  className="link-button"
-                  onClick={() => navigate("/admin/billing")}
-                  type="button"
-                >
-                  Open billing
-                </button>
-              ) : null
-            }
-            hint={
-              data.paymentsTotal === 0
-                ? "No payments yet"
-                : `Showing ${Math.min(data.payments.length, 5)} most recent`
-            }
-            title="Recent payments"
-          />
-          <RecentPayments
-            formatDate={formatDate}
-            formatMoney={formatMoney}
-            items={(data.payments || []).slice(0, 5)}
-            navigate={navigate}
-          />
-        </div>
+      <section className="panel-block admin-dashboard-vendors-panel">
+        <SectionHeader
+          action={
+            typeof navigate === "function" ? (
+              <button
+                className="link-button"
+                onClick={() => navigate("/admin/vendors")}
+                type="button"
+              >
+                Manage vendors
+              </button>
+            ) : null
+          }
+          hint={
+            data.totalVendors > derived.vendorRows.length
+              ? `Showing ${derived.vendorRows.length} of ${data.totalVendors}`
+              : `${derived.vendorRows.length} vendor${derived.vendorRows.length === 1 ? "" : "s"}`
+          }
+          title="Vendors"
+        />
+        <VendorTable
+          formatDate={formatDate}
+          navigate={navigate}
+          rows={derived.vendorRows}
+          totalVendors={data.totalVendors}
+        />
       </section>
     </div>
   );

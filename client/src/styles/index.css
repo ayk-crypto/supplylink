@@ -8652,3 +8652,186 @@ body {
   }
 }
 /* === end Module 30 ============================================== */
+
+/* === Module 31 — Super Admin Dashboard v2 (vendor table + activity grid) === */
+
+.admin-dashboard-page {
+  max-width: 1320px;
+}
+
+.admin-dashboard-kpi-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.admin-dashboard-activity-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 18px;
+  margin-top: 22px;
+  align-items: start;
+}
+
+.admin-dashboard-activity-panel,
+.admin-dashboard-quick-panel-side {
+  margin-top: 0 !important;
+}
+
+.admin-dashboard-activity-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  margin-top: 6px;
+}
+
+.admin-dashboard-activity-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.admin-dashboard-activity-block-head h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  letter-spacing: 0.005em;
+}
+
+.admin-dashboard-quick-actions-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  grid-template-columns: none;
+}
+
+.admin-dashboard-vendors-panel {
+  margin-top: 22px;
+}
+
+.admin-dashboard-vendor-table-wrapper {
+  margin-top: 6px;
+  overflow-x: auto;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.admin-dashboard-vendor-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  color: #0f172a;
+}
+
+.admin-dashboard-vendor-table thead th {
+  text-align: left;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+  background: #f8fafc;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.admin-dashboard-vendor-table tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.04);
+  vertical-align: middle;
+}
+
+.admin-dashboard-vendor-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.admin-dashboard-vendor-table tbody tr:hover {
+  background: rgba(29, 122, 70, 0.03);
+}
+
+.admin-dashboard-vendor-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.admin-dashboard-vendor-cell strong {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.25;
+}
+
+.admin-dashboard-vendor-cell small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: #64748b;
+}
+
+.admin-dashboard-vendor-table-foot {
+  padding: 10px 14px;
+  border-top: 1px solid rgba(15, 23, 42, 0.05);
+  background: #fafbfc;
+  text-align: right;
+}
+
+@media (max-width: 1180px) {
+  .admin-dashboard-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .admin-dashboard-activity-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .admin-dashboard-kpi-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .admin-dashboard-vendor-table-wrapper {
+    border: 0;
+    background: transparent;
+    border-radius: 0;
+  }
+  .admin-dashboard-vendor-table {
+    display: block;
+  }
+  .admin-dashboard-vendor-table thead {
+    display: none;
+  }
+  .admin-dashboard-vendor-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .admin-dashboard-vendor-table tbody tr {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px;
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    border-radius: 12px;
+  }
+  .admin-dashboard-vendor-table tbody td {
+    display: block;
+    padding: 0;
+    border: 0;
+    font-size: 13px;
+  }
+  .admin-dashboard-vendor-table tbody td:not(:first-child) {
+    color: #475569;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-dashboard-kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+/* === end Module 31 ============================================== */

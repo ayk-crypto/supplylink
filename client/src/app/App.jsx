@@ -42,20 +42,6 @@ import { appRoutes, findRoute } from "./routes.js";
 import { useBrowserRoute } from "./useBrowserRoute.js";
 import { useAuth } from "../features/auth/useAuth.js";
 
-function VendorWorkspaceOnlyScreen() {
-  return (
-    <div className="resource-page">
-      <section className="page-header">
-        <div>
-          <p className="eyebrow">Vendor workspace</p>
-          <h2>This section is available only for vendor workspaces.</h2>
-          <p>Platform admins can use the admin navigation to manage SupplyLink.</p>
-        </div>
-      </section>
-    </div>
-  );
-}
-
 const screens = {
   "admin-dashboard": AdminDashboardScreen,
   "admin-vendors": AdminVendorsScreen,
@@ -151,6 +137,12 @@ function AuthenticatedApp({ navigate, path }) {
     }
   }, [isSuperAdmin, navigate, path]);
 
+  useEffect(() => {
+    if (isVendorRouteForPlatformAdmin) {
+      navigate("/admin", { replace: true });
+    }
+  }, [isVendorRouteForPlatformAdmin, navigate]);
+
   return (
     <ProtectedRoute>
       <SettingsProvider>
@@ -161,9 +153,7 @@ function AuthenticatedApp({ navigate, path }) {
           navItems={navItems}
           onNavigate={(nextPath) => navigate(nextPath)}
         >
-          {isVendorRouteForPlatformAdmin ? (
-            <VendorWorkspaceOnlyScreen />
-          ) : isForbiddenPlatformRoute ? (
+          {isVendorRouteForPlatformAdmin ? null : isForbiddenPlatformRoute ? (
             <NotFoundScreen onGoHome={() => navigate("/dashboard", { replace: true })} />
           ) : ActiveScreen ? (
             <ActiveScreen
