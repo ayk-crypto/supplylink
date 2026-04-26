@@ -580,7 +580,7 @@ function AdminDashboardScreen({ navigate }) {
 
       <section className="panel-block dashboard-wide-panel admin-dashboard-activity-panel">
         <SectionHeader
-          hint="Latest vendors and payments across the platform"
+          hint="Recent platform activity"
           title="Recent activity"
         />
         <div className="admin-dashboard-activity-stack">
