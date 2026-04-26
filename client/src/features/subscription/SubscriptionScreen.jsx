@@ -56,6 +56,18 @@ function formatUsageCount(value, limit) {
   return `${value} used / ${formatLimit(limit)}`;
 }
 
+function formatPlanName(subscription, planCode) {
+  if (subscription?.planConfig?.code === planCode) {
+    return subscription.planConfig.displayName || subscription.planConfig.label || planCode;
+  }
+
+  if (planCode === "custom") {
+    return "Custom Plan";
+  }
+
+  return String(planCode || "").toUpperCase();
+}
+
 function SubscriptionScreen() {
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -142,7 +154,7 @@ function SubscriptionScreen() {
       />
 
       {error ? <ErrorState message={error} onRetry={loadSubscription} /> : null}
-      {isLoading ? <LoadingState>Loading subscription…</LoadingState> : null}
+      {isLoading ? <LoadingState>Loading subscription...</LoadingState> : null}
 
       {!isLoading && subscription ? (
         <>
@@ -154,8 +166,8 @@ function SubscriptionScreen() {
             <div className="subscription-summary-grid">
               <article className="subscription-stat">
                 <span>Current access</span>
-                <strong>{subscription.effectiveAccess?.toUpperCase() || subscription.plan.toUpperCase()}</strong>
-                <small>Base Plan: {subscription.basePlan.toUpperCase()}</small>
+                <strong>{formatPlanName(subscription, subscription.effectiveAccess || subscription.plan)}</strong>
+                <small>Base Plan: {formatPlanName(subscription, subscription.basePlan)}</small>
               </article>
               <article className="subscription-stat">
                 <span>Status</span>

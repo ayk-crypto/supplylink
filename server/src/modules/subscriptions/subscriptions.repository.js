@@ -356,7 +356,8 @@ async function listPlanConfigs(client = { query }) {
                 WHEN 'free' THEN 1
                 WHEN 'basic' THEN 2
                 WHEN 'pro' THEN 3
-                ELSE 4
+                WHEN 'custom' THEN 4
+                ELSE 5
               END`
   );
 

@@ -430,20 +430,33 @@ async function updateBillingPlan(planCode, payload, actor = {}, requestId = null
   const updated = await updatePlanConfigByCode(planCode, mapPlanUpdatePayload(payload));
   const mapped = mapPlanConfig(updated);
 
-  await recordAuditEvent({
+  const before = mapPlanConfig(existing);
+  const auditPayload = {
     vendorId: null,
     actor,
     entityType: "subscription_plan_config",
     entityId: null,
-    eventType: "billing.plan_config.updated",
     eventLabel: `Updated ${mapped.displayName} plan configuration`,
     metadata: {
       planCode,
-      before: mapPlanConfig(existing),
+      before,
       after: mapped
     },
     requestId
+  };
+
+  await recordAuditEvent({
+    ...auditPayload,
+    eventType: "billing.plan_config.updated"
   });
+
+  if (planCode === "custom") {
+    await recordAuditEvent({
+      ...auditPayload,
+      eventType: "billing.custom_plan.updated",
+      eventLabel: "Updated custom plan configuration"
+    });
+  }
 
   return mapped;
 }
@@ -539,6 +552,9 @@ async function updateVendorSubscriptionByAdmin(vendorId, payload, actor = {}, re
   if (payload.status === "active") eventTypes.add("billing.subscription.activated");
   if (payload.status === "cancelled") eventTypes.add("billing.subscription.cancelled");
   if (payload.status === "expired") eventTypes.add("billing.subscription.expired");
+  if (payload.plan === "custom" && subscription.plan !== "custom") {
+    eventTypes.add("billing.custom_plan.assigned");
+  }
 
   await Promise.all(
     [...eventTypes].map((eventType) =>
@@ -725,6 +741,33 @@ async function recordManualSubscriptionPayment(payload, actor = {}, requestId = 
       },
       requestId
     });
+
+    if (payload.planCode === "custom" && result.subscription.plan !== "custom") {
+      await recordAuditEvent({
+        vendorId: payload.vendorId,
+        actor,
+        entityType: "subscription",
+        entityId: result.updatedSubscription.id,
+        eventType: "billing.custom_plan.assigned",
+        eventLabel: "Custom plan assigned from manual payment",
+        metadata: {
+          paymentId: payment.id,
+          before: {
+            plan: result.subscription.plan,
+            status: result.subscription.status,
+            billingCycle: result.subscription.billing_cycle,
+            currentPeriodEnd: result.subscription.current_period_end
+          },
+          after: {
+            plan: result.updatedSubscription.plan,
+            status: result.updatedSubscription.status,
+            billingCycle: result.updatedSubscription.billing_cycle,
+            currentPeriodEnd: result.updatedSubscription.current_period_end
+          }
+        },
+        requestId
+      });
+    }
   }
 
   return payment;

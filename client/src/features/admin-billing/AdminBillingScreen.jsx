@@ -23,7 +23,7 @@ import {
 import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
 
-const PLAN_OPTIONS = ["free", "basic", "pro"];
+const FALLBACK_PLAN_OPTIONS = ["free", "basic", "pro", "custom"];
 const STATUS_OPTIONS = ["trial", "active", "expired", "cancelled"];
 const BILLING_CYCLE_OPTIONS = ["monthly", "annual"];
 const PAYMENT_METHOD_OPTIONS = [
@@ -136,6 +136,15 @@ function getPlanBillingAmount(plans, planCode, billingCycle) {
   return formatPlanAmount(amount);
 }
 
+function getPlanOptions(plans) {
+  return plans.length ? plans.map((plan) => plan.code) : FALLBACK_PLAN_OPTIONS;
+}
+
+function getPlanLabel(plans, planCode) {
+  const plan = plans.find((item) => item.code === planCode);
+  return plan?.displayName || formatToken(planCode);
+}
+
 function buildPaymentDraft(amount = "0") {
   return {
     vendorId: "",
@@ -176,6 +185,7 @@ function AdminBillingScreen() {
   const [planDraft, setPlanDraft] = useState(null);
   const [isPaymentFormOpen, setIsPaymentFormOpen] = useState(false);
   const [paymentDraft, setPaymentDraft] = useState(buildPaymentDraft);
+  const planOptions = useMemo(() => getPlanOptions(plans), [plans]);
 
   const query = useMemo(
     () => ({
@@ -397,6 +407,7 @@ function AdminBillingScreen() {
                     Customers: {formatLimit(plan.maxCustomers)}; invoices/month:{" "}
                     {formatLimit(plan.maxInvoicesPerMonth)}
                   </small>
+                  <small>{plan.isActive ? "Active" : "Inactive"}</small>
                   <small>{plan.annualBenefit?.label || `Annual includes ${plan.annualFreeMonths} free months`}</small>
                   <button className="secondary-button" onClick={() => openPlanEditor(plan)} type="button">
                     Edit plan
@@ -423,9 +434,9 @@ function AdminBillingScreen() {
                 value={filters.plan}
               >
                 <option value="">All plans</option>
-                {PLAN_OPTIONS.map((plan) => (
+                {planOptions.map((plan) => (
                   <option key={plan} value={plan}>
-                    {plan}
+                    {getPlanLabel(plans, plan)}
                   </option>
                 ))}
               </select>
@@ -483,8 +494,8 @@ function AdminBillingScreen() {
                           <small>{subscription.vendor.slug}</small>
                         </div>
                         <div>
-                          <strong>{subscription.currentPlan}</strong>
-                          <small>Access: {subscription.effectiveAccess}</small>
+                          <strong>{getPlanLabel(plans, subscription.currentPlan)}</strong>
+                          <small>Access: {getPlanLabel(plans, subscription.effectiveAccess)}</small>
                         </div>
                         <StatusPill status={subscription.status} />
                         <span>{subscription.billingCycle}</span>
@@ -586,9 +597,9 @@ function AdminBillingScreen() {
               }
               value={subscriptionDraft.plan}
             >
-              {PLAN_OPTIONS.map((plan) => (
+              {planOptions.map((plan) => (
                 <option key={plan} value={plan}>
-                  {plan}
+                  {getPlanLabel(plans, plan)}
                 </option>
               ))}
             </select>
@@ -763,9 +774,9 @@ function AdminBillingScreen() {
               onChange={(event) => updatePaymentPlan(event.target.value)}
               value={paymentDraft.planCode}
             >
-              {PLAN_OPTIONS.map((plan) => (
+              {planOptions.map((plan) => (
                 <option key={plan} value={plan}>
-                  {plan}
+                  {getPlanLabel(plans, plan)}
                 </option>
               ))}
             </select>
@@ -782,7 +793,10 @@ function AdminBillingScreen() {
               ))}
             </select>
             {paymentDraft.billingCycle === "annual" ? (
-              <small>Annual billing includes 3 free months by default.</small>
+              <small>
+                {plans.find((plan) => plan.code === paymentDraft.planCode)?.annualBenefit?.label ||
+                  "Annual billing follows the selected plan configuration."}
+              </small>
             ) : null}
           </Field>
           <Field

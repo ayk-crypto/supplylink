@@ -31,6 +31,17 @@ const SUBSCRIPTION_PLANS = {
     maxCustomers: null,
     maxInvoicesPerMonth: null,
     isActive: true
+  },
+  custom: {
+    code: "custom",
+    displayName: "Custom Plan",
+    label: "Custom Plan",
+    monthlyPrice: 0,
+    annualPrice: 0,
+    annualFreeMonths: 0,
+    maxCustomers: null,
+    maxInvoicesPerMonth: null,
+    isActive: true
   }
 };
 
