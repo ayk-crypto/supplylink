@@ -11,21 +11,30 @@ function getInitials(value, fallback = "?") {
   return parts.map((part) => part[0]?.toUpperCase() || "").join("") || fallback;
 }
 
-function hashHue(value) {
+const AVATAR_PALETTE = [
+  { bg: "#e2e8f0", fg: "#334155" },
+  { bg: "#d1fae5", fg: "#047857" },
+  { bg: "#dbeafe", fg: "#1d4ed8" },
+  { bg: "#ede9fe", fg: "#5b21b6" },
+  { bg: "#fef3c7", fg: "#92400e" },
+  { bg: "#cffafe", fg: "#0e7490" }
+];
+
+function hashIndex(value, modulo) {
   const text = String(value || "");
   let hash = 0;
   for (let i = 0; i < text.length; i += 1) {
     hash = (hash * 31 + text.charCodeAt(i)) | 0;
   }
-  return Math.abs(hash) % 360;
+  return Math.abs(hash) % modulo;
 }
 
 function Avatar({ name, seed, size = "md", title }) {
   const initials = getInitials(name);
-  const hue = hashHue(seed || name || "supplylink");
+  const tone = AVATAR_PALETTE[hashIndex(seed || name || "supplylink", AVATAR_PALETTE.length)];
   const style = {
-    backgroundColor: `hsl(${hue} 60% 92%)`,
-    color: `hsl(${hue} 50% 28%)`
+    backgroundColor: tone.bg,
+    color: tone.fg
   };
   return (
     <span
