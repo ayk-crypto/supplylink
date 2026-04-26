@@ -9089,3 +9089,258 @@ body {
   color: #94a3b8;
 }
 /* === end Module 32a ============================================== */
+
+/* === Module 33 — Super Admin Vendors page refinement (scoped) === */
+
+.admin-vendors-page {
+  display: grid;
+  gap: 16px;
+}
+
+/* KPI strip */
+.admin-vendors-page .admin-vendors-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-vendors-page .admin-vendors-kpi {
+  background: var(--surface);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+
+.admin-vendors-page .admin-vendors-kpi-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1d7a46;
+}
+
+.admin-vendors-page .admin-vendors-kpi-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+.admin-vendors-page .admin-vendors-kpi-hint {
+  font-size: 11.5px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+@media (max-width: 720px) {
+  .admin-vendors-page .admin-vendors-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Vendor table — 5 column grid with Actions */
+.admin-vendors-page .admin-vendors-grid {
+  grid-template-columns:
+    minmax(220px, 1.4fr)
+    minmax(220px, 1.3fr)
+    minmax(110px, 0.55fr)
+    minmax(100px, 0.5fr)
+    minmax(80px, 0.4fr);
+}
+
+.admin-vendors-page .resource-row.admin-vendors-grid {
+  padding: 10px 14px;
+  align-items: center;
+}
+
+.admin-vendors-page .resource-table-head.admin-vendors-grid {
+  padding: 8px 14px;
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+}
+
+.admin-vendors-page .admin-vendors-actions-head {
+  text-align: right;
+}
+
+.admin-vendors-page .admin-vendors-actions-cell {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Bold admin name, lighter email */
+.admin-vendors-page .admin-vendors-name strong {
+  font-weight: 700;
+  font-size: 13.5px;
+  color: #0f172a;
+}
+
+.admin-vendors-page .admin-vendors-name small {
+  font-size: 11.5px;
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.admin-vendors-page .admin-vendors-admin strong {
+  font-weight: 700;
+  font-size: 13px;
+  color: #0f172a;
+}
+
+.admin-vendors-page .admin-vendors-admin small {
+  font-weight: 400;
+  font-size: 11.5px;
+  color: #94a3b8;
+}
+
+/* Plan badge — subtle */
+.admin-vendors-page .admin-vendors-plan {
+  font-weight: 600;
+  font-size: 11px;
+  min-height: 22px;
+  padding: 3px 9px;
+  letter-spacing: 0.01em;
+  opacity: 0.95;
+}
+
+/* Status pill — compact, not full-width */
+.admin-vendors-page .resource-row .status-pill {
+  font-size: 11px;
+  padding: 3px 9px;
+  min-height: 22px;
+  width: fit-content;
+  line-height: 1.15;
+  font-weight: 600;
+}
+
+/* View button */
+.admin-vendors-page .admin-vendors-view-button {
+  font-size: 12px;
+  padding: 4px 12px;
+  min-height: 26px;
+  font-weight: 600;
+}
+
+/* Toolbar — search input grows since button removed */
+.admin-vendors-page .resource-toolbar input[type="search"] {
+  flex: 1 1 320px;
+}
+
+/* Footer — count + optional pager */
+.admin-vendors-page .admin-vendors-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 2px 0;
+  flex-wrap: wrap;
+}
+
+.admin-vendors-page .admin-vendors-footer-count {
+  font-size: 12.5px;
+  color: #475569;
+  font-weight: 600;
+}
+
+.admin-vendors-page .admin-vendors-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-vendors-page .admin-vendors-footer-pageinfo {
+  font-size: 12.5px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Responsive table — stack on small */
+@media (max-width: 760px) {
+  .admin-vendors-page .admin-vendors-grid {
+    grid-template-columns:
+      minmax(180px, 1.2fr)
+      minmax(180px, 1.2fr)
+      minmax(100px, 0.55fr)
+      minmax(90px, 0.45fr)
+      minmax(70px, 0.35fr);
+  }
+}
+
+/* === Vendor detail modal (scoped via class names — no global leakage) === */
+.admin-vendors-detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 24px;
+}
+
+.admin-vendors-detail-panel {
+  background: var(--surface);
+  border-radius: 16px;
+  width: min(520px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.admin-vendors-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.admin-vendors-detail-head h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.admin-vendors-detail-head p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.admin-vendors-detail-body {
+  padding: 16px 22px 20px;
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.admin-vendors-detail-row {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 12px;
+  font-size: 13px;
+  align-items: center;
+}
+
+.admin-vendors-detail-row dt {
+  color: #64748b;
+  font-weight: 500;
+  margin: 0;
+  font-size: 12px;
+}
+
+.admin-vendors-detail-row dd {
+  color: #0f172a;
+  font-weight: 500;
+  margin: 0;
+  word-break: break-word;
+}
+/* === end Module 33 ============================================== */
