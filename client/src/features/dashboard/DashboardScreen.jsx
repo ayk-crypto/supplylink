@@ -10,7 +10,7 @@ import { useAppSettings } from "../system/settingsContext.js";
 import { formatDateWith, formatMoneyWith } from "../system/settingsFormat.js";
 import { useDashboardData } from "./useDashboardData.js";
 
-function KpiCard({ tone, label, value, hint, icon, trend }) {
+function KpiCard({ tone, label, value, hint, meta, icon }) {
   return (
     <article className="kpi-card" data-tone={tone || "neutral"}>
       <div className="kpi-card-head">
@@ -20,12 +20,38 @@ function KpiCard({ tone, label, value, hint, icon, trend }) {
         <span className="kpi-card-label">{label}</span>
       </div>
       <strong className="kpi-card-value">{value}</strong>
-      <div className="kpi-card-foot">
-        {hint ? <small>{hint}</small> : null}
-        {trend ? <span className={`kpi-card-trend tone-${trend.tone}`}>{trend.label}</span> : null}
-      </div>
+      {meta ? <div className="kpi-card-meta">{meta}</div> : null}
+      <div className="kpi-card-foot">{hint ? <small>{hint}</small> : null}</div>
     </article>
   );
+}
+
+const PLAN_LABELS = { free: "Free", basic: "Basic", pro: "Pro", custom: "Custom" };
+const PLAN_TONES = {
+  free: "neutral",
+  basic: "info",
+  pro: "violet",
+  custom: "success"
+};
+
+function planLabel(code) {
+  if (!code) return "—";
+  return PLAN_LABELS[code] || code.charAt(0).toUpperCase() + code.slice(1);
+}
+
+function billingCycleLabel(cycle) {
+  if (cycle === "annual") return "Annual";
+  if (cycle === "monthly") return "Monthly";
+  return cycle ? cycle.charAt(0).toUpperCase() + cycle.slice(1) : "—";
+}
+
+function planStatusLabel(status) {
+  if (!status) return "";
+  if (status === "trial") return "Trial";
+  if (status === "active") return "Active";
+  if (status === "past_due") return "Past due";
+  if (status === "cancelled" || status === "canceled") return "Cancelled";
+  return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
 const ICONS = {
@@ -92,7 +118,24 @@ function DashboardStatus({ type, status }) {
 
 function ActivityFeed({ formatDate, formatMoney, items, navigate }) {
   if (!items?.length) {
-    return <EmptyState>No recent commercial activity yet.</EmptyState>;
+    return (
+      <EmptyState
+        title="No commercial activity yet"
+        action={
+          typeof navigate === "function" ? (
+            <button
+              className="primary-button compact"
+              onClick={() => navigate("/quotations/new")}
+              type="button"
+            >
+              Create quotation
+            </button>
+          ) : null
+        }
+      >
+        Quotations, orders, invoices, and payments will appear here as soon as you record one.
+      </EmptyState>
+    );
   }
   return (
     <div className="dashboard-activity-feed">
@@ -138,7 +181,24 @@ function ActivityFeed({ formatDate, formatMoney, items, navigate }) {
 
 function OverdueInvoices({ formatDate, formatMoney, items, navigate }) {
   if (!items?.length) {
-    return <EmptyState>No overdue invoices right now.</EmptyState>;
+    return (
+      <EmptyState
+        title="Nothing overdue"
+        action={
+          typeof navigate === "function" ? (
+            <button
+              className="ghost-button compact"
+              onClick={() => navigate("/reports/receivables")}
+              type="button"
+            >
+              View receivables
+            </button>
+          ) : null
+        }
+      >
+        All issued invoices are within their due date. Nice work staying on top of collections.
+      </EmptyState>
+    );
   }
   return (
     <div className="dashboard-overdue-list">
@@ -186,7 +246,24 @@ function OverdueInvoices({ formatDate, formatMoney, items, navigate }) {
 
 function TopCustomers({ formatDate, formatMoney, items, navigate }) {
   if (!items?.length) {
-    return <EmptyState>No customer billing data yet.</EmptyState>;
+    return (
+      <EmptyState
+        title="No customer activity yet"
+        action={
+          typeof navigate === "function" ? (
+            <button
+              className="primary-button compact"
+              onClick={() => navigate("/customers")}
+              type="button"
+            >
+              Add customer
+            </button>
+          ) : null
+        }
+      >
+        Once you bill a customer, the highest-value relationships will be ranked here.
+      </EmptyState>
+    );
   }
   return (
     <div className="dashboard-customer-list">
@@ -227,7 +304,24 @@ function TopCustomers({ formatDate, formatMoney, items, navigate }) {
 
 function PaymentsList({ formatDate, formatMoney, items, navigate }) {
   if (!items?.length) {
-    return <EmptyState>No payments have been recorded yet.</EmptyState>;
+    return (
+      <EmptyState
+        title="No payments recorded"
+        action={
+          typeof navigate === "function" ? (
+            <button
+              className="primary-button compact"
+              onClick={() => navigate("/invoices")}
+              type="button"
+            >
+              Record payment
+            </button>
+          ) : null
+        }
+      >
+        Open an invoice and add a payment to see incoming cash here.
+      </EmptyState>
+    );
   }
   return (
     <div className="dashboard-payment-list">
@@ -261,9 +355,26 @@ function PaymentsList({ formatDate, formatMoney, items, navigate }) {
   );
 }
 
-function NotificationsList({ notifications }) {
+function NotificationsList({ navigate, notifications }) {
   if (!notifications?.latest?.length) {
-    return <EmptyState>No recent notifications.</EmptyState>;
+    return (
+      <EmptyState
+        title="You're all caught up"
+        action={
+          typeof navigate === "function" ? (
+            <button
+              className="ghost-button compact"
+              onClick={() => navigate("/notifications")}
+              type="button"
+            >
+              Open inbox
+            </button>
+          ) : null
+        }
+      >
+        New activity, comments, and system alerts will appear here.
+      </EmptyState>
+    );
   }
   return (
     <div className="dashboard-notification-list">
@@ -284,14 +395,14 @@ function HeaderActions({ navigate }) {
   if (typeof navigate !== "function") return null;
   return (
     <div className="button-row dashboard-header-actions">
+      <button className="secondary-button compact" onClick={() => navigate("/quotations/new")} type="button">
+        New quotation
+      </button>
       <button className="secondary-button compact" onClick={() => navigate("/orders/new")} type="button">
         New order
       </button>
-      <button className="secondary-button compact" onClick={() => navigate("/invoices/new")} type="button">
+      <button className="primary-button compact" onClick={() => navigate("/invoices/new")} type="button">
         New invoice
-      </button>
-      <button className="primary-button compact" onClick={() => navigate("/quotations/new")} type="button">
-        New quotation
       </button>
     </div>
   );
@@ -303,8 +414,10 @@ function DashboardScreen({ navigate }) {
     dashboard,
     error,
     isLoading,
+    isSubscriptionLoading,
     notifications,
-    notificationsError
+    notificationsError,
+    subscription
   } = useDashboardData();
   const { settings } = useAppSettings();
   const formatMoney = (value) => formatMoneyWith(settings, value);
@@ -337,6 +450,39 @@ function DashboardScreen({ navigate }) {
   const overdueCount = aggregates.receivables?.overdueInvoiceCount ?? overdueInvoices.length;
   const openInvoiceCount = aggregates.receivables?.openInvoiceCount ?? 0;
 
+  const planCode =
+    subscription?.plan || subscription?.currentPlan || subscription?.basePlan;
+  const planTone = PLAN_TONES[planCode] || "violet";
+  const planValue = isSubscriptionLoading ? "…" : planLabel(planCode);
+  const subscriptionStatus = subscription?.subscriptionStatus || subscription?.status;
+  const planStatus = planStatusLabel(subscriptionStatus);
+  const planCycleText = subscription ? billingCycleLabel(subscription.billingCycle) : "";
+  const isTrial = subscriptionStatus === "trial";
+  const isEnded = subscriptionStatus === "cancelled" || subscriptionStatus === "canceled";
+  const isPastDue = subscriptionStatus === "past_due";
+  const planRenewalIso = isTrial
+    ? subscription?.trialEndsAt
+    : subscription?.currentPeriodEnd || subscription?.trialEndsAt;
+  let planRenewalLabel;
+  if (!subscription) {
+    planRenewalLabel = "Plan details unavailable";
+  } else if (isEnded) {
+    planRenewalLabel = "Subscription ended";
+  } else if (isPastDue && planRenewalIso) {
+    planRenewalLabel = `Past due since ${formatDate(planRenewalIso)}`;
+  } else if (planRenewalIso) {
+    planRenewalLabel = `${isTrial ? "Trial ends" : "Renews"} ${formatDate(planRenewalIso)}`;
+  } else {
+    planRenewalLabel = "No renewal date set";
+  }
+
+  const topCustomerName = topCustomers[0]?.label;
+  const customersHint = topCustomerName
+    ? `Top: ${topCustomerName}`
+    : summary.totalCustomers
+      ? "Linked to this workspace"
+      : "Add your first customer to get started";
+
   return (
     <div className="dashboard-page dashboard-v2">
       <PageHeader
@@ -363,7 +509,7 @@ function DashboardScreen({ navigate }) {
           icon={ICONS.customers}
           label="Customers"
           value={String(summary.totalCustomers || 0)}
-          hint="Linked to this workspace"
+          hint={customersHint}
         />
         <KpiCard
           tone="violet"
@@ -373,11 +519,23 @@ function DashboardScreen({ navigate }) {
           hint={`${openInvoiceCount} open · ${overdueCount} overdue`}
         />
         <KpiCard
-          tone="neutral"
+          tone={planTone}
           icon={ICONS.subscriptions}
-          label="Subscriptions"
-          value="—"
-          hint="Not available on this workspace"
+          label="Plan"
+          value={planValue}
+          meta={
+            subscription ? (
+              <span className="kpi-card-meta-row">
+                <span className="kpi-card-chip">{planCycleText}</span>
+                {planStatus ? (
+                  <span className="kpi-card-chip" data-status={subscription?.subscriptionStatus || subscription?.status}>
+                    {planStatus}
+                  </span>
+                ) : null}
+              </span>
+            ) : null
+          }
+          hint={planRenewalLabel}
         />
       </section>
 
@@ -491,7 +649,7 @@ function DashboardScreen({ navigate }) {
           ) : areNotificationsLoading && !notifications ? (
             <LoadingSkeleton label="Loading notifications" rows={3} />
           ) : (
-            <NotificationsList notifications={notifications} />
+            <NotificationsList navigate={navigate} notifications={notifications} />
           )}
         </div>
       </section>
