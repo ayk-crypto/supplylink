@@ -516,11 +516,9 @@ function AdminDashboardScreen({ navigate }) {
     );
   }
 
-  const trialHint = derived.subsTruncated
-    ? `From first ${data.subscriptions.length} of ${data.subsTotal} subscriptions`
-    : data.subsTotal === 0
-      ? "No subscriptions yet"
-      : "Across all tenants";
+  const trialHint = derived.trialCount > 0
+    ? "Converting to paid soon"
+    : "No trials in progress";
 
   const paidHint = derived.subsTruncated
     ? `Active or past-due in the first ${data.subscriptions.length}`
