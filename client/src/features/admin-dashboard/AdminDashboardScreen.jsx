@@ -123,61 +123,17 @@ function HeaderActions({ navigate }) {
     <div className="button-row admin-dashboard-header-actions">
       <button
         className="secondary-button compact"
-        onClick={() => navigate("/admin/vendors")}
+        onClick={() => navigate("/admin/billing")}
         type="button"
       >
-        Manage Vendors
+        Admin Billing
       </button>
       <button
         className="primary-button compact"
-        onClick={() => navigate("/admin/billing")}
-        type="button"
-      >
-        Open Admin Billing
-      </button>
-    </div>
-  );
-}
-
-function QuickActions({ navigate }) {
-  if (typeof navigate !== "function") return null;
-  return (
-    <div className="admin-dashboard-quick-actions admin-dashboard-quick-actions-stack">
-      <button
-        className="admin-dashboard-quick-action"
-        data-tone="primary"
         onClick={() => navigate("/admin/vendors")}
         type="button"
       >
-        <span className="admin-dashboard-quick-icon" aria-hidden="true">
-          <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="9" cy="8" r="3" />
-            <path d="M3 17c0-2.8 2.7-5 6-5s6 2.2 6 5" />
-            <path d="M15 5v4M13 7h4" />
-          </svg>
-        </span>
-        <span className="admin-dashboard-quick-body">
-          <strong>Create Vendor</strong>
-          <small>Onboard a new client workspace</small>
-        </span>
-      </button>
-      <button
-        className="admin-dashboard-quick-action"
-        data-tone="neutral"
-        onClick={() => navigate("/admin/billing")}
-        type="button"
-      >
-        <span className="admin-dashboard-quick-icon" aria-hidden="true">
-          <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="5" width="14" height="11" rx="2" />
-            <path d="M3 9h14" />
-            <path d="M7 13h3" />
-          </svg>
-        </span>
-        <span className="admin-dashboard-quick-body">
-          <strong>Admin Billing</strong>
-          <small>Plans, subscriptions, manual payments</small>
-        </span>
+        + Create Vendor
       </button>
     </div>
   );
@@ -218,11 +174,6 @@ function RecentSignups({ formatDate, items, navigate }) {
               <div>
                 <strong>{vendor.displayName || vendor.legalName || "Untitled vendor"}</strong>
                 <p>{vendor.adminUser?.email || vendor.contactEmail || "No admin assigned"}</p>
-                {vendor.createdAt ? (
-                  <span>Joined {formatDate(vendor.createdAt)}</span>
-                ) : (
-                  <span>Joined date unavailable</span>
-                )}
               </div>
             </div>
             <div className="admin-dashboard-signup-meta">
@@ -234,6 +185,9 @@ function RecentSignups({ formatDate, items, navigate }) {
                 status={vendor.status}
                 tone={statusTone}
               />
+              <span className="admin-dashboard-row-time">
+                {vendor.createdAt ? formatDate(vendor.createdAt) : "—"}
+              </span>
             </div>
           </article>
         );
@@ -271,12 +225,17 @@ function RecentPayments({ formatDate, formatMoney, items, navigate }) {
         return (
           <article className="admin-dashboard-payment-row" key={payment.id}>
             <div className="admin-dashboard-payment-main">
+              <div className="admin-dashboard-payment-icon" aria-hidden="true">
+                <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10 3v14" />
+                  <path d="M13.5 6.5c-.7-1-2.1-1.5-3.5-1.5s-3 .7-3 2.2c0 1.5 1.5 2 3.3 2.4 1.7.4 3.2 1 3.2 2.5 0 1.5-1.6 2.4-3.5 2.4-1.5 0-3-.6-3.5-1.7" />
+                </svg>
+              </div>
               <div>
                 <strong>{payment.vendor?.displayName || "Vendor"}</strong>
-                <p>{payment.vendor?.slug || "—"}</p>
-                <span>
+                <p>
                   {planLabel(planCode)} · {billingCycleLabel(payment.billingCycle)}
-                </span>
+                </p>
               </div>
             </div>
             <div className="admin-dashboard-payment-meta">
@@ -290,7 +249,9 @@ function RecentPayments({ formatDate, formatMoney, items, navigate }) {
                 status={payment.paymentStatus}
                 tone={statusTone}
               />
-              <span>{formatDate(payment.paidAt || payment.createdAt)}</span>
+              <span className="admin-dashboard-row-time">
+                {formatDate(payment.paidAt || payment.createdAt)}
+              </span>
             </div>
           </article>
         );
@@ -517,7 +478,7 @@ function AdminDashboardScreen({ navigate }) {
   }
 
   const trialHint = derived.trialCount > 0
-    ? "Converting to paid soon"
+    ? `${derived.trialCount} in trial phase`
     : "No trials in progress";
 
   const paidHint = derived.subsTruncated
@@ -575,68 +536,84 @@ function AdminDashboardScreen({ navigate }) {
           value={String(derived.paidCount)}
           hint={paidHint}
         />
-        <KpiCard
-          tone="success"
-          icon={ICONS.payments}
-          label="Total payments"
-          value={`${paymentsValuePrefix}${formatMoney(derived.totalPaymentsAmount)}`}
-          hint={paymentsHintBase}
-        />
       </section>
 
-      <section className="admin-dashboard-activity-grid">
-        <div className="panel-block dashboard-wide-panel admin-dashboard-activity-panel">
-          <SectionHeader
-            hint="Latest vendors and payments across the platform"
-            title="Recent activity"
-          />
-          <div className="admin-dashboard-activity-stack">
-            <div className="admin-dashboard-activity-block">
-              <div className="admin-dashboard-activity-block-head">
-                <h3>Recent vendors</h3>
-                {typeof navigate === "function" ? (
-                  <button
-                    className="link-button"
-                    onClick={() => navigate("/admin/vendors")}
-                    type="button"
-                  >
-                    All vendors
-                  </button>
-                ) : null}
-              </div>
-              <RecentSignups
-                formatDate={formatDate}
-                items={(data.vendors || []).slice(0, 5)}
-                navigate={navigate}
-              />
-            </div>
-
-            <div className="admin-dashboard-activity-block">
-              <div className="admin-dashboard-activity-block-head">
-                <h3>Recent payments</h3>
-                {typeof navigate === "function" ? (
-                  <button
-                    className="link-button"
-                    onClick={() => navigate("/admin/billing")}
-                    type="button"
-                  >
-                    Open billing
-                  </button>
-                ) : null}
-              </div>
-              <RecentPayments
-                formatDate={formatDate}
-                formatMoney={formatMoney}
-                items={(data.payments || []).slice(0, 5)}
-                navigate={navigate}
-              />
-            </div>
+      <section className="admin-dashboard-highlight" aria-label="Total payments">
+        <div className="admin-dashboard-highlight-card">
+          <div className="admin-dashboard-highlight-icon" aria-hidden="true">
+            {ICONS.payments}
           </div>
+          <div className="admin-dashboard-highlight-body">
+            <span className="admin-dashboard-highlight-label">Total payments</span>
+            <strong className="admin-dashboard-highlight-value">
+              {paymentsValuePrefix}{formatMoney(derived.totalPaymentsAmount)}
+            </strong>
+            <small className="admin-dashboard-highlight-hint">{paymentsHintBase}</small>
+          </div>
+          {typeof navigate === "function" ? (
+            <button
+              className="secondary-button compact admin-dashboard-highlight-action"
+              onClick={() => navigate("/admin/billing")}
+              type="button"
+            >
+              View payments →
+            </button>
+          ) : null}
         </div>
+      </section>
 
-        <div className="panel-block admin-dashboard-quick-panel admin-dashboard-quick-panel-side">
-          <SectionHeader hint="Jump straight into the workflow" title="Quick actions" />
-          <QuickActions navigate={navigate} />
+      <section className="panel-block dashboard-wide-panel admin-dashboard-activity-panel">
+        <SectionHeader
+          hint="Latest vendors and payments across the platform"
+          title="Recent activity"
+        />
+        <div className="admin-dashboard-activity-stack">
+          <div className="admin-dashboard-activity-block">
+            <div className="admin-dashboard-activity-block-head">
+              <span className="admin-dashboard-activity-icon" aria-hidden="true">
+                {ICONS.vendors}
+              </span>
+              <h3>Recent vendors</h3>
+              {typeof navigate === "function" ? (
+                <button
+                  className="link-button"
+                  onClick={() => navigate("/admin/vendors")}
+                  type="button"
+                >
+                  All vendors
+                </button>
+              ) : null}
+            </div>
+            <RecentSignups
+              formatDate={formatDate}
+              items={(data.vendors || []).slice(0, 5)}
+              navigate={navigate}
+            />
+          </div>
+
+          <div className="admin-dashboard-activity-block">
+            <div className="admin-dashboard-activity-block-head">
+              <span className="admin-dashboard-activity-icon" aria-hidden="true">
+                {ICONS.payments}
+              </span>
+              <h3>Recent payments</h3>
+              {typeof navigate === "function" ? (
+                <button
+                  className="link-button"
+                  onClick={() => navigate("/admin/billing")}
+                  type="button"
+                >
+                  Open billing
+                </button>
+              ) : null}
+            </div>
+            <RecentPayments
+              formatDate={formatDate}
+              formatMoney={formatMoney}
+              items={(data.payments || []).slice(0, 5)}
+              navigate={navigate}
+            />
+          </div>
         </div>
       </section>
 
