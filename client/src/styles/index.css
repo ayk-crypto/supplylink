@@ -7962,7 +7962,6 @@ body {
   font-size: 0.75rem;
 }
 
-.admin-billing-page .row-actions .primary-button.compact,
 .admin-billing-page .button-row .primary-button.compact {
   padding: 6px 14px;
   font-size: 0.85rem;
@@ -9563,9 +9562,29 @@ body {
   }
 }
 
+/* Custom Plan card — let the longer "Custom Plan (Admin Only)" badge
+   wrap to a second line and stay top-left, with the ACTIVE pill
+   tucked into the top-right corner so the two never collide. */
+.admin-billing-page .ab-plan-card[data-plan="custom"] .ab-plan-card-head {
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.admin-billing-page .ab-plan-card[data-plan="custom"] .ab-plan-badge {
+  white-space: normal;
+  text-align: left;
+  line-height: 1.25;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.admin-billing-page .ab-plan-card[data-plan="custom"] .ab-plan-status {
+  flex: 0 0 auto;
+}
+
 /* Custom Plan helper text — only rendered for the custom plan card. */
 .admin-billing-page .ab-plan-card[data-plan="custom"] .ab-plan-helper {
-  margin: -2px 0 0;
+  margin: 0;
   padding: 8px 10px;
   font-size: 12px;
   font-weight: 500;
@@ -9676,5 +9695,16 @@ body {
   font-weight: 500;
   color: #64748b;
   text-align: right;
+}
+
+/* Manage button — secondary-style compact action so the row CTA does
+   not visually compete with the page-level "Record payment" primary
+   button. Matches the Vendors page row-action styling. */
+.admin-billing-page .ab-row-manage.secondary-button.compact {
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: 8px;
+  white-space: nowrap;
 }
 /* === end Module 36 ============================================== */

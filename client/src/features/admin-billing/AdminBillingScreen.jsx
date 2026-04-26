@@ -656,7 +656,7 @@ function AdminBillingScreen() {
                         </span>
                         <div className="row-actions">
                           <button
-                            className="primary-button compact"
+                            className="secondary-button compact ab-row-manage"
                             onClick={() => openSubscriptionEditor(subscription)}
                             type="button"
                           >
@@ -674,15 +674,6 @@ function AdminBillingScreen() {
 
           <section className="ab-panel">
             <SectionHeader
-              action={
-                <button
-                  className="primary-button compact"
-                  onClick={openPaymentForm}
-                  type="button"
-                >
-                  Record payment
-                </button>
-              }
               title="Billing history"
               hint="Manual payments recorded by platform admins."
             />
