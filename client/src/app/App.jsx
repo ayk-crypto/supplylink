@@ -107,12 +107,59 @@ function NotFoundScreen({ onGoHome }) {
   );
 }
 
+/* Role-aware home path: super admins land on the platform console, all
+   other authenticated users (vendor_admin, vendor_staff, etc.) land on
+   the vendor dashboard. */
+function resolveHomePath(user) {
+  if (user?.roleCodes?.includes("super_admin")) {
+    return "/admin";
+  }
+  return "/dashboard";
+}
+
+/* Compute a redirect target for the current user + URL combination, or
+   null if the user is already on a route they're allowed to view.
+   Centralizing this keeps the post-login flow predictable and prevents
+   the "workspace page not available" screen from ever flashing for
+   vendor users who happen to land on a platform-scoped URL.
+
+   Rules:
+   - Root path "/" → role's home path.
+   - Super admin on a vendor-scoped route → /admin.
+   - Vendor user (not super_admin) on a platform-scoped route → /dashboard.
+   - Vendor user on an unknown URL → /dashboard (no broken screen).
+   - Otherwise → null (no redirect; render the route normally). */
+function resolveRedirect({ isSuperAdmin, route, path, isAuthenticated }) {
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  const homePath = isSuperAdmin ? "/admin" : "/dashboard";
+
+  if (path === "/" || path === "") {
+    return homePath;
+  }
+
+  if (isSuperAdmin && route?.scope === "vendor") {
+    return "/admin";
+  }
+
+  if (!isSuperAdmin && route?.scope === "platform") {
+    return "/dashboard";
+  }
+
+  if (!isSuperAdmin && !route) {
+    return "/dashboard";
+  }
+
+  return null;
+}
+
 function AuthenticatedApp({ navigate, path }) {
   const { user } = useAuth();
   const route = findRoute(path);
   const ActiveScreen = route ? screens[route.id] : null;
   const isSuperAdmin = user?.roleCodes?.includes("super_admin");
-  const isVendorRouteForPlatformAdmin = isSuperAdmin && route?.scope === "vendor";
   const isForbiddenPlatformRoute =
     route?.scope === "platform" &&
     !route.allowedRoles?.some((roleCode) => user?.roleCodes?.includes(roleCode));
@@ -131,17 +178,18 @@ function AuthenticatedApp({ navigate, path }) {
     );
   });
 
-  useEffect(() => {
-    if (isSuperAdmin && path === "/") {
-      navigate("/admin", { replace: true });
-    }
-  }, [isSuperAdmin, navigate, path]);
+  const redirectTo = resolveRedirect({
+    isSuperAdmin,
+    route,
+    path,
+    isAuthenticated: Boolean(user)
+  });
 
   useEffect(() => {
-    if (isVendorRouteForPlatformAdmin) {
-      navigate("/admin", { replace: true });
+    if (redirectTo && redirectTo !== path) {
+      navigate(redirectTo, { replace: true });
     }
-  }, [isVendorRouteForPlatformAdmin, navigate]);
+  }, [navigate, path, redirectTo]);
 
   return (
     <ProtectedRoute>
@@ -153,8 +201,8 @@ function AuthenticatedApp({ navigate, path }) {
           navItems={navItems}
           onNavigate={(nextPath) => navigate(nextPath)}
         >
-          {isVendorRouteForPlatformAdmin ? null : isForbiddenPlatformRoute ? (
-            <NotFoundScreen onGoHome={() => navigate("/dashboard", { replace: true })} />
+          {redirectTo ? null : isForbiddenPlatformRoute ? (
+            <NotFoundScreen onGoHome={() => navigate(resolveHomePath(user), { replace: true })} />
           ) : ActiveScreen ? (
             <ActiveScreen
               entityId={route.params?.entityId}
@@ -164,7 +212,7 @@ function AuthenticatedApp({ navigate, path }) {
               orderId={route.params?.orderId}
             />
           ) : (
-            <NotFoundScreen onGoHome={() => navigate("/dashboard", { replace: true })} />
+            <NotFoundScreen onGoHome={() => navigate(resolveHomePath(user), { replace: true })} />
           )}
         </AppShell>
       </NotificationsProvider>
