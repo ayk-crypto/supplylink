@@ -9794,24 +9794,27 @@ body {
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
 }
 
+/* Section title with leading accent bar. Uses inline-flex + gap so the
+   bar is an actual inline element next to the text — guaranteed to
+   stay perfectly aligned regardless of grid context, line-box metrics,
+   or section card height. (The previous absolute positioning approach
+   drifted on titles whose section card was stretched by a taller
+   sibling in the same grid row.) */
 .admin-vendors-detail-section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
-  padding-left: 10px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #475569;
-  position: relative;
 }
 
-/* Subtle accent bar before each section title for stronger visual anchor */
 .admin-vendors-detail-section-title::before {
   content: "";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  flex: 0 0 auto;
   width: 3px;
   height: 12px;
   border-radius: 2px;
