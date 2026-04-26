@@ -61,6 +61,37 @@ function InvoiceListScreen({ navigate }) {
   const attachmentCounts = useAttachmentCounts("invoices", itemIds);
   const hasFilters = Boolean(customerId || search || status);
 
+  const todayIso = (() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  })();
+  const isOverdue = (invoice) => {
+    if (!invoice.dueDate) return false;
+    const dueDateOnly = String(invoice.dueDate).slice(0, 10);
+    return (
+      dueDateOnly < todayIso &&
+      invoice.status !== "paid" &&
+      invoice.status !== "void" &&
+      Number(invoice.balanceDue || 0) > 0
+    );
+  };
+
+  const pageSummary = useMemo(() => {
+    let outstanding = 0;
+    let overdueCount = 0;
+    let paidCount = 0;
+    items.forEach((invoice) => {
+      outstanding += Number(invoice.balanceDue || 0);
+      if (invoice.status === "paid") paidCount += 1;
+      if (isOverdue(invoice)) overdueCount += 1;
+    });
+    return { outstanding, overdueCount, paidCount };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items]);
+
   useEffect(() => {
     let active = true;
     const controller = new AbortController();
@@ -122,6 +153,26 @@ function InvoiceListScreen({ navigate }) {
         description="See every invoice and its balance — filter by customer, status, or search to find what you need."
         eyebrow="Invoices"
         title="Invoices"
+        meta={
+          items.length ? (
+            <div className="page-header-chips" aria-label="Page summary">
+              <span className={`summary-chip${pageSummary.outstanding > 0 ? " tone-danger" : " tone-success"}`}>
+                <em>{toMoney(pageSummary.outstanding)}</em>
+                <small>Outstanding on this page</small>
+              </span>
+              {pageSummary.overdueCount > 0 ? (
+                <span className="summary-chip tone-danger">
+                  <em>{pageSummary.overdueCount}</em>
+                  <small>Overdue</small>
+                </span>
+              ) : null}
+              <span className="summary-chip tone-success">
+                <em>{pageSummary.paidCount}</em>
+                <small>Paid</small>
+              </span>
+            </div>
+          ) : null
+        }
       />
 
       <Toolbar onSubmit={submitSearch}>
@@ -201,31 +252,57 @@ function InvoiceListScreen({ navigate }) {
             <span>Outstanding</span>
             <span className="actions-col">Actions</span>
           </div>
-          {items.map((invoice) => (
-            <article className="resource-row invoice-grid" key={invoice.id}>
-              <div>
-                <strong>
-                  {invoice.invoiceNumber}
-                  <AttachmentBadge
-                    count={attachmentCounts[invoice.id]}
-                    onClick={() => navigate(`/invoices/${invoice.id}`)}
-                  />
-                </strong>
-                <span>{formatDateWith(settings, invoice.issueDate || invoice.createdAt)}</span>
-              </div>
-              <span>{formatCustomer(invoice.customer)}</span>
-              <StatusPill kind="invoice" status={invoice.status} />
-              <span>{toMoney(invoice.grandTotal)}</span>
-              <span>{toMoney(invoice.balanceDue)}</span>
-              <button
-                className="secondary-button compact"
-                onClick={() => navigate(`/invoices/${invoice.id}`)}
-                type="button"
+          {items.map((invoice) => {
+            const overdue = isOverdue(invoice);
+            const balance = Number(invoice.balanceDue || 0);
+            const outstandingClass = balance <= 0
+              ? "amount-cell tone-success"
+              : overdue
+                ? "amount-cell tone-danger"
+                : "amount-cell tone-warning";
+            return (
+              <article
+                className={`resource-row invoice-grid invoice-row${overdue ? " is-overdue" : ""}`}
+                key={invoice.id}
               >
-                View
-              </button>
-            </article>
-          ))}
+                <div className="invoice-row-identity">
+                  <strong>
+                    <button
+                      className="link-button"
+                      onClick={() => navigate(`/invoices/${invoice.id}`)}
+                      type="button"
+                    >
+                      {invoice.invoiceNumber}
+                    </button>
+                    <AttachmentBadge
+                      count={attachmentCounts[invoice.id]}
+                      onClick={() => navigate(`/invoices/${invoice.id}`)}
+                    />
+                  </strong>
+                  <span>
+                    {invoice.issueDate
+                      ? `Issued ${formatDateWith(settings, invoice.issueDate)}`
+                      : `Created ${formatDateWith(settings, invoice.createdAt)}`}
+                    {invoice.dueDate ? ` · Due ${formatDateWith(settings, invoice.dueDate)}` : ""}
+                  </span>
+                </div>
+                <span>{formatCustomer(invoice.customer)}</span>
+                <StatusPill
+                  kind="invoice"
+                  status={overdue ? "overdue" : invoice.status}
+                />
+                <span className="amount-cell">{toMoney(invoice.grandTotal)}</span>
+                <span className={outstandingClass}>{toMoney(invoice.balanceDue)}</span>
+                <button
+                  className="secondary-button compact"
+                  onClick={() => navigate(`/invoices/${invoice.id}`)}
+                  type="button"
+                >
+                  View
+                </button>
+              </article>
+            );
+          })}
         </div>
         </TableScroll>
       ) : null}

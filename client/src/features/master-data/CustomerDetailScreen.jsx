@@ -18,6 +18,7 @@ import { getEntityAuditHistory } from "../../services/auditApi.js";
 import { useAppSettings } from "../system/settingsContext.js";
 import { formatDateTimeWith, formatDateWith } from "../system/settingsFormat.js";
 import StatusPill from "../../components/ui/StatusPill.jsx";
+import Avatar from "../../components/ui/Avatar.jsx";
 import {
   actorDisplayLabel,
   eventLabelOf,
@@ -263,48 +264,93 @@ function CustomerDetailScreen({ id, navigate }) {
   const recentPayments = paymentsSection.data?.items || [];
   const auditItems = auditSection.data?.items || [];
 
+  const displayName = customer.fullName || customer.companyName || "Customer";
+  const balance = ledgerSummary.endingBalance;
+  const balanceTone =
+    balance == null ? "neutral" : balance > 0 ? "danger" : balance < 0 ? "info" : "success";
+
   return (
     <div className="resource-page">
-      <PageHeader
-        eyebrow="Customer"
-        title={customer.fullName || customer.companyName || "Customer"}
-        description={[customer.companyName, customer.email, customer.phone]
-          .filter(Boolean)
-          .join(" · ")
-          || "No contact details on file."}
-        action={
-          <div className="button-row">
+      <header className={`customer-summary-card balance-tone-${balanceTone}`}>
+        <div className="customer-summary-identity">
+          <Avatar name={displayName} seed={customer.id} size="lg" />
+          <div className="customer-summary-text">
+            <p className="eyebrow">Customer</p>
+            <h1>{displayName}</h1>
+            <div className="customer-summary-chips">
+              <StatusPill kind="relationship" status={relationship?.status || "active"} />
+              {relationship?.accountCode ? (
+                <span className="meta-chip">Code · {relationship.accountCode}</span>
+              ) : null}
+              {customer.companyName && customer.fullName ? (
+                <span className="meta-chip">{customer.companyName}</span>
+              ) : null}
+            </div>
+            <ul className="customer-summary-contacts">
+              {customer.email ? (
+                <li>
+                  <span aria-hidden="true">✉</span>
+                  <a href={`mailto:${customer.email}`}>{customer.email}</a>
+                </li>
+              ) : null}
+              {customer.phone ? (
+                <li>
+                  <span aria-hidden="true">☏</span>
+                  <a href={`tel:${customer.phone}`}>{customer.phone}</a>
+                </li>
+              ) : null}
+              {!customer.email && !customer.phone ? (
+                <li className="muted">No contact details on file.</li>
+              ) : null}
+            </ul>
+          </div>
+        </div>
+        <div className="customer-summary-balance">
+          <span className="customer-summary-balance-label">Ledger balance</span>
+          <strong className="customer-summary-balance-value">
+            {balance != null ? toMoney(balance) : "—"}
+          </strong>
+          <small>
+            {balance == null
+              ? "No ledger activity"
+              : balance > 0
+                ? "Customer owes"
+                : balance < 0
+                  ? "Credit on account"
+                  : "Settled in full"}
+          </small>
+          <div className="button-row customer-summary-actions">
             <button
-              className="secondary-button"
+              className="secondary-button compact"
               onClick={() => navigate("/customers")}
               type="button"
             >
               Back
             </button>
             <button
-              className="secondary-button"
+              className="secondary-button compact"
               onClick={() => navigate(`/ledger/customers/${id}`)}
               type="button"
             >
-              Open statement
+              Statement
             </button>
             <button
-              className="secondary-button"
+              className="secondary-button compact"
               onClick={() => navigate(`/audit/customers/${id}`)}
               type="button"
             >
-              Full audit
+              Audit
             </button>
             <button
-              className="primary-button"
+              className="primary-button compact"
               onClick={() => setIsEditing(true)}
               type="button"
             >
               Edit
             </button>
           </div>
-        }
-      />
+        </div>
+      </header>
 
       <SectionHeader title="Overview" hint="Profile, contact details, and account snapshot." />
       <section className="detail-grid">

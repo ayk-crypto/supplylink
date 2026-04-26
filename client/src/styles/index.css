@@ -7099,3 +7099,299 @@ body {
   }
 }
 /* === end Module 25 ================================================ */
+
+/* === Module 26 — Phase 2: customer & invoice list/detail polish ====== */
+
+/* Avatar */
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+  user-select: none;
+}
+.avatar-sm { width: 28px; height: 28px; font-size: 0.7rem; }
+.avatar-md { width: 36px; height: 36px; font-size: 0.78rem; }
+.avatar-lg { width: 56px; height: 56px; font-size: 1rem; }
+
+/* PageHeader summary chips (inline aggregates) */
+.page-header-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+.page-header-chips .summary-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: var(--surface-subtle, rgba(0, 0, 0, 0.04));
+  border: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.08));
+  line-height: 1.15;
+}
+.page-header-chips .summary-chip em {
+  font-style: normal;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-strong, #111);
+}
+.page-header-chips .summary-chip small {
+  font-size: 0.7rem;
+  color: var(--text-muted, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+}
+.page-header-chips .summary-chip.tone-danger { border-color: rgba(196, 47, 47, 0.32); background: rgba(196, 47, 47, 0.06); }
+.page-header-chips .summary-chip.tone-danger em { color: #b3261e; }
+.page-header-chips .summary-chip.tone-success { border-color: rgba(29, 122, 70, 0.30); background: rgba(29, 122, 70, 0.06); }
+.page-header-chips .summary-chip.tone-success em { color: #1d7a46; }
+
+/* Customer list rows — restructured columns */
+.resource-table-head.customer-grid,
+.resource-table .resource-row.customer-grid.customer-row {
+  grid-template-columns: minmax(220px, 1.6fr) minmax(200px, 1.2fr) 120px 160px;
+  align-items: center;
+  gap: 16px;
+}
+.resource-table .resource-row.customer-grid.customer-row {
+  padding: 14px 16px;
+  transition: background-color 120ms ease, box-shadow 120ms ease;
+}
+.resource-table .resource-row.customer-grid.customer-row:hover {
+  background: var(--surface-subtle, rgba(0, 0, 0, 0.035));
+  box-shadow: inset 3px 0 0 var(--accent, #2557b7);
+}
+.customer-row-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.customer-row-identity-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.customer-row-identity-text strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.customer-row-identity-text > span {
+  font-size: 0.8rem;
+  color: var(--text-muted, #6b7280);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 28ch;
+}
+.customer-row-contact {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.customer-row-contact strong {
+  font-weight: 500;
+  font-size: 0.85rem;
+  color: var(--text, #1f2937);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.customer-row-contact > span {
+  font-size: 0.78rem;
+  color: var(--text-muted, #6b7280);
+  margin-top: 2px;
+}
+
+/* Invoice list rows — secondary line + amount tones + overdue band */
+.resource-table .resource-row.invoice-grid.invoice-row {
+  align-items: center;
+  transition: background-color 120ms ease, box-shadow 120ms ease;
+}
+.resource-table .resource-row.invoice-grid.invoice-row:hover {
+  background: var(--surface-subtle, rgba(0, 0, 0, 0.035));
+  box-shadow: inset 3px 0 0 var(--accent, #2557b7);
+}
+.resource-table .resource-row.invoice-grid.invoice-row.is-overdue {
+  box-shadow: inset 3px 0 0 #b3261e;
+  background: rgba(196, 47, 47, 0.04);
+}
+.invoice-row-identity strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.invoice-row-identity > span {
+  font-size: 0.78rem;
+  color: var(--text-muted, #6b7280);
+  margin-top: 2px;
+  display: block;
+}
+.amount-cell {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  text-align: right;
+  justify-self: end;
+}
+.amount-cell.tone-success { color: #1d7a46; }
+.amount-cell.tone-warning { color: #b35c1e; font-weight: 600; }
+.amount-cell.tone-danger  { color: #b3261e; font-weight: 700; }
+
+/* Customer detail summary card hero */
+.customer-summary-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  padding: 20px 24px;
+  border-radius: 14px;
+  background: linear-gradient(135deg,
+    var(--surface, #fff) 0%,
+    var(--surface-subtle, rgba(0, 0, 0, 0.025)) 100%);
+  border: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.08));
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  margin-bottom: 18px;
+  position: relative;
+  overflow: hidden;
+}
+.customer-summary-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--summary-accent, var(--accent, #2557b7));
+}
+.customer-summary-card.balance-tone-danger  { --summary-accent: #b3261e; }
+.customer-summary-card.balance-tone-warning { --summary-accent: #b35c1e; }
+.customer-summary-card.balance-tone-success { --summary-accent: #1d7a46; }
+.customer-summary-card.balance-tone-info    { --summary-accent: #2557b7; }
+.customer-summary-card.balance-tone-neutral { --summary-accent: var(--border-strong, rgba(0, 0, 0, 0.18)); }
+
+.customer-summary-identity {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  min-width: 0;
+}
+.customer-summary-text { min-width: 0; }
+.customer-summary-text .eyebrow {
+  margin: 0 0 2px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted, #6b7280);
+  font-weight: 600;
+}
+.customer-summary-text h1 {
+  margin: 0 0 8px;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--text-strong, #111);
+  line-height: 1.2;
+}
+.customer-summary-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.customer-summary-chips .meta-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--surface-subtle, rgba(0, 0, 0, 0.05));
+  border: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.08));
+  font-size: 0.75rem;
+  color: var(--text-muted, #4b5563);
+}
+.customer-summary-contacts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  font-size: 0.85rem;
+}
+.customer-summary-contacts li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text, #1f2937);
+}
+.customer-summary-contacts li.muted { color: var(--text-muted, #6b7280); }
+.customer-summary-contacts li > span[aria-hidden="true"] {
+  color: var(--text-muted, #9ca3af);
+  font-size: 0.95rem;
+}
+.customer-summary-contacts a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dotted transparent;
+}
+.customer-summary-contacts a:hover { border-bottom-color: currentColor; }
+
+.customer-summary-balance {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+  min-width: 200px;
+  gap: 2px;
+}
+.customer-summary-balance-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted, #6b7280);
+  font-weight: 600;
+}
+.customer-summary-balance-value {
+  font-size: 1.55rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--summary-accent, var(--text-strong, #111));
+  line-height: 1.1;
+}
+.customer-summary-balance small {
+  font-size: 0.78rem;
+  color: var(--text-muted, #6b7280);
+}
+.customer-summary-actions {
+  margin-top: 12px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+/* Mobile responsiveness — only summary card + chips here.
+   Existing global @media (max-width:768px) already collapses
+   .resource-table-head and stacks .customer-grid / .invoice-grid rows
+   to a single column, so we don't redefine row layout. */
+@media (max-width: 720px) {
+  .customer-summary-card {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+  .customer-summary-balance {
+    align-items: flex-start;
+    text-align: left;
+    min-width: 0;
+  }
+  .customer-summary-actions {
+    justify-content: flex-start;
+  }
+  .customer-row-identity-text > span,
+  .customer-row-contact strong { white-space: normal; max-width: none; }
+  .page-header-chips .summary-chip { flex: 1 1 auto; }
+}
+/* === end Module 26 ================================================ */

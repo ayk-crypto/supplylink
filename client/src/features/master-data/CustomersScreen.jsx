@@ -19,6 +19,7 @@ import {
   Toolbar
 } from "../../components/ui/ResourceScreens.jsx";
 import StatusPill from "../../components/ui/StatusPill.jsx";
+import Avatar from "../../components/ui/Avatar.jsx";
 import CustomerForm from "./CustomerForm.jsx";
 import { getApiErrorMessage } from "./resourceUtils.js";
 import { useResourceDirectory } from "./useResourceDirectory.js";
@@ -136,51 +137,63 @@ function CustomersScreen({ navigate }) {
         <TableScroll>
         <div className="resource-table">
           <div className="resource-table-head customer-grid">
-            <span>Name</span>
-            <span>Email</span>
-            <span>Phone</span>
+            <span>Customer</span>
+            <span>Contact</span>
             <span>Status</span>
             <span className="actions-col">Actions</span>
           </div>
-          {items.map((record) => (
-            <article className="resource-row customer-grid" key={record.customer.id}>
-              <div>
-                <strong>
+          {items.map((record) => {
+            const customer = record.customer;
+            const displayName = customer.fullName || customer.companyName || "Unnamed customer";
+            const secondary =
+              customer.companyName && customer.fullName
+                ? customer.companyName
+                : record.relationship?.accountCode || "No company";
+            return (
+              <article className="resource-row customer-grid customer-row" key={customer.id}>
+                <div className="customer-row-identity">
+                  <Avatar name={displayName} seed={customer.id} size="md" />
+                  <div className="customer-row-identity-text">
+                    <strong>
+                      <button
+                        className="link-button"
+                        onClick={() => navigate(`/customers/${customer.id}`)}
+                        type="button"
+                      >
+                        {displayName}
+                      </button>
+                      <AttachmentBadge
+                        count={attachmentCounts[customer.id]}
+                        onClick={() => navigate(`/customers/${customer.id}`)}
+                      />
+                    </strong>
+                    <span>{secondary}</span>
+                  </div>
+                </div>
+                <div className="customer-row-contact">
+                  <strong>{customer.email || "No email on file"}</strong>
+                  <span>{customer.phone || "No phone on file"}</span>
+                </div>
+                <StatusPill kind="relationship" status={record.relationship?.status || "active"} />
+                <div className="button-row">
                   <button
-                    className="link-button"
-                    onClick={() => navigate(`/customers/${record.customer.id}`)}
+                    className="secondary-button compact"
+                    onClick={() => navigate(`/customers/${customer.id}`)}
                     type="button"
                   >
-                    {record.customer.fullName}
+                    View
                   </button>
-                  <AttachmentBadge
-                    count={attachmentCounts[record.customer.id]}
-                    onClick={() => navigate(`/customers/${record.customer.id}`)}
-                  />
-                </strong>
-                <span>{record.customer.companyName || record.relationship?.accountCode || "No company"}</span>
-              </div>
-              <span>{record.customer.email || "No email"}</span>
-              <span>{record.customer.phone || "No phone"}</span>
-              <StatusPill kind="relationship" status={record.relationship?.status || "active"} />
-              <div className="button-row">
-                <button
-                  className="secondary-button compact"
-                  onClick={() => navigate(`/customers/${record.customer.id}`)}
-                  type="button"
-                >
-                  View
-                </button>
-                <button
-                  className="secondary-button compact"
-                  onClick={() => setEditingRecord(record)}
-                  type="button"
-                >
-                  Edit
-                </button>
-              </div>
-            </article>
-          ))}
+                  <button
+                    className="secondary-button compact"
+                    onClick={() => setEditingRecord(record)}
+                    type="button"
+                  >
+                    Edit
+                  </button>
+                </div>
+              </article>
+            );
+          })}
         </div>
         </TableScroll>
       ) : null}
