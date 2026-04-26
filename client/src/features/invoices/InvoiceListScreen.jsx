@@ -1,14 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { listCustomers } from "../../services/masterDataApi.js";
+import { useCallback, useMemo, useState } from "react";
 import { listInvoices } from "../../services/invoiceApi.js";
 import {
-  EmptyState,
   ErrorState,
   LoadingSkeleton,
-  PageHeader,
-  Pagination,
-  TableScroll,
-  Toolbar
+  Pagination
 } from "../../components/ui/ResourceScreens.jsx";
 import AttachmentBadge from "../attachments/AttachmentBadge.jsx";
 import { useAttachmentCounts } from "../attachments/useAttachmentCounts.js";
@@ -20,27 +15,55 @@ import { useAppSettings } from "../system/settingsContext.js";
 import { formatDateWith, getDefaultPageSize } from "../system/settingsFormat.js";
 import StatusPill from "../../components/ui/StatusPill.jsx";
 
-const invoiceStatuses = ["draft", "issued", "partially_paid", "paid", "void"];
+const invoiceStatuses = [
+  { value: "draft", label: "Draft" },
+  { value: "issued", label: "Issued" },
+  { value: "partially_paid", label: "Partially paid" },
+  { value: "paid", label: "Paid" },
+  { value: "void", label: "Void" }
+];
+
+function todayIsoDate() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function isOverdueInvoice(invoice, today) {
+  if (!invoice.dueDate) return false;
+  const dueDateOnly = String(invoice.dueDate).slice(0, 10);
+  return (
+    dueDateOnly < today &&
+    invoice.status !== "paid" &&
+    invoice.status !== "void" &&
+    Number(invoice.balanceDue || 0) > 0
+  );
+}
+
+function KpiCard({ tone, label, value, hint }) {
+  return (
+    <article className="invoices-kpi-card" data-tone={tone}>
+      <span className="invoices-kpi-label">{label}</span>
+      <strong className="invoices-kpi-value">{value}</strong>
+      {hint ? <small className="invoices-kpi-hint">{hint}</small> : null}
+    </article>
+  );
+}
 
 function InvoiceListScreen({ navigate }) {
   const { showToast } = useToast();
   const { settings } = useAppSettings();
   const pageSize = getDefaultPageSize(settings, 10);
-  const [customers, setCustomers] = useState([]);
-  const [customerId, setCustomerId] = useState("");
   const [page, setPage] = useState(1);
   const [searchDraft, setSearchDraft] = useState("");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
+
   const query = useMemo(
-    () => ({
-      customerId,
-      page,
-      pageSize,
-      search,
-      status
-    }),
-    [customerId, page, pageSize, search, status]
+    () => ({ page, pageSize, search, status }),
+    [page, pageSize, search, status]
   );
   const loadInvoices = useCallback((params, options) => listInvoices(params, options), []);
   const handleListError = useCallback(
@@ -59,78 +82,29 @@ function InvoiceListScreen({ navigate }) {
   const items = useMemo(() => data?.items || [], [data]);
   const itemIds = useMemo(() => items.map((item) => item.id), [items]);
   const attachmentCounts = useAttachmentCounts("invoices", itemIds);
-  const hasFilters = Boolean(customerId || search || status);
+  const hasFilters = Boolean(search || status);
+  const today = todayIsoDate();
 
-  const todayIso = (() => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, "0");
-    const d = String(now.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  })();
-  const isOverdue = (invoice) => {
-    if (!invoice.dueDate) return false;
-    const dueDateOnly = String(invoice.dueDate).slice(0, 10);
-    return (
-      dueDateOnly < todayIso &&
-      invoice.status !== "paid" &&
-      invoice.status !== "void" &&
-      Number(invoice.balanceDue || 0) > 0
-    );
-  };
-
-  const pageSummary = useMemo(() => {
-    let outstanding = 0;
+  const kpis = useMemo(() => {
+    let paidAmount = 0;
+    let outstandingAmount = 0;
     let overdueCount = 0;
-    let paidCount = 0;
     items.forEach((invoice) => {
-      outstanding += Number(invoice.balanceDue || 0);
-      if (invoice.status === "paid") paidCount += 1;
-      if (isOverdue(invoice)) overdueCount += 1;
-    });
-    return { outstanding, overdueCount, paidCount };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items]);
-
-  useEffect(() => {
-    let active = true;
-    const controller = new AbortController();
-
-    async function loadCustomerFilter() {
-      try {
-        const response = await listCustomers(
-          { page: 1, pageSize: 100, status: "active" },
-          { signal: controller.signal }
-        );
-
-        if (active) {
-          setCustomers(
-            (response.data.items || []).map((record) => ({
-              id: record.customer.id,
-              label: record.customer.companyName || record.customer.fullName
-            }))
-          );
-        }
-      } catch (requestError) {
-        if (!active || requestError.name === "AbortError") {
-          return;
-        }
-
-        showToast({
-          message: getApiErrorMessage(requestError, "Customer filter could not be loaded."),
-          title: "Customer filter unavailable",
-          tone: "error"
-        });
+      const grand = Number(invoice.grandTotal || 0);
+      const balance = Number(invoice.balanceDue || 0);
+      if (invoice.status === "paid") {
+        paidAmount += grand;
+      } else if (invoice.status !== "void") {
+        const paid = Math.max(grand - balance, 0);
+        paidAmount += paid;
       }
-    }
+      outstandingAmount += balance;
+      if (isOverdueInvoice(invoice, today)) overdueCount += 1;
+    });
+    return { paidAmount, outstandingAmount, overdueCount };
+  }, [items, today]);
 
-    loadCustomerFilter();
-
-    return () => {
-      active = false;
-      controller.abort();
-    };
-  }, [showToast]);
+  const totalInvoices = data?.pagination?.totalItems ?? items.length;
 
   function submitSearch(event) {
     event.preventDefault();
@@ -138,68 +112,85 @@ function InvoiceListScreen({ navigate }) {
     setPage(1);
   }
 
-  return (
-    <div className="resource-page">
-      <PageHeader
-        action={
-          <button
-            className="primary-button"
-            onClick={() => navigate("/invoices/new")}
-            type="button"
-          >
-            Create invoice
-          </button>
-        }
-        description="See every invoice and its balance — filter by customer, status, or search to find what you need."
-        eyebrow="Invoices"
-        title="Invoices"
-        meta={
-          items.length ? (
-            <div className="page-header-chips" aria-label="Page summary">
-              <span className={`summary-chip${pageSummary.outstanding > 0 ? " tone-danger" : " tone-success"}`}>
-                <em>{toMoney(pageSummary.outstanding)}</em>
-                <small>Outstanding on this page</small>
-              </span>
-              {pageSummary.overdueCount > 0 ? (
-                <span className="summary-chip tone-danger">
-                  <em>{pageSummary.overdueCount}</em>
-                  <small>Overdue</small>
-                </span>
-              ) : null}
-              <span className="summary-chip tone-success">
-                <em>{pageSummary.paidCount}</em>
-                <small>Paid</small>
-              </span>
-            </div>
-          ) : null
-        }
-      />
+  function resetFilters() {
+    setSearchDraft("");
+    setSearch("");
+    setStatus("");
+    setPage(1);
+  }
 
-      <Toolbar onSubmit={submitSearch}>
-        <input
-          aria-label="Search invoices"
-          onChange={(event) => setSearchDraft(event.target.value)}
-          placeholder="Search invoice number or notes"
-          type="search"
-          value={searchDraft}
-        />
-        <select
-          aria-label="Filter by customer"
-          onChange={(event) => {
-            setCustomerId(event.target.value);
-            setPage(1);
-          }}
-          value={customerId}
+  function goToInvoice(invoiceId) {
+    navigate(`/invoices/${invoiceId}`);
+  }
+
+  return (
+    <div className="resource-page invoices-page">
+      <header className="invoices-header">
+        <div className="invoices-header-copy">
+          <h1>Invoices</h1>
+          <p>Manage your billing and track payments</p>
+        </div>
+        <button
+          className="btn-primary"
+          onClick={() => navigate("/invoices/new")}
+          type="button"
         >
-          <option value="">All customers</option>
-          {customers.map((customer) => (
-            <option key={customer.id} value={customer.id}>
-              {customer.label}
-            </option>
-          ))}
-        </select>
+          + New invoice
+        </button>
+      </header>
+
+      <section className="invoices-kpi-grid" aria-label="Invoice summary">
+        <KpiCard
+          tone="info"
+          label="Total invoices"
+          value={Number(totalInvoices || 0).toLocaleString()}
+          hint="All invoices"
+        />
+        <KpiCard
+          tone="success"
+          label="Paid amount"
+          value={toMoney(kpis.paidAmount)}
+          hint="On this page"
+        />
+        <KpiCard
+          tone="warning"
+          label="Outstanding"
+          value={toMoney(kpis.outstandingAmount)}
+          hint="On this page"
+        />
+        <KpiCard
+          tone="danger"
+          label="Overdue"
+          value={Number(kpis.overdueCount || 0).toLocaleString()}
+          hint="Needs attention"
+        />
+      </section>
+
+      <form className="invoices-filter-bar" onSubmit={submitSearch} role="search">
+        <div className="invoices-search-input">
+          <span className="invoices-search-icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.8" />
+              <path d="M20 20L17 17" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          </span>
+          <input
+            aria-label="Search invoices"
+            onChange={(event) => setSearchDraft(event.target.value)}
+            onBlur={() => {
+              if (searchDraft.trim() !== search) {
+                setSearch(searchDraft.trim());
+                setPage(1);
+              }
+            }}
+            placeholder="Search invoice number or notes"
+            type="search"
+            value={searchDraft}
+          />
+        </div>
         <select
           aria-label="Filter by status"
+          className="invoices-status-select"
           onChange={(event) => {
             setStatus(event.target.value);
             setPage(1);
@@ -207,104 +198,115 @@ function InvoiceListScreen({ navigate }) {
           value={status}
         >
           <option value="">All statuses</option>
-          {invoiceStatuses.map((statusOption) => (
-            <option key={statusOption} value={statusOption}>
-              {statusOption.replace("_", " ")}
+          {invoiceStatuses.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
             </option>
           ))}
         </select>
-        <button className="secondary-button" type="submit">
-          Search
-        </button>
         {hasFilters ? (
-          <button
-            className="secondary-button"
-            onClick={() => {
-              setSearchDraft("");
-              setSearch("");
-              setCustomerId("");
-              setStatus("");
-              setPage(1);
-            }}
-            type="button"
-          >
-            Reset
+          <button type="button" className="btn-ghost" onClick={resetFilters}>
+            Clear
           </button>
         ) : null}
-      </Toolbar>
+      </form>
 
       <ErrorState message={error} onRetry={reload} />
       {isLoading && !items.length ? <LoadingSkeleton label="Loading invoices" rows={5} /> : null}
-      {!isLoading && !items.length ? (
-        <EmptyState>
-          {hasFilters ? "No invoices match the current filters." : "No invoices found."}
-        </EmptyState>
+
+      {!isLoading && !items.length && !error ? (
+        hasFilters ? (
+          <div className="invoices-empty">
+            <strong>No invoices match these filters</strong>
+            <p>Try a different search term or status, or clear the filters to see everything.</p>
+            <button type="button" className="btn-secondary" onClick={resetFilters}>
+              Clear filters
+            </button>
+          </div>
+        ) : (
+          <div className="invoices-empty">
+            <strong>No invoices yet</strong>
+            <p>Create your first invoice to start tracking payments.</p>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => navigate("/invoices/new")}
+            >
+              + Create invoice
+            </button>
+          </div>
+        )
       ) : null}
 
       {items.length ? (
-        <TableScroll>
-        <div className="resource-table">
-          <div className="resource-table-head invoice-grid">
-            <span>Invoice</span>
-            <span>Customer</span>
-            <span>Status</span>
-            <span>Total</span>
-            <span>Outstanding</span>
-            <span className="actions-col">Actions</span>
+        <div className="invoices-table" role="table" aria-label="Invoices">
+          <div className="invoices-table-head" role="row">
+            <span role="columnheader">Invoice #</span>
+            <span role="columnheader">Customer</span>
+            <span role="columnheader" className="invoices-cell-amount">Amount</span>
+            <span role="columnheader">Status</span>
+            <span role="columnheader">Due date</span>
+            <span role="columnheader" className="invoices-cell-actions">Actions</span>
           </div>
           {items.map((invoice) => {
-            const overdue = isOverdue(invoice);
-            const balance = Number(invoice.balanceDue || 0);
-            const outstandingClass = balance <= 0
-              ? "amount-cell tone-success"
-              : overdue
-                ? "amount-cell tone-danger"
-                : "amount-cell tone-warning";
+            const overdue = isOverdueInvoice(invoice, today);
             return (
-              <article
-                className={`resource-row invoice-grid invoice-row${overdue ? " is-overdue" : ""}`}
+              <div
                 key={invoice.id}
+                role="row"
+                tabIndex={0}
+                className={`invoices-table-row${overdue ? " is-overdue" : ""}`}
+                onClick={() => goToInvoice(invoice.id)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    goToInvoice(invoice.id);
+                  }
+                }}
               >
-                <div className="invoice-row-identity">
-                  <strong>
-                    <button
-                      className="link-button"
-                      onClick={() => navigate(`/invoices/${invoice.id}`)}
-                      type="button"
-                    >
-                      {invoice.invoiceNumber}
-                    </button>
-                    <AttachmentBadge
-                      count={attachmentCounts[invoice.id]}
-                      onClick={() => navigate(`/invoices/${invoice.id}`)}
-                    />
-                  </strong>
-                  <span>
-                    {invoice.issueDate
-                      ? `Issued ${formatDateWith(settings, invoice.issueDate)}`
-                      : `Created ${formatDateWith(settings, invoice.createdAt)}`}
-                    {invoice.dueDate ? ` · Due ${formatDateWith(settings, invoice.dueDate)}` : ""}
-                  </span>
-                </div>
-                <span>{formatCustomer(invoice.customer)}</span>
-                <StatusPill
-                  kind="invoice"
-                  status={overdue ? "overdue" : invoice.status}
-                />
-                <span className="amount-cell">{toMoney(invoice.grandTotal)}</span>
-                <span className={outstandingClass}>{toMoney(invoice.balanceDue)}</span>
-                <button
-                  className="secondary-button compact"
-                  onClick={() => navigate(`/invoices/${invoice.id}`)}
-                  type="button"
-                >
-                  View
-                </button>
-              </article>
+                <span role="cell" className="invoices-cell-number">
+                  <strong>{invoice.invoiceNumber}</strong>
+                  <AttachmentBadge
+                    count={attachmentCounts[invoice.id]}
+                    onClick={(event) => {
+                      if (event && typeof event.stopPropagation === "function") {
+                        event.stopPropagation();
+                      }
+                      goToInvoice(invoice.id);
+                    }}
+                  />
+                </span>
+                <span role="cell" className="invoices-cell-customer">
+                  {formatCustomer(invoice.customer)}
+                </span>
+                <span role="cell" className="invoices-cell-amount">
+                  {toMoney(invoice.grandTotal)}
+                </span>
+                <span role="cell">
+                  <StatusPill
+                    kind="invoice"
+                    status={overdue ? "overdue" : invoice.status}
+                  />
+                </span>
+                <span role="cell" className="invoices-cell-due">
+                  {invoice.dueDate ? formatDateWith(settings, invoice.dueDate) : "—"}
+                </span>
+                <span role="cell" className="invoices-cell-actions">
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      goToInvoice(invoice.id);
+                    }}
+                  >
+                    View
+                  </button>
+                </span>
+              </div>
             );
           })}
         </div>
-        </TableScroll>
       ) : null}
 
       <Pagination pagination={data?.pagination} onPageChange={setPage} />

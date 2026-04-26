@@ -7814,14 +7814,14 @@ body {
    - .btn-ghost    → text-only; for inline row actions and section
                      header links.
 */
-.dashboard-page:not(.admin-dashboard-page) .btn,
-.dashboard-page:not(.admin-dashboard-page) .btn-primary,
-.dashboard-page:not(.admin-dashboard-page) .btn-secondary,
-.dashboard-page:not(.admin-dashboard-page) .btn-ghost,
-.dashboard-page:not(.admin-dashboard-page) .primary-button,
-.dashboard-page:not(.admin-dashboard-page) .secondary-button,
-.dashboard-page:not(.admin-dashboard-page) .ghost-button,
-.dashboard-page:not(.admin-dashboard-page) .link-button {
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .btn,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .btn-primary,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .btn-secondary,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .btn-ghost,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .primary-button,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .secondary-button,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .ghost-button,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .link-button {
   appearance: none;
   -webkit-appearance: none;
   display: inline-flex;
@@ -7842,40 +7842,40 @@ body {
   background: transparent;
   color: var(--text);
 }
-.dashboard-page:not(.admin-dashboard-page) .btn-primary,
-.dashboard-page:not(.admin-dashboard-page) .primary-button {
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .btn-primary,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .primary-button {
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
   box-shadow: 0 6px 14px rgba(15, 35, 28, 0.10);
 }
-.dashboard-page:not(.admin-dashboard-page) .btn-primary:hover,
-.dashboard-page:not(.admin-dashboard-page) .primary-button:hover {
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .btn-primary:hover,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .primary-button:hover {
   background: var(--accent-strong);
   border-color: var(--accent-strong);
   transform: translateY(-1px);
   box-shadow: 0 10px 20px rgba(15, 35, 28, 0.14);
 }
-.dashboard-page:not(.admin-dashboard-page) .btn-primary:active,
-.dashboard-page:not(.admin-dashboard-page) .primary-button:active {
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .btn-primary:active,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .primary-button:active {
   transform: translateY(0);
   box-shadow: 0 4px 10px rgba(15, 35, 28, 0.10);
 }
-.dashboard-page:not(.admin-dashboard-page) .btn-secondary,
-.dashboard-page:not(.admin-dashboard-page) .secondary-button {
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .btn-secondary,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .secondary-button {
   background: transparent;
   border: 1px solid #d6dbe1;
   color: #1f2937;
   padding: 9px 15px;
 }
-.dashboard-page:not(.admin-dashboard-page) .btn-secondary:hover,
-.dashboard-page:not(.admin-dashboard-page) .secondary-button:hover {
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .btn-secondary:hover,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .secondary-button:hover {
   background: #f8fafc;
   border-color: #cbd5e1;
 }
-.dashboard-page:not(.admin-dashboard-page) .btn-ghost,
-.dashboard-page:not(.admin-dashboard-page) .ghost-button,
-.dashboard-page:not(.admin-dashboard-page) .link-button {
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .btn-ghost,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .ghost-button,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .link-button {
   background: transparent;
   border: none;
   color: var(--accent);
@@ -7883,29 +7883,29 @@ body {
   padding: 6px 8px;
   border-radius: 8px;
 }
-.dashboard-page:not(.admin-dashboard-page) .btn-ghost:hover,
-.dashboard-page:not(.admin-dashboard-page) .ghost-button:hover,
-.dashboard-page:not(.admin-dashboard-page) .link-button:hover {
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .btn-ghost:hover,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .ghost-button:hover,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .link-button:hover {
   text-decoration: underline;
   color: var(--accent-strong);
 }
-.dashboard-page:not(.admin-dashboard-page) .btn-primary:focus-visible,
-.dashboard-page:not(.admin-dashboard-page) .btn-secondary:focus-visible,
-.dashboard-page:not(.admin-dashboard-page) .btn-ghost:focus-visible,
-.dashboard-page:not(.admin-dashboard-page) .primary-button:focus-visible,
-.dashboard-page:not(.admin-dashboard-page) .secondary-button:focus-visible,
-.dashboard-page:not(.admin-dashboard-page) .ghost-button:focus-visible,
-.dashboard-page:not(.admin-dashboard-page) .link-button:focus-visible {
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .btn-primary:focus-visible,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .btn-secondary:focus-visible,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .btn-ghost:focus-visible,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .primary-button:focus-visible,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .secondary-button:focus-visible,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .ghost-button:focus-visible,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .link-button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-.dashboard-page:not(.admin-dashboard-page) .btn-primary:disabled,
-.dashboard-page:not(.admin-dashboard-page) .btn-secondary:disabled,
-.dashboard-page:not(.admin-dashboard-page) .btn-ghost:disabled,
-.dashboard-page:not(.admin-dashboard-page) .primary-button:disabled,
-.dashboard-page:not(.admin-dashboard-page) .secondary-button:disabled,
-.dashboard-page:not(.admin-dashboard-page) .ghost-button:disabled,
-.dashboard-page:not(.admin-dashboard-page) .link-button:disabled {
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .btn-primary:disabled,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .btn-secondary:disabled,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .btn-ghost:disabled,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .primary-button:disabled,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .secondary-button:disabled,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .ghost-button:disabled,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .link-button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
   transform: none;
@@ -7913,24 +7913,24 @@ body {
 }
 /* Neutralize the legacy `.compact` size modifier inside the
    dashboard so every button is the same height. */
-.dashboard-page:not(.admin-dashboard-page) .primary-button.compact,
-.dashboard-page:not(.admin-dashboard-page) .secondary-button.compact,
-.dashboard-page:not(.admin-dashboard-page) .ghost-button.compact,
-.dashboard-page:not(.admin-dashboard-page) .btn-primary.compact,
-.dashboard-page:not(.admin-dashboard-page) .btn-secondary.compact,
-.dashboard-page:not(.admin-dashboard-page) .btn-ghost.compact {
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .primary-button.compact,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .secondary-button.compact,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .ghost-button.compact,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .btn-primary.compact,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .btn-secondary.compact,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .btn-ghost.compact {
   font-size: 0.875rem;
 }
-.dashboard-page:not(.admin-dashboard-page) .primary-button.compact,
-.dashboard-page:not(.admin-dashboard-page) .btn-primary.compact {
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .primary-button.compact,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .btn-primary.compact {
   padding: 10px 16px;
 }
-.dashboard-page:not(.admin-dashboard-page) .secondary-button.compact,
-.dashboard-page:not(.admin-dashboard-page) .btn-secondary.compact {
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .secondary-button.compact,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .btn-secondary.compact {
   padding: 9px 15px;
 }
-.dashboard-page:not(.admin-dashboard-page) .ghost-button.compact,
-.dashboard-page:not(.admin-dashboard-page) .btn-ghost.compact {
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .ghost-button.compact,
+:is(.dashboard-page:not(.admin-dashboard-page), .invoices-page) .btn-ghost.compact {
   padding: 6px 8px;
 }
 /* === end unified button system ================================== */
@@ -10218,3 +10218,354 @@ body {
   }
 }
 /* === end Module 37 ============================================== */
+
+/* === Invoices page (vendor) — modern SaaS layout =================
+   Strictly scoped under `.invoices-page`. Does not affect the
+   dashboard or admin screens. Pairs with the unified button system
+   above (which already covers `.invoices-page` via `:is(...)`). */
+.invoices-page {
+  display: grid;
+  gap: 20px;
+}
+
+/* Header */
+.invoices-page .invoices-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.invoices-page .invoices-header-copy h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--text-strong, #0f1f1a);
+}
+.invoices-page .invoices-header-copy p {
+  margin: 4px 0 0;
+  color: var(--muted, #5b6b66);
+  font-size: 0.9rem;
+}
+
+/* KPI strip — 4 cards: 4 cols ≥ 1100px, 2 cols ≥ 640px, 1 col below */
+.invoices-page .invoices-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+@media (max-width: 1100px) {
+  .invoices-page .invoices-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 520px) {
+  .invoices-page .invoices-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.invoices-page .invoices-kpi-card {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  background: #fff;
+  border: 1px solid rgba(15, 35, 28, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(15, 35, 28, 0.04),
+              0 8px 20px -16px rgba(15, 35, 28, 0.18);
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+  --tone-color: #4b5b56;
+  overflow: hidden;
+  min-height: 110px;
+}
+.invoices-page .invoices-kpi-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--tone-color);
+  opacity: 0.9;
+}
+.invoices-page .invoices-kpi-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(15, 35, 28, 0.16);
+  box-shadow: 0 1px 2px rgba(15, 35, 28, 0.05),
+              0 14px 28px -16px rgba(15, 35, 28, 0.28);
+}
+.invoices-page .invoices-kpi-card[data-tone="info"]    { --tone-color: #2557b7; }
+.invoices-page .invoices-kpi-card[data-tone="success"] { --tone-color: #1d7a46; }
+.invoices-page .invoices-kpi-card[data-tone="warning"] { --tone-color: #b35c1e; }
+.invoices-page .invoices-kpi-card[data-tone="danger"]  { --tone-color: #b13838; }
+
+.invoices-page .invoices-kpi-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted, #5b6b66);
+}
+.invoices-page .invoices-kpi-value {
+  font-size: 1.7rem;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--text-strong, #0f1f1a);
+  font-variant-numeric: tabular-nums;
+  word-break: break-word;
+}
+.invoices-page .invoices-kpi-hint {
+  color: var(--muted, #5b6b66);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+/* Filter bar — clean horizontal */
+.invoices-page .invoices-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid rgba(15, 35, 28, 0.08);
+  border-radius: 12px;
+  padding: 10px 12px;
+  box-shadow: 0 1px 2px rgba(15, 35, 28, 0.03);
+  flex-wrap: wrap;
+}
+.invoices-page .invoices-search-input {
+  position: relative;
+  flex: 1 1 280px;
+  min-width: 220px;
+}
+.invoices-page .invoices-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  color: #94a3b8;
+  pointer-events: none;
+}
+.invoices-page .invoices-search-input input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px 0 36px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  font-size: 0.9rem;
+  color: #1f2937;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.invoices-page .invoices-search-input input::placeholder { color: #9aa6b2; }
+.invoices-page .invoices-search-input input:focus {
+  outline: none;
+  background: #fff;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(15, 123, 99, 0.15);
+}
+.invoices-page .invoices-status-select {
+  height: 40px;
+  padding: 0 32px 0 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #1f2937;
+  font-size: 0.9rem;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  min-width: 170px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.invoices-page .invoices-status-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(15, 123, 99, 0.15);
+}
+
+/* Table */
+.invoices-page .invoices-table {
+  background: #fff;
+  border: 1px solid rgba(15, 35, 28, 0.08);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(15, 35, 28, 0.04),
+              0 12px 28px -22px rgba(15, 35, 28, 0.22);
+}
+.invoices-page .invoices-table-head,
+.invoices-page .invoices-table-row {
+  display: grid;
+  grid-template-columns:
+    minmax(140px, 1.1fr)   /* invoice # */
+    minmax(160px, 1.6fr)   /* customer */
+    minmax(110px, 0.9fr)   /* amount */
+    minmax(110px, 0.8fr)   /* status */
+    minmax(110px, 0.9fr)   /* due date */
+    minmax(90px, 0.6fr);   /* actions */
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+}
+.invoices-page .invoices-table-head {
+  background: #f8fafc;
+  border-bottom: 1px solid rgba(15, 35, 28, 0.08);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted, #5b6b66);
+}
+.invoices-page .invoices-table-row {
+  border-bottom: 1px solid rgba(15, 35, 28, 0.06);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  font-size: 0.9rem;
+  color: #1f2937;
+}
+.invoices-page .invoices-table-row:last-child { border-bottom: none; }
+.invoices-page .invoices-table-row:hover { background: #f9fafb; }
+.invoices-page .invoices-table-row:focus-visible {
+  outline: none;
+  background: #f1f5f9;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.invoices-page .invoices-table-row.is-overdue {
+  box-shadow: inset 3px 0 0 #b13838;
+}
+
+.invoices-page .invoices-cell-number {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.invoices-page .invoices-cell-number strong {
+  font-weight: 600;
+  color: var(--text-strong, #0f1f1a);
+}
+.invoices-page .invoices-cell-customer {
+  color: #1f2937;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.invoices-page .invoices-cell-amount {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong, #0f1f1a);
+  text-align: right;
+  justify-self: end;
+}
+.invoices-page .invoices-table-head .invoices-cell-amount {
+  font-weight: 700;
+  text-align: right;
+}
+.invoices-page .invoices-cell-due {
+  color: #4b5563;
+  font-variant-numeric: tabular-nums;
+}
+.invoices-page .invoices-cell-actions {
+  justify-self: end;
+}
+
+/* Status pills inside the invoices table — pill shape with padding */
+.invoices-page .invoices-table-row .status-pill {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  min-height: 24px;
+  text-transform: capitalize;
+  background: rgba(75, 91, 86, 0.10);
+  color: #4b5b56;
+}
+.invoices-page .invoices-table-row .status-pill.tone-success {
+  background: rgba(29, 122, 70, 0.12);
+  color: #1d7a46;
+}
+.invoices-page .invoices-table-row .status-pill.tone-info {
+  background: rgba(37, 87, 183, 0.12);
+  color: #2557b7;
+}
+.invoices-page .invoices-table-row .status-pill.tone-warning {
+  background: rgba(37, 87, 183, 0.12);
+  color: #2557b7;
+}
+.invoices-page .invoices-table-row .status-pill.tone-danger {
+  background: rgba(179, 56, 56, 0.12);
+  color: #b13838;
+}
+.invoices-page .invoices-table-row .status-pill.tone-neutral {
+  background: rgba(75, 91, 86, 0.10);
+  color: #4b5b56;
+}
+
+/* Empty state */
+.invoices-page .invoices-empty {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 48px 24px;
+  background: #fff;
+  border: 1px dashed #d6dbe1;
+  border-radius: 14px;
+}
+.invoices-page .invoices-empty strong {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-strong, #0f1f1a);
+}
+.invoices-page .invoices-empty p {
+  margin: 0;
+  color: var(--muted, #5b6b66);
+  max-width: 420px;
+  font-size: 0.9rem;
+}
+.invoices-page .invoices-empty .btn-primary,
+.invoices-page .invoices-empty .btn-secondary {
+  margin-top: 6px;
+}
+
+/* Compact responsive table — collapse to cards under 720px */
+@media (max-width: 720px) {
+  .invoices-page .invoices-table-head { display: none; }
+  .invoices-page .invoices-table-row {
+    grid-template-columns: 1fr auto;
+    grid-auto-rows: auto;
+    gap: 6px 12px;
+    padding: 14px 16px;
+  }
+  .invoices-page .invoices-cell-number { grid-column: 1 / -1; }
+  .invoices-page .invoices-cell-customer {
+    grid-column: 1 / -1;
+    color: var(--muted, #5b6b66);
+    font-size: 0.85rem;
+    white-space: normal;
+  }
+  .invoices-page .invoices-cell-amount {
+    grid-column: 1;
+    justify-self: start;
+    text-align: left;
+  }
+  .invoices-page .invoices-cell-due {
+    grid-column: 1;
+    justify-self: start;
+    font-size: 0.8rem;
+    color: var(--muted, #5b6b66);
+  }
+  .invoices-page .invoices-table-row .status-pill {
+    grid-column: 2;
+    justify-self: end;
+  }
+  .invoices-page .invoices-cell-actions {
+    grid-column: 2;
+    justify-self: end;
+  }
+}
+/* === end invoices page ============================================ */
