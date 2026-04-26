@@ -24,6 +24,8 @@ import {
   getLastActivityDate
 } from "../../utils/engagement.js";
 
+const VISIBLE_BADGE_ENGAGEMENTS = new Set(["at_risk", "dormant"]);
+
 const VENDOR_STATUS_TONES = {
   active: "success",
   draft: "neutral",
@@ -50,6 +52,8 @@ const INITIAL_KPIS = {
   activeVendors: 0,
   trialCount: 0,
   paidCount: 0,
+  atRiskCount: 0,
+  vendorsSampled: 0,
   loaded: false
 };
 
@@ -187,11 +191,19 @@ function VendorDetailModal({ vendor, onClose }) {
           </div>
           <div className="admin-vendors-detail-row">
             <dt>Last activity</dt>
+            <dd>{formatLastActivity(getLastActivityDate(vendor))}</dd>
+          </div>
+          <div className="admin-vendors-detail-row">
+            <dt>Engagement</dt>
             <dd>
-              {formatLastActivity(getLastActivityDate(vendor))}
-              <span style={{ marginLeft: 8 }}>
-                <EngagementBadge engagement={classifyEngagement(vendor)} />
-              </span>
+              {(() => {
+                const engagement = classifyEngagement(vendor);
+                return VISIBLE_BADGE_ENGAGEMENTS.has(engagement) ? (
+                  <EngagementBadge engagement={engagement} />
+                ) : (
+                  <span className="admin-vendors-engagement-active-text">Active</span>
+                );
+              })()}
             </dd>
           </div>
         </dl>
@@ -259,14 +271,21 @@ function AdminVendorsScreen() {
 
   const loadKpis = useCallback(async () => {
     try {
-      const [totalResponse, activeResponse, subsResponse] = await Promise.all([
+      const [totalResponse, activeResponse, subsResponse, sampleResponse] = await Promise.all([
         listAdminVendors({ pageSize: 1 }),
         listAdminVendors({ pageSize: 1, status: "active" }),
-        listAdminSubscriptions({ pageSize: 100 })
+        listAdminSubscriptions({ pageSize: 100 }),
+        listAdminVendors({ pageSize: 100 })
       ]);
 
       const totalVendors = totalResponse.data?.pagination?.totalItems ?? 0;
       const activeVendors = activeResponse.data?.pagination?.totalItems ?? 0;
+
+      const sampledVendors = sampleResponse.data?.items || [];
+      let atRiskCount = 0;
+      sampledVendors.forEach((vendor) => {
+        if (classifyEngagement(vendor) === "at_risk") atRiskCount += 1;
+      });
 
       const subscriptions = subsResponse.data?.items || [];
       const PAID_PLAN_CODES = new Set(["basic", "pro", "custom"]);
@@ -312,6 +331,8 @@ function AdminVendorsScreen() {
         activeVendors,
         trialCount,
         paidCount,
+        atRiskCount,
+        vendorsSampled: sampledVendors.length,
         loaded: true
       });
     } catch {
@@ -447,6 +468,17 @@ function AdminVendorsScreen() {
             {kpis.paidCount === 1 ? "1 active subscription" : `${kpis.paidCount} active subscriptions`}
           </span>
         </div>
+        <div className="admin-vendors-kpi" data-tone="warning">
+          <span className="admin-vendors-kpi-label">At risk vendors</span>
+          <strong className="admin-vendors-kpi-value">{kpis.atRiskCount}</strong>
+          <span className="admin-vendors-kpi-hint">
+            {kpis.atRiskCount === 0
+              ? "No vendors at risk"
+              : kpis.totalVendors > kpis.vendorsSampled
+                ? `${kpis.atRiskCount} of ${kpis.vendorsSampled} sampled`
+                : `Inactive 14–30 days`}
+          </span>
+        </div>
       </section>
 
       {error ? <ErrorState message={error} onRetry={loadVendors} /> : null}
@@ -545,7 +577,9 @@ function AdminVendorsScreen() {
                       </div>
                       <div className="admin-vendors-activity">
                         <strong>{formatLastActivity(vendor.lastActivityAt)}</strong>
-                        <EngagementBadge engagement={vendor.engagement} />
+                        {VISIBLE_BADGE_ENGAGEMENTS.has(vendor.engagement) ? (
+                          <EngagementBadge engagement={vendor.engagement} />
+                        ) : null}
                       </div>
                       <div className="admin-vendors-actions-cell">
                         <button

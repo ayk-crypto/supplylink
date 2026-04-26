@@ -18,7 +18,7 @@ export const ENGAGEMENT_TONES = {
 };
 
 export const ENGAGEMENT_FILTER_OPTIONS = [
-  { value: "all", label: "All engagement" },
+  { value: "all", label: "All activity" },
   { value: "active", label: "Active" },
   { value: "at_risk", label: "At Risk" },
   { value: "dormant", label: "Dormant" }

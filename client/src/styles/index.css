@@ -9128,7 +9128,7 @@ body {
 /* KPI strip */
 .admin-vendors-page .admin-vendors-kpis {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -9165,10 +9165,24 @@ body {
   font-weight: 500;
 }
 
+@media (max-width: 1180px) {
+  .admin-vendors-page .admin-vendors-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 720px) {
   .admin-vendors-page .admin-vendors-kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+.admin-vendors-page .admin-vendors-kpi[data-tone="warning"] .admin-vendors-kpi-label {
+  color: #b45309;
+}
+
+.admin-vendors-page .admin-vendors-kpi[data-tone="warning"] .admin-vendors-kpi-value {
+  color: #92400e;
 }
 
 /* Vendor table — 6 column grid with Last Activity + Actions */
@@ -9461,23 +9475,30 @@ body {
   border-color: rgba(239, 68, 68, 0.3);
 }
 
-/* Row tinting by engagement */
+/* Row tinting by engagement — subtle accent only, premium feel */
 .admin-vendors-page .resource-row.admin-vendors-grid[data-engagement="at_risk"] {
-  background: rgba(254, 249, 195, 0.55);
+  background: rgba(250, 204, 21, 0.06);
   box-shadow: inset 3px 0 0 #eab308;
 }
 
 .admin-vendors-page .resource-row.admin-vendors-grid[data-engagement="at_risk"]:hover {
-  background: rgba(254, 240, 138, 0.7);
+  background: rgba(250, 204, 21, 0.12);
 }
 
 .admin-vendors-page .resource-row.admin-vendors-grid[data-engagement="dormant"] {
-  background: rgba(254, 226, 226, 0.6);
+  background: rgba(239, 68, 68, 0.05);
   box-shadow: inset 3px 0 0 #ef4444;
 }
 
 .admin-vendors-page .resource-row.admin-vendors-grid[data-engagement="dormant"]:hover {
-  background: rgba(254, 202, 202, 0.7);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Modal: plain "Active" label when no badge needed */
+.admin-vendors-detail-panel .admin-vendors-engagement-active-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #15803d;
 }
 
 /* Engagement filter dropdown — match status select sizing */
