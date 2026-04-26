@@ -4562,6 +4562,84 @@ a:hover {
 }
 /* === end Module 20AT ============================================== */
 
+/* Admin vendor management */
+.admin-vendors-panel {
+  display: grid;
+  gap: 16px;
+  padding: 22px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg, 18px);
+  background:
+    radial-gradient(circle at top right, rgba(15, 123, 99, 0.08), transparent 34%),
+    var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.admin-vendors-grid {
+  grid-template-columns: minmax(220px, 1.35fr) minmax(220px, 1.25fr) minmax(120px, 0.65fr) minmax(110px, 0.55fr);
+}
+
+.admin-vendors-name,
+.admin-vendors-admin {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.admin-vendors-name strong,
+.admin-vendors-admin strong {
+  color: var(--text);
+  font-weight: 750;
+}
+
+.admin-vendors-name small,
+.admin-vendors-admin small {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.admin-vendors-plan {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 28px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.admin-vendors-plan[data-tone="neutral"] {
+  color: #475569;
+  background: #f1f5f9;
+}
+
+.admin-vendors-plan[data-tone="info"] {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.admin-vendors-plan[data-tone="violet"] {
+  color: #6d28d9;
+  background: #ede9fe;
+}
+
+.admin-vendors-plan[data-tone="success"] {
+  color: #047857;
+  background: #d1fae5;
+}
+
+@media (max-width: 760px) {
+  .admin-vendors-panel {
+    padding: 16px;
+  }
+
+  .admin-vendors-grid {
+    grid-template-columns: minmax(180px, 1.2fr) minmax(220px, 1.2fr) minmax(110px, 0.7fr) minmax(100px, 0.6fr);
+  }
+}
+
 .document-share-shell {
   width: min(580px, calc(100vw - 32px));
   background: var(--surface);

@@ -6,6 +6,7 @@ import requireVendorAccess from "../../middlewares/requireVendorAccess.js";
 import requireVendorWritable from "../../middlewares/requireVendorWritable.js";
 import validateRequest from "../../middlewares/validateRequest.js";
 import {
+  create,
   getById,
   getMe,
   list,
@@ -18,6 +19,7 @@ import {
   baseVendorUpdateBodySchema,
   paginationQuerySchema,
   superAdminVendorUpdateBodySchema,
+  vendorCreateBodySchema,
   vendorIdParamsSchema
 } from "./vendors.schemas.js";
 
@@ -29,6 +31,14 @@ vendorsRoutes.get(
   authorizeRoles("super_admin"),
   validateRequest({ query: paginationQuerySchema }),
   asyncHandler(list)
+);
+
+vendorsRoutes.post(
+  "/",
+  authenticate,
+  authorizeRoles("super_admin"),
+  validateRequest({ body: vendorCreateBodySchema }),
+  asyncHandler(create)
 );
 
 vendorsRoutes.get("/me", authenticate, requireVendorAccess(), asyncHandler(getMe));

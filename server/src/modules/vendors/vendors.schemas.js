@@ -24,6 +24,13 @@ const paginationQuerySchema = z.object({
   search: z.string().trim().min(1).max(200).optional()
 });
 
+const vendorCreateBodySchema = z.object({
+  vendorName: z.string().trim().min(2).max(200),
+  adminName: z.string().trim().min(2).max(150),
+  adminEmail: z.string().trim().email(),
+  temporaryPassword: z.string().min(8).max(72)
+});
+
 const baseVendorUpdateShape = {
   legalName: z.string().trim().min(2).max(200).optional(),
   displayName: z.string().trim().min(2).max(200).optional(),
@@ -66,5 +73,6 @@ export {
   baseVendorUpdateBodySchema,
   paginationQuerySchema,
   superAdminVendorUpdateBodySchema,
+  vendorCreateBodySchema,
   vendorIdParamsSchema
 };

@@ -1,5 +1,6 @@
 import { sendSuccess } from "../../core/http/apiResponse.js";
 import {
+  createVendorAccount,
   getAccessibleVendorProfile,
   getVendorDirectory,
   getVendorMembers,
@@ -14,6 +15,20 @@ async function list(request, response) {
     data: result,
     meta: {
       requestId: request.context.requestId
+    }
+  });
+}
+
+async function create(request, response) {
+  const result = await createVendorAccount(request.body, request.auth);
+
+  sendSuccess(response, {
+    statusCode: 201,
+    message: "Vendor created successfully",
+    data: result,
+    meta: {
+      requestId: request.context.requestId,
+      vendorId: result.vendor.id
     }
   });
 }
@@ -104,4 +119,13 @@ async function listMembersByVendorId(request, response) {
   });
 }
 
-export { getById, getMe, list, listMembersByVendorId, listMyMembers, updateById, updateMe };
+export {
+  create,
+  getById,
+  getMe,
+  list,
+  listMembersByVendorId,
+  listMyMembers,
+  updateById,
+  updateMe
+};

@@ -113,6 +113,14 @@ const appRoutes = [
     group: "platform"
   },
   {
+    id: "admin-vendors",
+    label: "Vendors",
+    path: "/admin/vendors",
+    allowedRoles: ["super_admin"],
+    scope: "platform",
+    group: "platform"
+  },
+  {
     id: "admin-billing",
     label: "Admin Billing",
     path: "/admin/billing",
