@@ -449,6 +449,13 @@ function VendorDetailModal({ vendor, onClose }) {
               >
                 Manage Billing
               </button>
+            </div>
+
+            <div className="admin-vendors-detail-danger-zone">
+              <div className="admin-vendors-detail-danger-zone-copy">
+                <strong>Danger zone</strong>
+                <p>Suspending blocks this vendor's access until reactivated.</p>
+              </div>
               <button
                 className="admin-vendors-detail-danger-button"
                 onClick={() => setIsConfirmingSuspend(true)}
