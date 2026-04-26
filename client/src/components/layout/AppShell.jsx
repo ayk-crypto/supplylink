@@ -64,8 +64,11 @@ function AppShell({
     (membership) => membership.vendorId === user.currentVendorId
   );
   const roleLabel = user?.roleCodes?.join(", ") || "Team member";
-  const vendorName = activeVendor?.vendorDisplayName || "Platform overview";
-  const vendorSlug = activeVendor?.vendorSlug || user?.currentVendorId || "No workspace selected";
+  const isSuperAdmin = user?.roleCodes?.includes("super_admin") || false;
+  const vendorName = activeVendor?.vendorDisplayName || (isSuperAdmin ? "Platform overview" : "Selected workspace");
+  const realVendorSlug = activeVendor?.vendorSlug || user?.currentVendorId || null;
+  const workspaceLabel = isSuperAdmin ? "Role" : "Current workspace";
+  const sidebarSubLabel = realVendorSlug || (isSuperAdmin ? "Super admin" : null);
   const userInitials = getInitials(user?.fullName, "SL");
   const navGroups = useMemo(() => groupNavItems(navItems), [navItems]);
   const activeNavItem = navItems.find((item) => item.path === activePath);
@@ -103,9 +106,9 @@ function AppShell({
         </div>
 
         <div className="sidebar-vendor">
-          <span>Current workspace</span>
+          <span>{workspaceLabel}</span>
           <strong>{vendorName}</strong>
-          <small>{vendorSlug}</small>
+          {sidebarSubLabel ? <small>{sidebarSubLabel}</small> : null}
         </div>
 
         <nav className="side-nav" aria-label="Primary navigation">
@@ -152,7 +155,7 @@ function AppShell({
           <div className="workspace-title-block">
             <p className="eyebrow">{activeNavItem ? activeNavItem.label : "Workspace"}</p>
             <h1>{vendorName}</h1>
-            <p className="workspace-subtitle">{vendorSlug}</p>
+            {realVendorSlug ? <p className="workspace-subtitle">{realVendorSlug}</p> : null}
           </div>
 
           <div className="topbar-actions">
