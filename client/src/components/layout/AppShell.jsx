@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { navGroupOrder } from "../../app/routes.js";
 import { useAuth } from "../../features/auth/useAuth.js";
 import { useAppSettings } from "../../features/system/settingsContext.js";
 
@@ -20,6 +21,35 @@ function getInitials(value, fallback = "SL") {
   return parts.map((part) => part[0]?.toUpperCase() || "").join("");
 }
 
+function groupNavItems(items) {
+  const buckets = new Map();
+
+  items.forEach((item) => {
+    const groupId = item.group || "overview";
+
+    if (!buckets.has(groupId)) {
+      buckets.set(groupId, []);
+    }
+
+    buckets.get(groupId).push(item);
+  });
+
+  const ordered = [];
+
+  navGroupOrder.forEach((group) => {
+    if (buckets.has(group.id)) {
+      ordered.push({ ...group, items: buckets.get(group.id) });
+      buckets.delete(group.id);
+    }
+  });
+
+  buckets.forEach((items, id) => {
+    ordered.push({ id, label: id.charAt(0).toUpperCase() + id.slice(1), items });
+  });
+
+  return ordered;
+}
+
 function AppShell({
   activePath = "/dashboard",
   children,
@@ -37,6 +67,8 @@ function AppShell({
   const vendorName = activeVendor?.vendorDisplayName || "Selected workspace";
   const vendorSlug = activeVendor?.vendorSlug || user?.currentVendorId || "No workspace selected";
   const userInitials = getInitials(user?.fullName, "SL");
+  const navGroups = useMemo(() => groupNavItems(navItems), [navItems]);
+  const activeNavItem = navItems.find((item) => item.path === activePath);
 
   return (
     <div className="app-layout">
@@ -66,7 +98,7 @@ function AppShell({
             onClick={() => setIsNavOpen(false)}
             type="button"
           >
-            Close
+            <span aria-hidden="true">×</span>
           </button>
         </div>
 
@@ -77,19 +109,25 @@ function AppShell({
         </div>
 
         <nav className="side-nav" aria-label="Primary navigation">
-          {navItems.map((item) => (
-            <button
-              className={item.path === activePath ? "active" : ""}
-              key={item.id}
-              onClick={(event) => {
-                event.preventDefault();
-                onNavigate?.(item.path);
-                setIsNavOpen(false);
-              }}
-              type="button"
-            >
-              <span>{item.label}</span>
-            </button>
+          {navGroups.map((group) => (
+            <div className="side-nav-group" key={group.id}>
+              <p className="side-nav-group-label">{group.label}</p>
+              {group.items.map((item) => (
+                <button
+                  className={`side-nav-item nav-group-${group.id} ${item.path === activePath ? "active" : ""}`}
+                  key={item.id}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    onNavigate?.(item.path);
+                    setIsNavOpen(false);
+                  }}
+                  type="button"
+                >
+                  <span aria-hidden="true" className="side-nav-bullet" />
+                  <span className="side-nav-label">{item.label}</span>
+                </button>
+              ))}
+            </div>
           ))}
         </nav>
       </aside>
@@ -103,11 +141,16 @@ function AppShell({
             onClick={() => setIsNavOpen((value) => !value)}
             type="button"
           >
-            Menu
+            <span aria-hidden="true" className="nav-toggle-icon">
+              <span />
+              <span />
+              <span />
+            </span>
+            <span className="nav-toggle-label">Menu</span>
           </button>
 
           <div className="workspace-title-block">
-            <p className="eyebrow">Workspace</p>
+            <p className="eyebrow">{activeNavItem ? activeNavItem.label : "Workspace"}</p>
             <h1>{vendorName}</h1>
             <p className="workspace-subtitle">{vendorSlug}</p>
           </div>
@@ -122,7 +165,12 @@ function AppShell({
                 <strong>{user?.fullName}</strong>
                 <span>{roleLabel}</span>
               </div>
-              <button onClick={logout} type="button">
+              <button
+                aria-label="Sign out"
+                className="session-chip-logout"
+                onClick={logout}
+                type="button"
+              >
                 Logout
               </button>
             </div>

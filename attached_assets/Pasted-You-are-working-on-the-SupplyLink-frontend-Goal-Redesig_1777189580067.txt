@@ -1,0 +1,48 @@
+You are working on the SupplyLink frontend.
+
+Goal:
+Redesign the existing SupplyLink frontend into a premium, modern, responsive B2B SaaS interface.
+
+Important:
+- Do NOT change backend API contracts.
+- Do NOT remove existing working functionality.
+- Preserve current auth/session handling.
+- Preserve existing routes and data flows unless a small frontend-only refactor is clearly needed.
+- Focus only on frontend UI/UX, layout, responsiveness, and polish.
+
+Design direction:
+The interface should feel like a serious SaaS product similar to Zoho, QuickBooks, Odoo, or modern fintech dashboards.
+
+Primary focus for this pass:
+1. Dashboard
+2. Customers list/detail screens
+3. Invoice list/detail screens
+4. Shared layout system used by sidebar, topbar, tables, cards, forms, modals, empty states, loading states, and error states.
+
+Required improvements:
+- Professional app shell with clean sidebar and topbar.
+- Better dashboard KPI cards for revenue, receivables, orders, invoices, and recent activity.
+- Clean modern tables with search, filters, status badges, action buttons, and mobile responsiveness.
+- Better form layouts with grouped fields, helper text, validation states, and clear primary/secondary actions.
+- Premium detail pages with summary cards, status chips, timeline/activity area where available, and clearly visible totals.
+- Consistent spacing, typography, button styles, cards, shadows, borders, and hover states.
+- Better skeleton loaders, empty states, and error messages.
+- Fully responsive layout for desktop, tablet, and mobile.
+- Optimize loading and avoid unnecessary re-renders where practical.
+
+Technical expectations:
+- First inspect the current frontend structure, routing, API services, auth/session handling, CSS files, and reusable components.
+- Reuse existing components where sensible.
+- Create or improve reusable UI primitives instead of duplicating styles.
+- Keep changes frontend-only unless a tiny backend adjustment is absolutely required.
+- Do not introduce heavy dependencies unless clearly justified.
+- Keep the code clean, maintainable, and scalable.
+- Make sure the app still builds successfully.
+
+Deliverables:
+- Updated frontend UI with a premium SaaS look.
+- Summary of files changed.
+- Any bugs found and fixed.
+- Any known limitations or recommended next UI polish pass.
+
+Start by inspecting the project, then implement the redesign in a controlled way.

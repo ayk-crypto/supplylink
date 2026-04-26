@@ -1,10 +1,11 @@
-function PageHeader({ eyebrow, title, description, action }) {
+function PageHeader({ eyebrow, title, description, action, meta = null }) {
   return (
     <section className="page-header">
-      <div>
+      <div className="page-header-copy">
         <p className="eyebrow">{eyebrow}</p>
         <h2>{title}</h2>
-        <p>{description}</p>
+        {description ? <p>{description}</p> : null}
+        {meta ? <div className="page-header-meta">{meta}</div> : null}
       </div>
       {action ? <div className="page-header-action">{action}</div> : null}
     </section>
@@ -19,16 +20,26 @@ function Toolbar({ children, onSubmit }) {
   );
 }
 
-function EmptyState({ children }) {
+function EmptyState({ children, action = null, title = "Nothing to show yet" }) {
   return (
     <div className="empty-panel" role="status">
-      <span className="empty-panel-mark" aria-hidden="true">
-        +
+      <span className="empty-panel-icon" aria-hidden="true">
+        <svg fill="none" height="22" viewBox="0 0 24 24" width="22" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M4 7.5L12 4l8 3.5v9L12 20l-8-3.5v-9z"
+            stroke="currentColor"
+            strokeLinejoin="round"
+            strokeWidth="1.6"
+          />
+          <path d="M4 7.5L12 11l8-3.5" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.6" />
+          <path d="M12 11v9" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.6" />
+        </svg>
       </span>
       <div className="empty-panel-copy">
-        <strong>Nothing to show yet</strong>
+        <strong>{title}</strong>
         <p>{children}</p>
       </div>
+      {action ? <div className="empty-panel-action">{action}</div> : null}
     </div>
   );
 }
@@ -77,12 +88,13 @@ function TableScroll({ children }) {
   return <div className="table-scroll">{children}</div>;
 }
 
-function SectionHeader({ title, action, hint }) {
+function SectionHeader({ title, action, hint, meta = null }) {
   return (
     <div className="panel-heading section-heading">
       <div>
         <h3>{title}</h3>
         {hint ? <span>{hint}</span> : null}
+        {meta ? <div className="section-heading-meta">{meta}</div> : null}
       </div>
       {action ? <div className="section-heading-action">{action}</div> : null}
     </div>
@@ -155,30 +167,39 @@ function Pagination({ pagination, onPageChange }) {
     return null;
   }
 
+  const totalPages = pagination.totalPages || 1;
+  const totalItems = pagination.totalItems ?? 0;
   const canGoBack = pagination.page > 1;
-  const canGoForward = pagination.totalPages > pagination.page;
+  const canGoForward = totalPages > pagination.page;
 
   return (
     <div className="pagination-bar">
       <span className="pagination-summary">
-        Page {pagination.page} of {pagination.totalPages || 1} / {pagination.totalItems} records
+        <strong>
+          Page {pagination.page} <span className="pagination-summary-divider">of</span> {totalPages}
+        </strong>
+        <span className="pagination-summary-meta">
+          {totalItems.toLocaleString()} {totalItems === 1 ? "record" : "records"}
+        </span>
       </span>
       <div className="pagination-actions">
         <button
-          className="secondary-button"
+          aria-label="Previous page"
+          className="secondary-button compact"
           disabled={!canGoBack}
           onClick={() => onPageChange(pagination.page - 1)}
           type="button"
         >
-          Previous
+          ← Previous
         </button>
         <button
-          className="secondary-button"
+          aria-label="Next page"
+          className="secondary-button compact"
           disabled={!canGoForward}
           onClick={() => onPageChange(pagination.page + 1)}
           type="button"
         >
-          Next
+          Next →
         </button>
       </div>
     </div>

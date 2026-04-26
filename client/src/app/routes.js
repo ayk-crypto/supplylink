@@ -3,106 +3,133 @@ const appRoutes = [
     id: "dashboard",
     label: "Dashboard",
     path: "/dashboard",
-    scope: "vendor"
+    scope: "vendor",
+    group: "overview"
   },
   {
     id: "customers",
     label: "Customers",
     path: "/customers",
-    scope: "vendor"
+    scope: "vendor",
+    group: "catalog"
   },
   {
     id: "categories",
     label: "Categories",
     path: "/categories",
-    scope: "vendor"
+    scope: "vendor",
+    group: "catalog"
   },
   {
     id: "products",
     label: "Products",
     path: "/products",
-    scope: "vendor"
+    scope: "vendor",
+    group: "catalog"
   },
   {
     id: "quotations",
     label: "Quotations",
     path: "/quotations",
-    scope: "vendor"
+    scope: "vendor",
+    group: "sales"
   },
   {
     id: "orders",
     label: "Orders",
     path: "/orders",
-    scope: "vendor"
+    scope: "vendor",
+    group: "sales"
   },
   {
     id: "invoices",
     label: "Invoices",
     path: "/invoices",
-    scope: "vendor"
+    scope: "vendor",
+    group: "sales"
   },
   {
     id: "inventory",
     label: "Inventory",
     path: "/inventory",
-    scope: "vendor"
+    scope: "vendor",
+    group: "operations"
   },
   {
     id: "routes",
     label: "Routes",
     path: "/routes",
-    scope: "vendor"
+    scope: "vendor",
+    group: "operations"
   },
   {
     id: "route-templates",
     label: "Route Templates",
     path: "/route-templates",
-    scope: "vendor"
+    scope: "vendor",
+    group: "operations"
   },
   {
     id: "ledger",
     label: "Ledger",
     path: "/ledger",
-    scope: "vendor"
+    scope: "vendor",
+    group: "finance"
   },
   {
     id: "reports",
     label: "Reports",
     path: "/reports",
-    scope: "vendor"
+    scope: "vendor",
+    group: "finance"
   },
   {
     id: "audit",
     label: "Audit",
     path: "/audit",
-    scope: "vendor"
+    scope: "vendor",
+    group: "admin"
   },
   {
     id: "settings",
     label: "Settings",
     path: "/settings",
-    scope: "vendor"
+    scope: "vendor",
+    group: "admin"
   },
   {
     id: "subscription",
     label: "Subscription",
     path: "/subscription",
-    scope: "vendor"
+    scope: "vendor",
+    group: "admin"
   },
   {
     id: "admin-dashboard",
     label: "Admin Dashboard",
     path: "/admin",
     allowedRoles: ["super_admin"],
-    scope: "platform"
+    scope: "platform",
+    group: "platform"
   },
   {
     id: "admin-billing",
     label: "Admin Billing",
     path: "/admin/billing",
     allowedRoles: ["super_admin"],
-    scope: "platform"
+    scope: "platform",
+    group: "platform"
   }
+];
+
+const navGroupOrder = [
+  { id: "overview", label: "Overview" },
+  { id: "catalog", label: "Catalog" },
+  { id: "sales", label: "Sales" },
+  { id: "operations", label: "Operations" },
+  { id: "finance", label: "Finance" },
+  { id: "admin", label: "Admin" },
+  { id: "platform", label: "Platform" }
 ];
 
 const routeDefinitions = [
@@ -283,4 +310,4 @@ function findRoute(pathname) {
   return null;
 }
 
-export { appRoutes, findRoute, normalizePath };
+export { appRoutes, findRoute, navGroupOrder, normalizePath };
