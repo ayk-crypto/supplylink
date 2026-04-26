@@ -112,7 +112,7 @@ function ActivityFeed({ formatDate, formatMoney, items, navigate }) {
         action={
           typeof navigate === "function" ? (
             <button
-              className="primary-button compact"
+              className="btn-primary"
               onClick={() => navigate("/quotations/new")}
               type="button"
             >
@@ -148,7 +148,7 @@ function ActivityFeed({ formatDate, formatMoney, items, navigate }) {
             <span>{formatDate(item.date)}</span>
             {typeof navigate === "function" ? (
               <button
-                className="link-button"
+                className="btn-ghost"
                 onClick={() => {
                   if (item.type === "quotation") navigate(`/quotations/${item.id}`);
                   if (item.type === "order") navigate(`/orders/${item.id}`);
@@ -175,7 +175,7 @@ function OverdueInvoices({ formatDate, formatMoney, items, navigate }) {
         action={
           typeof navigate === "function" ? (
             <button
-              className="ghost-button compact"
+              className="btn-secondary"
               onClick={() => navigate("/reports/receivables")}
               type="button"
             >
@@ -217,7 +217,7 @@ function OverdueInvoices({ formatDate, formatMoney, items, navigate }) {
               <strong>{formatMoney(invoice.balanceDue)}</strong>
               {typeof navigate === "function" ? (
                 <button
-                  className="link-button"
+                  className="btn-ghost"
                   onClick={() => navigate(`/invoices/${invoice.id}`)}
                   type="button"
                 >
@@ -240,7 +240,7 @@ function TopCustomers({ formatDate, formatMoney, items, navigate }) {
         action={
           typeof navigate === "function" ? (
             <button
-              className="primary-button compact"
+              className="btn-primary"
               onClick={() => navigate("/customers")}
               type="button"
             >
@@ -276,7 +276,7 @@ function TopCustomers({ formatDate, formatMoney, items, navigate }) {
             <small>Billed total</small>
             {typeof navigate === "function" ? (
               <button
-                className="link-button"
+                className="btn-ghost"
                 onClick={() => navigate(`/customers/${customer.id}`)}
                 type="button"
               >
@@ -298,7 +298,7 @@ function PaymentsList({ formatDate, formatMoney, items, navigate }) {
         action={
           typeof navigate === "function" ? (
             <button
-              className="primary-button compact"
+              className="btn-primary"
               onClick={() => navigate("/invoices")}
               type="button"
             >
@@ -329,7 +329,7 @@ function PaymentsList({ formatDate, formatMoney, items, navigate }) {
             <small>{payment.paymentMethod || "Payment"}</small>
             {typeof navigate === "function" ? (
               <button
-                className="link-button"
+                className="btn-ghost"
                 onClick={() => navigate("/reports/payments")}
                 type="button"
               >
@@ -351,7 +351,7 @@ function NotificationsList({ navigate, notifications }) {
         action={
           typeof navigate === "function" ? (
             <button
-              className="ghost-button compact"
+              className="btn-ghost"
               onClick={() => navigate("/notifications")}
               type="button"
             >
@@ -439,13 +439,13 @@ function HeaderActions({ navigate }) {
   if (typeof navigate !== "function") return null;
   return (
     <div className="button-row dashboard-header-actions">
-      <button className="secondary-button compact" onClick={() => navigate("/quotations/new")} type="button">
+      <button className="btn-secondary" onClick={() => navigate("/quotations/new")} type="button">
         New quotation
       </button>
-      <button className="secondary-button compact" onClick={() => navigate("/orders/new")} type="button">
+      <button className="btn-secondary" onClick={() => navigate("/orders/new")} type="button">
         New order
       </button>
-      <button className="primary-button compact" onClick={() => navigate("/invoices/new")} type="button">
+      <button className="btn-primary" onClick={() => navigate("/invoices/new")} type="button">
         New invoice
       </button>
     </div>
@@ -597,7 +597,7 @@ function DashboardScreen({ navigate }) {
           <SectionHeader
             action={
               typeof navigate === "function" ? (
-                <button className="link-button" onClick={() => navigate("/reports")} type="button">
+                <button className="btn-ghost" onClick={() => navigate("/reports")} type="button">
                   Open reports
                 </button>
               ) : null
@@ -618,7 +618,7 @@ function DashboardScreen({ navigate }) {
             action={
               typeof navigate === "function" ? (
                 <button
-                  className="link-button"
+                  className="btn-ghost"
                   onClick={() => navigate("/reports/receivables")}
                   type="button"
                 >
@@ -641,7 +641,7 @@ function DashboardScreen({ navigate }) {
           <SectionHeader
             action={
               typeof navigate === "function" ? (
-                <button className="link-button" onClick={() => navigate("/customers")} type="button">
+                <button className="btn-ghost" onClick={() => navigate("/customers")} type="button">
                   Customers
                 </button>
               ) : null
@@ -662,7 +662,7 @@ function DashboardScreen({ navigate }) {
             action={
               typeof navigate === "function" ? (
                 <button
-                  className="link-button"
+                  className="btn-ghost"
                   onClick={() => navigate("/reports/payments")}
                   type="button"
                 >
@@ -686,7 +686,7 @@ function DashboardScreen({ navigate }) {
             action={
               typeof navigate === "function" ? (
                 <button
-                  className="link-button"
+                  className="btn-ghost"
                   onClick={() => navigate("/notifications")}
                   type="button"
                 >
