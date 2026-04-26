@@ -478,14 +478,14 @@ function AdminDashboardScreen({ navigate }) {
   }
 
   const trialHint = derived.trialCount > 0
-    ? `${derived.trialCount} currently in trial`
-    : "No trials in progress";
+    ? `${derived.trialCount} in trial`
+    : "0 in trial";
 
   const paidHint = derived.paidCount === 0
-    ? "No paid subscriptions yet"
+    ? "0 active subscriptions"
     : derived.subsTruncated
-      ? `${derived.paidCount}+ paid subscriptions`
-      : `${derived.paidCount} paid subscription${derived.paidCount === 1 ? "" : "s"}`;
+      ? `${derived.paidCount}+ active subscriptions`
+      : `${derived.paidCount} active subscription${derived.paidCount === 1 ? "" : "s"}`;
 
   const paymentsHintBase = derived.paymentsTruncated
     ? `${data.paymentsTotal} payments recorded`
@@ -503,9 +503,8 @@ function AdminDashboardScreen({ navigate }) {
   }, null);
 
   const inactiveVendors = Math.max(0, data.totalVendors - data.activeVendors);
-  const activeVendorHint = data.totalVendors > 0
-    ? `${data.activeVendors} active / ${inactiveVendors} inactive`
-    : "Onboard a vendor to begin";
+  const activeVendorHint = `${data.activeVendors} active · ${inactiveVendors} inactive`;
+  const totalVendorsHint = `${data.totalVendors} workspace${data.totalVendors === 1 ? "" : "s"}`;
 
   return (
     <div className="dashboard-page dashboard-v2 admin-dashboard-page">
@@ -522,7 +521,7 @@ function AdminDashboardScreen({ navigate }) {
           icon={ICONS.vendors}
           label="Total vendors"
           value={String(data.totalVendors)}
-          hint={data.totalVendors > 0 ? "Workspaces on the platform" : "No vendors onboarded yet"}
+          hint={totalVendorsHint}
         />
         <KpiCard
           tone="success"
