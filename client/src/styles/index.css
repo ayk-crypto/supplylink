@@ -9711,3 +9711,182 @@ body {
   white-space: nowrap;
 }
 /* === end Module 36 ============================================== */
+
+/* === Module 37 — Vendor Detail modal: sectioned layout + actions ===
+   Adds grouped sections (Basic / Admin / Billing / Activity / Actions)
+   to the existing Vendor detail dialog and a footer-like actions row
+   with Login as Vendor (primary), Reset Password + Manage Billing
+   (secondary), and Suspend Vendor (danger). All selectors are scoped
+   under `.admin-vendors-detail-panel` so nothing leaks elsewhere. */
+
+.admin-vendors-detail-panel .admin-vendors-detail-body {
+  display: grid;
+  gap: 18px;
+  padding: 18px 22px 22px;
+  margin: 0;
+}
+
+.admin-vendors-detail-section {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px 16px;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 12px;
+  background: #fafbfc;
+}
+
+.admin-vendors-detail-section-title {
+  margin: 0 0 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.admin-vendors-detail-grid {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+/* Inherits the existing `.admin-vendors-detail-row` rule (130px label
+   column + value column). No override needed — keeps spacing parity
+   with the previous flat dl layout. */
+
+/* Actions section — slightly different background to draw the eye and
+   group the destructive button visually away from the read-only data. */
+.admin-vendors-detail-actions-section {
+  background: #f8fafc;
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+.admin-vendors-detail-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-vendors-detail-action-row > button {
+  flex: 0 1 auto;
+}
+
+/* Reset-password reveal callout — neutral surface with monospaced
+   password and a small Copy affordance. Stays inline so the password
+   is contextually attached to the Reset Password action. */
+.admin-vendors-detail-password-callout {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #cbd5f5;
+  background: #eef2ff;
+}
+
+.admin-vendors-detail-password-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #3730a3;
+}
+
+.admin-vendors-detail-password-value {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-vendors-detail-password-value code {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  background: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  word-break: break-all;
+  user-select: all;
+}
+
+.admin-vendors-detail-password-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #475569;
+}
+
+/* Inline confirmation panel for Suspend Vendor — appears above the
+   action row so the destructive choice is acknowledged before any
+   (eventually) wired-up backend call fires. UI only for now. */
+.admin-vendors-detail-confirm {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+}
+
+.admin-vendors-detail-confirm p {
+  margin: 0;
+  font-size: 13px;
+  color: #7f1d1d;
+}
+
+.admin-vendors-detail-confirm-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+/* Danger button (compact). Scoped to the detail panel so we don't
+   introduce a global `.danger-button` token. Matches primary/secondary
+   compact size so the action row reads as one cohesive group. */
+.admin-vendors-detail-panel .admin-vendors-detail-danger-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  border-radius: 8px;
+  border: 1px solid #b91c1c;
+  background: #dc2626;
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+.admin-vendors-detail-panel .admin-vendors-detail-danger-button:hover:not(:disabled) {
+  background: #b91c1c;
+  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.22);
+}
+
+.admin-vendors-detail-panel .admin-vendors-detail-danger-button:focus-visible {
+  outline: 2px solid #f87171;
+  outline-offset: 2px;
+}
+
+.admin-vendors-detail-panel .admin-vendors-detail-danger-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 540px) {
+  .admin-vendors-detail-action-row > button,
+  .admin-vendors-detail-action-row > .admin-vendors-detail-danger-button {
+    flex: 1 1 100%;
+  }
+}
+/* === end Module 37 ============================================== */

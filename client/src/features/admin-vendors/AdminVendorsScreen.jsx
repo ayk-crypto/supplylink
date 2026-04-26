@@ -122,9 +122,104 @@ function formatDateShort(value) {
   }
 }
 
+/* Generates a human-readable temporary password using the Web Crypto
+   API where available, with a Math.random fallback for older runtimes.
+   Excludes ambiguous characters (0/O, 1/l/I) to reduce read-aloud errors. */
+function generateTemporaryPassword(length = 14) {
+  const charset = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    const buffer = new Uint32Array(length);
+    crypto.getRandomValues(buffer);
+    let result = "";
+    for (let index = 0; index < length; index += 1) {
+      result += charset[buffer[index] % charset.length];
+    }
+    return result;
+  }
+  let result = "";
+  for (let index = 0; index < length; index += 1) {
+    result += charset[Math.floor(Math.random() * charset.length)];
+  }
+  return result;
+}
+
+function VendorDetailEngagement({ vendor }) {
+  const engagement = classifyEngagement(vendor);
+  return VISIBLE_BADGE_ENGAGEMENTS.has(engagement) ? (
+    <EngagementBadge engagement={engagement} />
+  ) : (
+    <span className="admin-vendors-engagement-active-text">Active</span>
+  );
+}
+
 function VendorDetailModal({ vendor, onClose }) {
+  const { showToast } = useToast();
+  const [tempPassword, setTempPassword] = useState(null);
+  const [isConfirmingSuspend, setIsConfirmingSuspend] = useState(false);
+
   if (!vendor) return null;
+
+  const vendorLabel = vendor.displayName || vendor.legalName || "this vendor";
   const planCode = vendor.plan || "free";
+  const billingCycle = vendor.billingCycle || vendor.subscription?.billingCycle || null;
+  const periodEnd = vendor.currentPeriodEnd || vendor.subscription?.currentPeriodEnd || null;
+  const lastPayment =
+    vendor.lastPaymentAt ||
+    vendor.lastPayment ||
+    vendor.subscription?.lastPaymentAt ||
+    null;
+
+  const handleResetPassword = () => {
+    setTempPassword(generateTemporaryPassword(14));
+  };
+
+  const handleCopyPassword = async () => {
+    if (!tempPassword) return;
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(tempPassword);
+        showToast({
+          title: "Password copied",
+          message: "Temporary password copied to your clipboard.",
+          tone: "success"
+        });
+        return;
+      }
+      throw new Error("Clipboard API unavailable");
+    } catch {
+      showToast({
+        title: "Copy unavailable",
+        message: "Select the password manually to copy it.",
+        tone: "warning"
+      });
+    }
+  };
+
+  const handleLoginAsVendor = () => {
+    showToast({
+      title: "Coming soon",
+      message: `Impersonation for ${vendorLabel} will be available in a future release.`,
+      tone: "info"
+    });
+  };
+
+  const handleManageBilling = () => {
+    showToast({
+      title: "Manage billing",
+      message: "Open the Admin Billing page from the sidebar to manage subscriptions.",
+      tone: "info"
+    });
+  };
+
+  const handleConfirmSuspend = () => {
+    setIsConfirmingSuspend(false);
+    showToast({
+      title: "Coming soon",
+      message: `Suspension for ${vendorLabel} will be available in a future release.`,
+      tone: "warning"
+    });
+  };
+
   return (
     <div
       className="admin-vendors-detail-overlay"
@@ -136,7 +231,7 @@ function VendorDetailModal({ vendor, onClose }) {
         onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-label={`Vendor details for ${vendor.displayName || vendor.legalName || "vendor"}`}
+        aria-label={`Vendor details for ${vendorLabel}`}
       >
         <header className="admin-vendors-detail-head">
           <div>
@@ -152,61 +247,195 @@ function VendorDetailModal({ vendor, onClose }) {
             Close
           </button>
         </header>
-        <dl className="admin-vendors-detail-body">
-          <div className="admin-vendors-detail-row">
-            <dt>Status</dt>
-            <dd>
-              <StatusPill
-                label={formatToken(vendor.status)}
-                status={vendor.status}
-                tone={VENDOR_STATUS_TONES[vendor.status] || "neutral"}
-              />
-            </dd>
-          </div>
-          <div className="admin-vendors-detail-row">
-            <dt>Plan</dt>
-            <dd>
-              <PlanBadge plan={planCode} />
-            </dd>
-          </div>
-          <div className="admin-vendors-detail-row">
-            <dt>Legal name</dt>
-            <dd>{vendor.legalName || "—"}</dd>
-          </div>
-          <div className="admin-vendors-detail-row">
-            <dt>Admin name</dt>
-            <dd>{vendor.adminUser?.fullName || "—"}</dd>
-          </div>
-          <div className="admin-vendors-detail-row">
-            <dt>Admin email</dt>
-            <dd>{vendor.adminUser?.email || vendor.contactEmail || "—"}</dd>
-          </div>
-          <div className="admin-vendors-detail-row">
-            <dt>Contact email</dt>
-            <dd>{vendor.contactEmail || "—"}</dd>
-          </div>
-          <div className="admin-vendors-detail-row">
-            <dt>Created</dt>
-            <dd>{formatDateShort(vendor.createdAt)}</dd>
-          </div>
-          <div className="admin-vendors-detail-row">
-            <dt>Last activity</dt>
-            <dd>{formatLastActivity(getLastActivityDate(vendor))}</dd>
-          </div>
-          <div className="admin-vendors-detail-row">
-            <dt>Engagement</dt>
-            <dd>
-              {(() => {
-                const engagement = classifyEngagement(vendor);
-                return VISIBLE_BADGE_ENGAGEMENTS.has(engagement) ? (
-                  <EngagementBadge engagement={engagement} />
-                ) : (
-                  <span className="admin-vendors-engagement-active-text">Active</span>
-                );
-              })()}
-            </dd>
-          </div>
-        </dl>
+
+        <div className="admin-vendors-detail-body">
+          <section className="admin-vendors-detail-section" aria-labelledby="vd-basic">
+            <h3 className="admin-vendors-detail-section-title" id="vd-basic">
+              Basic Info
+            </h3>
+            <dl className="admin-vendors-detail-grid">
+              <div className="admin-vendors-detail-row">
+                <dt>Status</dt>
+                <dd>
+                  <StatusPill
+                    label={formatToken(vendor.status)}
+                    status={vendor.status}
+                    tone={VENDOR_STATUS_TONES[vendor.status] || "neutral"}
+                  />
+                </dd>
+              </div>
+              <div className="admin-vendors-detail-row">
+                <dt>Legal name</dt>
+                <dd>{vendor.legalName || "—"}</dd>
+              </div>
+              <div className="admin-vendors-detail-row">
+                <dt>Slug</dt>
+                <dd>{vendor.slug || "—"}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section className="admin-vendors-detail-section" aria-labelledby="vd-admin">
+            <h3 className="admin-vendors-detail-section-title" id="vd-admin">
+              Admin Info
+            </h3>
+            <dl className="admin-vendors-detail-grid">
+              <div className="admin-vendors-detail-row">
+                <dt>Admin name</dt>
+                <dd>{vendor.adminUser?.fullName || "—"}</dd>
+              </div>
+              <div className="admin-vendors-detail-row">
+                <dt>Admin email</dt>
+                <dd>{vendor.adminUser?.email || vendor.contactEmail || "—"}</dd>
+              </div>
+              <div className="admin-vendors-detail-row">
+                <dt>Contact email</dt>
+                <dd>{vendor.contactEmail || "—"}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section className="admin-vendors-detail-section" aria-labelledby="vd-billing">
+            <h3 className="admin-vendors-detail-section-title" id="vd-billing">
+              Billing Info
+            </h3>
+            <dl className="admin-vendors-detail-grid">
+              <div className="admin-vendors-detail-row">
+                <dt>Plan</dt>
+                <dd>
+                  <PlanBadge plan={planCode} />
+                </dd>
+              </div>
+              <div className="admin-vendors-detail-row">
+                <dt>Billing cycle</dt>
+                <dd>{billingCycle ? formatToken(billingCycle) : "Not set"}</dd>
+              </div>
+              <div className="admin-vendors-detail-row">
+                <dt>Period end</dt>
+                <dd>{periodEnd ? formatDateShort(periodEnd) : "Not set"}</dd>
+              </div>
+              <div className="admin-vendors-detail-row">
+                <dt>Last payment</dt>
+                <dd>{lastPayment ? formatDateShort(lastPayment) : "Not set"}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section className="admin-vendors-detail-section" aria-labelledby="vd-activity">
+            <h3 className="admin-vendors-detail-section-title" id="vd-activity">
+              Activity
+            </h3>
+            <dl className="admin-vendors-detail-grid">
+              <div className="admin-vendors-detail-row">
+                <dt>Created</dt>
+                <dd>{formatDateShort(vendor.createdAt)}</dd>
+              </div>
+              <div className="admin-vendors-detail-row">
+                <dt>Last activity</dt>
+                <dd>{formatLastActivity(getLastActivityDate(vendor))}</dd>
+              </div>
+              <div className="admin-vendors-detail-row">
+                <dt>Engagement</dt>
+                <dd>
+                  <VendorDetailEngagement vendor={vendor} />
+                </dd>
+              </div>
+            </dl>
+          </section>
+
+          <section
+            className="admin-vendors-detail-section admin-vendors-detail-actions-section"
+            aria-labelledby="vd-actions"
+          >
+            <h3 className="admin-vendors-detail-section-title" id="vd-actions">
+              Actions
+            </h3>
+
+            {tempPassword ? (
+              <div
+                className="admin-vendors-detail-password-callout"
+                role="status"
+                aria-live="polite"
+              >
+                <div className="admin-vendors-detail-password-label">Temporary password</div>
+                <div className="admin-vendors-detail-password-value">
+                  <code>{tempPassword}</code>
+                  <button
+                    className="link-button"
+                    onClick={handleCopyPassword}
+                    type="button"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <p className="admin-vendors-detail-password-hint">
+                  Share this with the vendor securely. It will not be shown again after you
+                  close this dialog.
+                </p>
+              </div>
+            ) : null}
+
+            {isConfirmingSuspend ? (
+              <div
+                className="admin-vendors-detail-confirm"
+                role="alertdialog"
+                aria-label="Confirm suspend vendor"
+              >
+                <p>
+                  Suspend <strong>{vendorLabel}</strong>? They will lose access until reactivated.
+                </p>
+                <div className="admin-vendors-detail-confirm-actions">
+                  <button
+                    className="secondary-button compact"
+                    onClick={() => setIsConfirmingSuspend(false)}
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="admin-vendors-detail-danger-button"
+                    onClick={handleConfirmSuspend}
+                    type="button"
+                  >
+                    Yes, suspend
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
+            <div className="admin-vendors-detail-action-row">
+              <button
+                className="primary-button compact"
+                onClick={handleLoginAsVendor}
+                type="button"
+              >
+                Login as Vendor
+              </button>
+              <button
+                className="secondary-button compact"
+                onClick={handleResetPassword}
+                type="button"
+              >
+                Reset Password
+              </button>
+              <button
+                className="secondary-button compact"
+                onClick={handleManageBilling}
+                type="button"
+              >
+                Manage Billing
+              </button>
+              <button
+                className="admin-vendors-detail-danger-button"
+                onClick={() => setIsConfirmingSuspend(true)}
+                type="button"
+                disabled={isConfirmingSuspend}
+              >
+                Suspend Vendor
+              </button>
+            </div>
+          </section>
+        </div>
       </aside>
     </div>
   );
@@ -632,7 +861,13 @@ function AdminVendorsScreen() {
         </section>
       ) : null}
 
-      <VendorDetailModal vendor={viewingVendor} onClose={() => setViewingVendor(null)} />
+      {viewingVendor ? (
+        <VendorDetailModal
+          key={viewingVendor.id || viewingVendor.slug || "vendor-detail"}
+          vendor={viewingVendor}
+          onClose={() => setViewingVendor(null)}
+        />
+      ) : null}
 
       {isFormOpen ? (
         <FormPanel
