@@ -7182,23 +7182,22 @@ body {
 
 /* Avatar */
 .avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
   border-radius: 999px;
   font-weight: 600;
   letter-spacing: 0;
-  line-height: 1;
   text-align: center;
   text-indent: 0;
   flex-shrink: 0;
   user-select: none;
   padding: 0;
   overflow: hidden;
+  vertical-align: middle;
+  box-sizing: border-box;
 }
-.avatar-sm { width: 28px; height: 28px; font-size: 0.7rem; }
-.avatar-md { width: 36px; height: 36px; font-size: 0.78rem; }
-.avatar-lg { width: 56px; height: 56px; font-size: 1rem; }
+.avatar-sm { width: 28px; height: 28px; line-height: 28px; font-size: 0.7rem; }
+.avatar-md { width: 36px; height: 36px; line-height: 36px; font-size: 0.78rem; }
+.avatar-lg { width: 56px; height: 56px; line-height: 56px; font-size: 1rem; }
 
 /* PageHeader summary chips (inline aggregates) */
 .page-header-chips {
