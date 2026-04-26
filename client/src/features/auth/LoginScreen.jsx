@@ -26,6 +26,7 @@ function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [vendorId, setVendorId] = useState("");
+  const [showVendorId, setShowVendorId] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,6 +34,17 @@ function LoginScreen() {
     if (error) {
       setError("");
     }
+  }
+
+  function toggleVendorId() {
+    setShowVendorId((current) => {
+      const next = !current;
+      if (!next) {
+        setVendorId("");
+      }
+      return next;
+    });
+    clearError();
   }
 
   async function handleSubmit(event) {
@@ -50,81 +62,108 @@ function LoginScreen() {
   }
 
   return (
-    <main className="auth-page">
+    <main className="auth-page auth-page-v2">
       <section className="auth-visual" aria-label="SupplyLink workspace">
         <img
           src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=80"
           alt="Warehouse shelves with prepared supply boxes"
         />
         <div className="auth-visual-copy">
-          <span>SupplyLink</span>
-          <h1>Run orders, invoices, routes, and receivables from one tenant-safe workspace.</h1>
+          <h1>SupplyLink</h1>
+          <p>
+            Orders, invoices, inventory and receivables — managed in one secure workspace.
+          </p>
         </div>
       </section>
 
       <section className="auth-panel" aria-label="Sign in">
-        <div>
-          <p className="eyebrow">Secure access</p>
-          <h2>Welcome back</h2>
-          <p className="muted">Sign in with your SupplyLink account to open the dashboard.</p>
-        </div>
+        <div className="auth-panel-card">
+          <header className="auth-panel-head">
+            <p className="eyebrow">Secure access</p>
+            <h2>Welcome back</h2>
+            <p className="muted">Sign in to manage your SupplyLink workspace.</p>
+          </header>
 
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <label>
-            Email
-            <input
-              autoComplete="email"
-              inputMode="email"
-              onChange={(event) => {
-                clearError();
-                setEmail(event.target.value);
-              }}
-              placeholder="vendor.admin@supplylink.local"
-              required
-              type="email"
-              value={email}
-            />
-          </label>
+          <form className="auth-form" onSubmit={handleSubmit} noValidate>
+            <label className="auth-field">
+              <span className="auth-field-label">Email</span>
+              <input
+                autoComplete="email"
+                inputMode="email"
+                onChange={(event) => {
+                  clearError();
+                  setEmail(event.target.value);
+                }}
+                placeholder="you@company.com"
+                required
+                type="email"
+                value={email}
+              />
+            </label>
 
-          <label>
-            Password
-            <input
-              autoComplete="current-password"
-              onChange={(event) => {
-                clearError();
-                setPassword(event.target.value);
-              }}
-              placeholder="Password123!"
-              required
-              type="password"
-              value={password}
-            />
-          </label>
+            <label className="auth-field">
+              <span className="auth-field-label">Password</span>
+              <input
+                autoComplete="current-password"
+                onChange={(event) => {
+                  clearError();
+                  setPassword(event.target.value);
+                }}
+                placeholder="Enter your password"
+                required
+                type="password"
+                value={password}
+              />
+            </label>
 
-          <label>
-            Vendor ID
-            <input
-              onChange={(event) => {
-                clearError();
-                setVendorId(event.target.value);
-              }}
-              placeholder="Optional when your account has one active vendor"
-              type="text"
-              value={vendorId}
-            />
-          </label>
-
-          {error ? (
-            <div className="form-error" role="alert">
-              <strong>Sign-in failed</strong>
-              <span>{error}</span>
+            <div className="auth-vendor-toggle">
+              <button
+                type="button"
+                className="auth-link-button"
+                aria-expanded={showVendorId}
+                aria-controls="auth-vendor-id-field"
+                onClick={toggleVendorId}
+              >
+                <span className="auth-toggle-icon" aria-hidden="true">
+                  {showVendorId ? "−" : "+"}
+                </span>
+                {showVendorId ? "Hide Vendor ID" : "Use Vendor ID (advanced)"}
+              </button>
+              <small>Only required if your account has access to multiple workspaces.</small>
             </div>
-          ) : null}
 
-          <button className="primary-button" disabled={isSubmitting} type="submit">
-            {isSubmitting ? "Signing in..." : "Sign in"}
-          </button>
-        </form>
+            {showVendorId ? (
+              <label className="auth-field" id="auth-vendor-id-field">
+                <span className="auth-field-label">Vendor ID</span>
+                <input
+                  autoComplete="off"
+                  onChange={(event) => {
+                    clearError();
+                    setVendorId(event.target.value);
+                  }}
+                  placeholder="e.g. acme-distribution"
+                  type="text"
+                  value={vendorId}
+                />
+              </label>
+            ) : null}
+
+            {error ? (
+              <div className="form-error" role="alert">
+                <strong>Sign-in failed</strong>
+                <span>{error}</span>
+              </div>
+            ) : null}
+
+            <button className="primary-button auth-submit" disabled={isSubmitting} type="submit">
+              {isSubmitting ? "Signing in…" : "Sign in"}
+            </button>
+          </form>
+
+          <footer className="auth-footer-helper">
+            Need access? Contact your workspace administrator.
+          </footer>
+        </div>
       </section>
     </main>
   );
