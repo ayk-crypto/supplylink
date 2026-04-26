@@ -7395,3 +7395,202 @@ body {
   .page-header-chips .summary-chip { flex: 1 1 auto; }
 }
 /* === end Module 26 ================================================ */
+
+/* === Module 27 — Focused Dashboard redesign (scoped to .dashboard-v2) === */
+
+.dashboard-page.dashboard-v2 {
+  display: grid;
+  gap: 24px;
+  max-width: 1320px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Heading inside the dashboard sits a little tighter than other pages */
+.dashboard-page.dashboard-v2 .page-header {
+  gap: 16px;
+}
+@media (min-width: 721px) {
+  .dashboard-page.dashboard-v2 .page-header { align-items: flex-end; }
+  .dashboard-page.dashboard-v2 .page-header-action { min-width: auto; }
+}
+.dashboard-page.dashboard-v2 .page-header h1,
+.dashboard-page.dashboard-v2 .page-header h2 {
+  font-size: 1.55rem;
+  letter-spacing: -0.015em;
+  font-weight: 700;
+  color: var(--text-strong, #0f1f1a);
+}
+.dashboard-page.dashboard-v2 .page-header > div > p {
+  margin-top: 4px;
+  color: var(--muted, #5b6b66);
+}
+.dashboard-header-actions { flex-wrap: wrap; gap: 8px; }
+
+/* KPI grid — 4 cards: 4 cols ≥ 1100px, 2 cols ≥ 640px, 1 col below */
+.dashboard-page.dashboard-v2 .dashboard-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+@media (max-width: 1100px) {
+  .dashboard-page.dashboard-v2 .dashboard-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 520px) {
+  .dashboard-page.dashboard-v2 .dashboard-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* KPI card — premium, calm, modern */
+.dashboard-page.dashboard-v2 .kpi-card {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 10px;
+  padding: 18px 18px 16px;
+  background: var(--surface, #fff);
+  border: 1px solid rgba(15, 35, 28, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(15, 35, 28, 0.04),
+              0 8px 20px -16px rgba(15, 35, 28, 0.18);
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+  --tone-color: #1f5447;
+  --tone-bg: rgba(31, 84, 71, 0.10);
+  overflow: hidden;
+  min-height: 120px;
+}
+.dashboard-page.dashboard-v2 .kpi-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--tone-color);
+  opacity: 0.9;
+}
+.dashboard-page.dashboard-v2 .kpi-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(15, 35, 28, 0.16);
+  box-shadow: 0 1px 2px rgba(15, 35, 28, 0.05),
+              0 14px 28px -16px rgba(15, 35, 28, 0.28);
+}
+.dashboard-page.dashboard-v2 .kpi-card[data-tone="success"] { --tone-color: #1d7a46; --tone-bg: rgba(29, 122, 70, 0.12); }
+.dashboard-page.dashboard-v2 .kpi-card[data-tone="warning"] { --tone-color: #b35c1e; --tone-bg: rgba(179, 92, 30, 0.12); }
+.dashboard-page.dashboard-v2 .kpi-card[data-tone="info"]    { --tone-color: #2557b7; --tone-bg: rgba(37, 87, 183, 0.12); }
+.dashboard-page.dashboard-v2 .kpi-card[data-tone="violet"]  { --tone-color: #6d4ec2; --tone-bg: rgba(109, 78, 194, 0.12); }
+.dashboard-page.dashboard-v2 .kpi-card[data-tone="neutral"] { --tone-color: #4b5b56; --tone-bg: rgba(75, 91, 86, 0.10); }
+
+.dashboard-page.dashboard-v2 .kpi-card-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.dashboard-page.dashboard-v2 .kpi-card-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--tone-bg);
+  color: var(--tone-color);
+  flex-shrink: 0;
+}
+.dashboard-page.dashboard-v2 .kpi-card-icon svg { display: block; }
+.dashboard-page.dashboard-v2 .kpi-card-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted, #5b6b66);
+}
+.dashboard-page.dashboard-v2 .kpi-card-value {
+  font-size: 1.7rem;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--text-strong, #0f1f1a);
+  font-variant-numeric: tabular-nums;
+  word-break: break-word;
+  align-self: end;
+  margin: 2px 0 0;
+}
+.dashboard-page.dashboard-v2 .kpi-card-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.dashboard-page.dashboard-v2 .kpi-card-foot small {
+  color: var(--muted, #5b6b66);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+.dashboard-page.dashboard-v2 .kpi-card-trend {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--tone-bg);
+  color: var(--tone-color);
+}
+.dashboard-page.dashboard-v2 .kpi-card-skeleton {
+  min-height: 120px;
+  display: block;
+}
+
+/* Insights grid — 2-col on wide, 1-col under 980px; wide panel spans full row */
+.dashboard-page.dashboard-v2 .dashboard-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.dashboard-page.dashboard-v2 .dashboard-wide-panel { grid-column: 1 / -1; }
+
+@media (max-width: 980px) {
+  .dashboard-page.dashboard-v2 .dashboard-insights-grid {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-page.dashboard-v2 .dashboard-wide-panel { grid-column: auto; }
+}
+
+/* Panel block polish — only inside dashboard v2 */
+.dashboard-page.dashboard-v2 .panel-block {
+  padding: 20px;
+  border-radius: 14px;
+  border: 1px solid rgba(15, 35, 28, 0.08);
+  background: var(--surface, #fff);
+  box-shadow: 0 1px 2px rgba(15, 35, 28, 0.04),
+              0 8px 20px -18px rgba(15, 35, 28, 0.18);
+}
+.dashboard-page.dashboard-v2 .panel-heading {
+  margin-bottom: 8px;
+}
+.dashboard-page.dashboard-v2 .panel-heading h3 {
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: var(--text-strong, #0f1f1a);
+}
+
+/* Tighter row dividers inside dashboard panels */
+.dashboard-page.dashboard-v2 .dashboard-activity-row,
+.dashboard-page.dashboard-v2 .dashboard-overdue-row,
+.dashboard-page.dashboard-v2 .dashboard-customer-row,
+.dashboard-page.dashboard-v2 .dashboard-payment-row,
+.dashboard-page.dashboard-v2 .dashboard-notification-row {
+  padding: 12px 0;
+}
+
+@media (max-width: 720px) {
+  .dashboard-page.dashboard-v2 { gap: 18px; }
+  .dashboard-page.dashboard-v2 .panel-block { padding: 16px; }
+  .dashboard-page.dashboard-v2 .kpi-card-value { font-size: 1.45rem; }
+  .dashboard-page.dashboard-v2 .page-header { align-items: stretch; }
+  .dashboard-page.dashboard-v2 .page-header-action { min-width: auto; width: 100%; }
+  .dashboard-header-actions { justify-content: stretch; }
+  .dashboard-header-actions .primary-button,
+  .dashboard-header-actions .secondary-button { flex: 1; min-width: 120px; }
+}
+/* === end Module 27 ============================================== */

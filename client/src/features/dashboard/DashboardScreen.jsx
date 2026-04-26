@@ -2,6 +2,7 @@ import {
   EmptyState,
   ErrorState,
   LoadingSkeleton,
+  PageHeader,
   SectionHeader
 } from "../../components/ui/ResourceScreens.jsx";
 import StatusPill from "../../components/ui/StatusPill.jsx";
@@ -9,33 +10,60 @@ import { useAppSettings } from "../system/settingsContext.js";
 import { formatDateWith, formatMoneyWith } from "../system/settingsFormat.js";
 import { useDashboardData } from "./useDashboardData.js";
 
-function SummaryCard({ accent, detail, icon, label, tone, value }) {
+function KpiCard({ tone, label, value, hint, icon, trend }) {
   return (
-    <article
-      className="dashboard-summary-card"
-      data-tone={tone || "neutral"}
-      style={accent ? { "--dashboard-accent": accent } : undefined}
-    >
-      <div className="dashboard-summary-head">
-        <span className="dashboard-summary-icon" aria-hidden="true">
-          {icon || "."}
+    <article className="kpi-card" data-tone={tone || "neutral"}>
+      <div className="kpi-card-head">
+        <span className="kpi-card-icon" aria-hidden="true">
+          {icon}
         </span>
-        <span className="dashboard-summary-label">{label}</span>
+        <span className="kpi-card-label">{label}</span>
       </div>
-      <strong>{value}</strong>
-      <small>{detail}</small>
+      <strong className="kpi-card-value">{value}</strong>
+      <div className="kpi-card-foot">
+        {hint ? <small>{hint}</small> : null}
+        {trend ? <span className={`kpi-card-trend tone-${trend.tone}`}>{trend.label}</span> : null}
+      </div>
     </article>
   );
 }
 
-function HeroStat({ label, value }) {
-  return (
-    <div className="dashboard-hero-stat">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
+const ICONS = {
+  revenue: (
+    <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M10 3v14" />
+      <path d="M13.5 6.5c-.7-1-2.1-1.5-3.5-1.5s-3 .7-3 2.2c0 1.5 1.5 2 3.3 2.4 1.7.4 3.2 1 3.2 2.5 0 1.5-1.6 2.4-3.5 2.4-1.5 0-3-.6-3.5-1.7" />
+    </svg>
+  ),
+  customers: (
+    <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="8" cy="7.5" r="2.7" />
+      <path d="M2.5 16.5c.7-2.5 3-4 5.5-4s4.8 1.5 5.5 4" />
+      <circle cx="14.5" cy="6.5" r="2" />
+      <path d="M13.5 11.5c2 .2 3.7 1.4 4.3 3.3" />
+    </svg>
+  ),
+  invoices: (
+    <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 2.5h7l3 3V17l-1.5-1-1.5 1-1.5-1-1.5 1-1.5-1L5 17V2.5z" />
+      <path d="M7.5 7.5h5M7.5 10h5M7.5 12.5h3" />
+    </svg>
+  ),
+  outstanding: (
+    <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="10" cy="10" r="7" />
+      <path d="M10 6v4l2.5 2" />
+    </svg>
+  ),
+  subscriptions: (
+    <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3.5 12a6.5 6.5 0 0 1 11-4.7l1.5 1.5" />
+      <path d="M16 4v4h-4" />
+      <path d="M16.5 8a6.5 6.5 0 0 1-11 4.7L4 11.2" />
+      <path d="M4 16v-4h4" />
+    </svg>
+  )
+};
 
 function activityTypeLabel(type) {
   switch (type) {
@@ -56,11 +84,9 @@ function DashboardStatus({ type, status }) {
   if (type === "payment") {
     return <span className="dashboard-inline-badge">Recorded</span>;
   }
-
   if (type === "quotation") {
     return <StatusPill kind="quotation" status={status} />;
   }
-
   return <StatusPill kind={type === "invoice" ? "invoice" : "order"} status={status} />;
 }
 
@@ -68,7 +94,6 @@ function ActivityFeed({ formatDate, formatMoney, items, navigate }) {
   if (!items?.length) {
     return <EmptyState>No recent commercial activity yet.</EmptyState>;
   }
-
   return (
     <div className="dashboard-activity-feed">
       {items.map((item) => (
@@ -115,7 +140,6 @@ function OverdueInvoices({ formatDate, formatMoney, items, navigate }) {
   if (!items?.length) {
     return <EmptyState>No overdue invoices right now.</EmptyState>;
   }
-
   return (
     <div className="dashboard-overdue-list">
       {items.map((invoice) => {
@@ -164,7 +188,6 @@ function TopCustomers({ formatDate, formatMoney, items, navigate }) {
   if (!items?.length) {
     return <EmptyState>No customer billing data yet.</EmptyState>;
   }
-
   return (
     <div className="dashboard-customer-list">
       {items.map((customer, index) => (
@@ -206,7 +229,6 @@ function PaymentsList({ formatDate, formatMoney, items, navigate }) {
   if (!items?.length) {
     return <EmptyState>No payments have been recorded yet.</EmptyState>;
   }
-
   return (
     <div className="dashboard-payment-list">
       {items.map((payment) => (
@@ -243,7 +265,6 @@ function NotificationsList({ notifications }) {
   if (!notifications?.latest?.length) {
     return <EmptyState>No recent notifications.</EmptyState>;
   }
-
   return (
     <div className="dashboard-notification-list">
       {notifications.latest.slice(0, 4).map((notification) => (
@@ -259,31 +280,20 @@ function NotificationsList({ notifications }) {
   );
 }
 
-function QuickActions({ navigate }) {
-  if (typeof navigate !== "function") {
-    return null;
-  }
-
-  const actions = [
-    { label: "New quotation", path: "/quotations/new", tone: "primary" },
-    { label: "New order", path: "/orders/new", tone: "primary" },
-    { label: "New invoice", path: "/invoices/new", tone: "secondary" },
-    { label: "Receivables report", path: "/reports/receivables", tone: "secondary" }
-  ];
-
+function HeaderActions({ navigate }) {
+  if (typeof navigate !== "function") return null;
   return (
-    <section aria-label="Quick actions" className="quick-actions dashboard-quick-actions">
-      {actions.map((action) => (
-        <button
-          className={`${action.tone}-button`}
-          key={action.path}
-          onClick={() => navigate(action.path)}
-          type="button"
-        >
-          {action.label}
-        </button>
-      ))}
-    </section>
+    <div className="button-row dashboard-header-actions">
+      <button className="secondary-button compact" onClick={() => navigate("/orders/new")} type="button">
+        New order
+      </button>
+      <button className="secondary-button compact" onClick={() => navigate("/invoices/new")} type="button">
+        New invoice
+      </button>
+      <button className="primary-button compact" onClick={() => navigate("/quotations/new")} type="button">
+        New quotation
+      </button>
+    </div>
   );
 }
 
@@ -302,14 +312,12 @@ function DashboardScreen({ navigate }) {
 
   if (isLoading) {
     return (
-      <div className="dashboard-page">
-        <section className="dashboard-insights-hero">
-          <LoadingSkeleton label="Loading dashboard" rows={4} />
-        </section>
-        <section className="dashboard-summary-grid">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <article className="dashboard-summary-card" key={index}>
-              <LoadingSkeleton rows={3} />
+      <div className="dashboard-page dashboard-v2">
+        <PageHeader eyebrow="Dashboard" title="Loading dashboard" />
+        <section className="dashboard-kpi-grid">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <article className="kpi-card kpi-card-skeleton" key={index}>
+              <LoadingSkeleton rows={2} />
             </article>
           ))}
         </section>
@@ -322,88 +330,54 @@ function DashboardScreen({ navigate }) {
   }
 
   const summary = dashboard.summaryCards || {};
+  const aggregates = dashboard.aggregates || {};
   const topCustomers = dashboard.insights?.topCustomers || [];
   const overdueInvoices = dashboard.insights?.overdueInvoices || [];
   const recentPayments = dashboard.insights?.recentPayments || [];
+  const overdueCount = aggregates.receivables?.overdueInvoiceCount ?? overdueInvoices.length;
+  const openInvoiceCount = aggregates.receivables?.openInvoiceCount ?? 0;
 
   return (
-    <div className="dashboard-page dashboard-insights-page">
-      <section className="dashboard-insights-hero">
-        <div>
-          <p className="eyebrow">Dashboard</p>
-          <h2>Business performance at a glance</h2>
-          <p>
-            Track cash collected, unpaid invoices, customer momentum, and the latest sales activity
-            without leaving the home screen.
-          </p>
-        </div>
-        <div className="dashboard-hero-panel">
-          <div className="dashboard-hero-panel-head">
-            <span>{dashboard.vendor?.label || "Workspace"}</span>
-            <strong>{formatMoney(summary.revenueCollected || 0)}</strong>
-            <p>Revenue collected so far across recorded payments.</p>
-          </div>
-          <div className="dashboard-hero-stats">
-            <HeroStat
-              label="Outstanding receivables"
-              value={formatMoney(summary.outstandingReceivables || 0)}
-            />
-            <HeroStat
-              label="Overdue invoices"
-              value={String(dashboard.aggregates?.receivables?.overdueInvoiceCount || 0)}
-            />
-            <HeroStat
-              label="Open invoices"
-              value={String(dashboard.aggregates?.receivables?.openInvoiceCount || 0)}
-            />
-          </div>
-        </div>
-      </section>
+    <div className="dashboard-page dashboard-v2">
+      <PageHeader
+        eyebrow={dashboard.vendor?.label || "Workspace"}
+        title="Business performance at a glance"
+        description="Track cash collected, unpaid invoices, customer momentum, and the latest sales activity."
+        action={<HeaderActions navigate={navigate} />}
+      />
 
-      <QuickActions navigate={navigate} />
-
-      <section className="dashboard-summary-grid">
-        <SummaryCard
+      <section className="dashboard-kpi-grid" aria-label="Key metrics">
+        <KpiCard
           tone="success"
-          icon="$"
-          detail="Total revenue collected"
-          label="Revenue collected"
+          icon={ICONS.revenue}
+          label="Revenue"
           value={formatMoney(summary.revenueCollected || 0)}
+          hint={
+            summary.outstandingReceivables > 0
+              ? `${formatMoney(summary.outstandingReceivables)} outstanding`
+              : "Everything collected"
+          }
         />
-        <SummaryCard
-          tone="warning"
-          icon="AR"
-          detail="Unpaid issued invoice balance"
-          label="Outstanding receivables"
-          value={formatMoney(summary.outstandingReceivables || 0)}
-        />
-        <SummaryCard
+        <KpiCard
           tone="info"
-          icon="CU"
-          detail="Linked customers"
+          icon={ICONS.customers}
           label="Customers"
           value={String(summary.totalCustomers || 0)}
+          hint="Linked to this workspace"
         />
-        <SummaryCard
+        <KpiCard
           tone="violet"
-          icon="QT"
-          detail="Quotations created"
-          label="Quotations"
-          value={String(summary.totalQuotations || 0)}
-        />
-        <SummaryCard
-          tone="teal"
-          icon="OR"
-          detail="Orders across all statuses"
-          label="Orders"
-          value={String(summary.totalOrders || 0)}
-        />
-        <SummaryCard
-          tone="rose"
-          icon="IV"
-          detail="Invoices issued so far"
+          icon={ICONS.invoices}
           label="Invoices"
           value={String(summary.totalInvoices || 0)}
+          hint={`${openInvoiceCount} open · ${overdueCount} overdue`}
+        />
+        <KpiCard
+          tone="neutral"
+          icon={ICONS.subscriptions}
+          label="Subscriptions"
+          value="—"
+          hint="Not available on this workspace"
         />
       </section>
 
@@ -423,7 +397,7 @@ function DashboardScreen({ navigate }) {
           <ActivityFeed
             formatDate={formatDate}
             formatMoney={formatMoney}
-            items={(dashboard.recent?.activity || []).slice(0, 3)}
+            items={(dashboard.recent?.activity || []).slice(0, 4)}
             navigate={navigate}
           />
         </div>
