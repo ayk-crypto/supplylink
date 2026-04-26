@@ -11,7 +11,6 @@ import {
   TableScroll,
   Toolbar
 } from "../../components/ui/ResourceScreens.jsx";
-import StatusPill from "../../components/ui/StatusPill.jsx";
 import {
   createBillingPayment,
   listAdminSubscriptions,
@@ -21,6 +20,7 @@ import {
   updateBillingPlan
 } from "../../services/adminBillingApi.js";
 import { useToast } from "../feedback/toastContext.js";
+import { useAuth } from "../auth/useAuth.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
 
 const PLAN_ORDER = ["free", "basic", "pro", "custom"];
@@ -210,11 +210,15 @@ function PlanBadge({ plans, planCode }) {
 
 function PlanCard({ plan, onEdit }) {
   const tone = getPlanTone(plan.code);
+  const isCustom = plan.code === "custom";
+  const displayName = isCustom
+    ? "Custom Plan (Admin Only)"
+    : plan.displayName || formatToken(plan.code);
   return (
-    <article className="ab-plan-card" data-tone={tone}>
+    <article className="ab-plan-card" data-tone={tone} data-plan={plan.code}>
       <header className="ab-plan-card-head">
         <span className="ab-plan-badge" data-tone={tone}>
-          {plan.displayName || formatToken(plan.code)}
+          {displayName}
         </span>
         <span
           className={`ab-plan-status ${plan.isActive ? "is-active" : "is-inactive"}`}
@@ -222,6 +226,10 @@ function PlanCard({ plan, onEdit }) {
           {plan.isActive ? "Active" : "Inactive"}
         </span>
       </header>
+
+      {isCustom ? (
+        <p className="ab-plan-helper">For negotiated or special customer pricing.</p>
+      ) : null}
 
       <div className="ab-plan-prices">
         <div className="ab-plan-price">
@@ -259,6 +267,8 @@ function PlanCard({ plan, onEdit }) {
 
 function AdminBillingScreen() {
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const isSuperAdmin = Boolean(user?.roleCodes?.includes("super_admin"));
   const [plans, setPlans] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
   const [payments, setPayments] = useState([]);
@@ -284,6 +294,10 @@ function AdminBillingScreen() {
   const [paymentDraft, setPaymentDraft] = useState(buildPaymentDraft);
   const planOptions = useMemo(() => getPlanOptions(plans), [plans]);
   const orderedPlans = useMemo(() => sortPlans(plans), [plans]);
+  const visiblePlans = useMemo(
+    () => (isSuperAdmin ? orderedPlans : orderedPlans.filter((plan) => plan.code !== "custom")),
+    [orderedPlans, isSuperAdmin]
+  );
 
   const query = useMemo(
     () => ({
@@ -327,13 +341,21 @@ function AdminBillingScreen() {
     loadBilling();
   }, [loadBilling]);
 
+  // Debounced instant search — apply searchDraft to filters after a short delay
+  useEffect(() => {
+    const trimmed = searchDraft.trim();
+    if (filters.search === trimmed) {
+      return undefined;
+    }
+    const handle = setTimeout(() => {
+      setFilters((current) => ({ ...current, search: trimmed }));
+      setPage(1);
+    }, 250);
+    return () => clearTimeout(handle);
+  }, [searchDraft, filters.search]);
+
   function submitFilters(event) {
     event.preventDefault();
-    setFilters((current) => ({
-      ...current,
-      search: searchDraft.trim()
-    }));
-    setPage(1);
   }
 
   function openSubscriptionEditor(subscription) {
@@ -510,7 +532,7 @@ function AdminBillingScreen() {
               hint="Pricing, limits, and trial benefits applied across all vendor workspaces."
             />
             <div className="ab-plan-grid">
-              {orderedPlans.map((plan) => (
+              {visiblePlans.map((plan) => (
                 <PlanCard key={plan.code} onEdit={openPlanEditor} plan={plan} />
               ))}
             </div>
@@ -523,12 +545,14 @@ function AdminBillingScreen() {
             />
             <Toolbar onSubmit={submitFilters}>
               <input
+                aria-label="Search vendor subscriptions"
                 onChange={(event) => setSearchDraft(event.target.value)}
-                placeholder="Search vendors"
+                placeholder="Search vendors by name or email"
                 type="search"
                 value={searchDraft}
               />
               <select
+                aria-label="Filter by plan"
                 onChange={(event) => {
                   setFilters((current) => ({ ...current, plan: event.target.value }));
                   setPage(1);
@@ -543,6 +567,7 @@ function AdminBillingScreen() {
                 ))}
               </select>
               <select
+                aria-label="Filter by status"
                 onChange={(event) => {
                   setFilters((current) => ({ ...current, status: event.target.value }));
                   setPage(1);
@@ -557,6 +582,7 @@ function AdminBillingScreen() {
                 ))}
               </select>
               <select
+                aria-label="Filter by billing cycle"
                 onChange={(event) => {
                   setFilters((current) => ({ ...current, billingCycle: event.target.value }));
                   setPage(1);
@@ -570,9 +596,6 @@ function AdminBillingScreen() {
                   </option>
                 ))}
               </select>
-              <button className="secondary-button" type="submit">
-                Search
-              </button>
             </Toolbar>
 
             {!subscriptions.length ? (
@@ -607,16 +630,19 @@ function AdminBillingScreen() {
                           {subscription.effectiveAccess &&
                           subscription.effectiveAccess !== subscription.currentPlan ? (
                             <small>
-                              Access: {getPlanLabel(plans, subscription.effectiveAccess)}
+                              {subscription.status === "trial" ? "Trial access: " : "Access: "}
+                              {getPlanLabel(plans, subscription.effectiveAccess)}
                             </small>
                           ) : null}
                         </div>
                         <div>
-                          <StatusPill
-                            status={subscription.status}
-                            tone={SUBSCRIPTION_STATUS_TONES[subscription.status]}
-                            label={formatToken(subscription.status)}
-                          />
+                          <span
+                            className="ab-status-badge"
+                            data-status={subscription.status}
+                            data-tone={SUBSCRIPTION_STATUS_TONES[subscription.status]}
+                          >
+                            {formatToken(subscription.status)}
+                          </span>
                         </div>
                         <span className="ab-cell-text">
                           {formatToken(subscription.billingCycle)}
@@ -634,7 +660,7 @@ function AdminBillingScreen() {
                             onClick={() => openSubscriptionEditor(subscription)}
                             type="button"
                           >
-                            Update
+                            Manage
                           </button>
                         </div>
                       </article>
@@ -658,7 +684,7 @@ function AdminBillingScreen() {
                 </button>
               }
               title="Billing history"
-              hint="Manual subscription payments recorded by platform admins."
+              hint="Manual payments recorded by platform admins."
             />
             {!payments.length ? (
               <EmptyState
@@ -705,18 +731,23 @@ function AdminBillingScreen() {
                         </div>
                         <div className="ab-cell-amount">
                           <strong>
-                            {payment.currency} {Number(payment.amount).toLocaleString()}
+                            <span className="ab-amount-currency">
+                              {(payment.currency || "PKR").toUpperCase()}
+                            </span>{" "}
+                            {Number(payment.amount).toLocaleString()}
                           </strong>
                         </div>
                         <span className="ab-cell-text">
                           {formatToken(payment.paymentMethod)}
                         </span>
                         <div>
-                          <StatusPill
-                            status={payment.paymentStatus}
-                            tone={PAYMENT_STATUS_TONES[payment.paymentStatus]}
-                            label={formatToken(payment.paymentStatus)}
-                          />
+                          <span
+                            className="ab-status-badge"
+                            data-status={payment.paymentStatus}
+                            data-tone={PAYMENT_STATUS_TONES[payment.paymentStatus]}
+                          >
+                            {formatToken(payment.paymentStatus)}
+                          </span>
                         </div>
                         <span className="ab-cell-text">
                           {formatDate(payment.periodStart)} – {formatDate(payment.periodEnd)}
@@ -729,7 +760,16 @@ function AdminBillingScreen() {
                     ))}
                   </div>
                 </TableScroll>
-                <Pagination pagination={paymentPagination} onPageChange={setPaymentPage} />
+                {paymentPagination && (paymentPagination.totalPages || 1) > 1 ? (
+                  <Pagination pagination={paymentPagination} onPageChange={setPaymentPage} />
+                ) : paymentPagination ? (
+                  <p className="ab-payments-footer">
+                    {(paymentPagination.totalItems ?? payments.length).toLocaleString()}{" "}
+                    {(paymentPagination.totalItems ?? payments.length) === 1
+                      ? "payment"
+                      : "payments"}
+                  </p>
+                ) : null}
               </>
             ) : null}
           </section>

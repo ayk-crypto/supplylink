@@ -9525,3 +9525,156 @@ body {
   flex: 0 0 auto;
 }
 /* === end Module 34 ============================================== */
+
+/* === Module 36: Admin Billing page refinements ================== */
+/* All rules scoped under .admin-billing-page so nothing leaks to
+   other surfaces. Mirrors the wrap-based header layout used on the
+   admin vendors page so the action stays top-right and gracefully
+   stacks on narrow cards. */
+
+.admin-billing-page .page-header {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  row-gap: 16px;
+}
+
+.admin-billing-page .page-header-copy {
+  flex: 1 1 360px;
+  min-width: min(360px, 100%);
+}
+
+.admin-billing-page .page-header-action {
+  margin-left: auto;
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  .admin-billing-page .page-header-action {
+    width: 100%;
+    margin-left: 0;
+  }
+  .admin-billing-page .page-header-action .button-row {
+    width: 100%;
+  }
+  .admin-billing-page .page-header-action .button-row .primary-button.compact {
+    width: 100%;
+  }
+}
+
+/* Custom Plan helper text — only rendered for the custom plan card. */
+.admin-billing-page .ab-plan-card[data-plan="custom"] .ab-plan-helper {
+  margin: -2px 0 0;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #166534;
+  background: rgba(22, 163, 74, 0.08);
+  border: 1px solid rgba(22, 163, 74, 0.18);
+  border-radius: 8px;
+}
+
+/* Compact status badges in the vendor subscriptions + billing
+   history tables — same visual language as the vendors page badges
+   so widths read consistently across admin surfaces. Base styles
+   default to the neutral tone so unknown / missing data-tone values
+   still render legibly. */
+.admin-billing-page .ab-status-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(148, 163, 184, 0.14);
+  color: #334155;
+  white-space: nowrap;
+}
+
+.admin-billing-page .ab-status-badge[data-tone="success"] {
+  background: rgba(34, 197, 94, 0.12);
+  color: #14532d;
+  border-color: rgba(34, 197, 94, 0.28);
+}
+
+.admin-billing-page .ab-status-badge[data-tone="info"] {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1e3a8a;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Warning text darkened from #a16207 -> #713f12 to clear WCAG AA
+   (>=4.5:1 contrast) at the new compact 10.5px badge size. */
+.admin-billing-page .ab-status-badge[data-tone="warning"] {
+  background: rgba(234, 179, 8, 0.18);
+  color: #713f12;
+  border-color: rgba(234, 179, 8, 0.35);
+}
+
+.admin-billing-page .ab-status-badge[data-tone="danger"] {
+  background: rgba(239, 68, 68, 0.14);
+  color: #991b1b;
+  border-color: rgba(239, 68, 68, 0.32);
+}
+
+.admin-billing-page .ab-status-badge[data-tone="neutral"] {
+  background: rgba(148, 163, 184, 0.14);
+  color: #334155;
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+/* Plan badge — tighten to match the new compact status badge so
+   the two pills feel like a matched pair. */
+.admin-billing-page .ab-plan-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+/* Plan badge inside plan cards stays full-size — only tighten when
+   it appears inside table cells. */
+.admin-billing-page .ab-plan-card .ab-plan-badge {
+  font-size: 0.78rem;
+  padding: 4px 10px;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+}
+
+/* Billing history: amount cell — slightly bolder + currency code
+   styled as a muted prefix so "PKR 3,000" reads cleanly. */
+.admin-billing-page .ab-cell-amount strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.005em;
+}
+
+.admin-billing-page .ab-amount-currency {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748b;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-right: 1px;
+}
+
+/* Billing history footer — compact summary used when there is
+   only a single page of payments. */
+.admin-billing-page .ab-payments-footer {
+  margin: 0;
+  padding: 10px 4px 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #64748b;
+  text-align: right;
+}
+/* === end Module 36 ============================================== */
