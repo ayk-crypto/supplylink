@@ -10,7 +10,7 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       "/api": {
-        target: "http://192.168.100.54:4000",
+        target: "http://localhost:4000",
         changeOrigin: true
       }
     }
