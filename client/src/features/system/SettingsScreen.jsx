@@ -23,6 +23,7 @@ import {
   getLogoUrl,
   isValidHexColor
 } from "./settingsFormat.js";
+import BrandingPreview from "./BrandingPreview.jsx";
 
 const DEFAULT_BRAND_COLOR_PLACEHOLDER = "#2563eb";
 
@@ -315,10 +316,11 @@ function SettingsScreen() {
       ) : null}
 
       <form id="settings-form" onSubmit={handleSave}>
-        <section className="transaction-panel">
+        <div className="branding-grid">
+        <section className="transaction-panel branding-section">
           <div className="panel-heading">
-            <h3>Company info</h3>
-            <span>Used on invoices, quotations, and printed documents.</span>
+            <h3>Invoice Branding</h3>
+            <span>Make every invoice look like a professional company document.</span>
           </div>
           <div className="settings-company-row">
             <div
@@ -491,7 +493,29 @@ function SettingsScreen() {
               />
             </Field>
           </div>
+          <div className="form-grid">
+            <Field
+              hint="Shown at the bottom of every invoice (e.g. payment instructions, thank-you note, tagline)."
+              label="Footer note"
+            >
+              <textarea
+                maxLength={2000}
+                onChange={(event) =>
+                  updateSection("company", "invoiceFooter", event.target.value)
+                }
+                placeholder="Thank you for your business. Payments are due within 30 days."
+                rows={3}
+                value={draft.company.invoiceFooter || ""}
+              />
+            </Field>
+          </div>
         </section>
+        <BrandingPreview
+          draft={draft}
+          logoObjectUrl={logoObjectUrl}
+          logoUrl={currentLogoUrl}
+        />
+        </div>
 
         <section className="transaction-panel">
           <div className="panel-heading">

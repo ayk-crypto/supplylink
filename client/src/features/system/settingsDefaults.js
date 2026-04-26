@@ -10,7 +10,8 @@ const DEFAULT_SETTINGS = {
     addressLine2: "",
     taxId: "",
     primaryBrandColor: "",
-    logoUrl: ""
+    logoUrl: "",
+    invoiceFooter: ""
   },
   invoice: {
     prefix: "INV-",
@@ -129,7 +130,8 @@ function buildCompanyPayload(company) {
     phone: trimString(company.phone, 50),
     taxId: trimString(company.taxId, 100),
     addressLine1: trimString(company.addressLine1, 250),
-    addressLine2: trimString(company.addressLine2, 250)
+    addressLine2: trimString(company.addressLine2, 250),
+    invoiceFooter: trimString(company.invoiceFooter, 2000)
   };
   const brandColor = trimString(company.primaryBrandColor, 7);
   if (brandColor === "" || /^#[0-9A-Fa-f]{6}$/.test(brandColor)) {

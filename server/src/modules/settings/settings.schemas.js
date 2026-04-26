@@ -28,7 +28,8 @@ const companySettingsSchema = z.object({
   addressLine1: z.string().trim().max(250).optional(),
   addressLine2: z.string().trim().max(250).optional(),
   logoUrl: optionalUrlSchema.optional(),
-  primaryBrandColor: optionalHexColorSchema
+  primaryBrandColor: optionalHexColorSchema,
+  invoiceFooter: z.string().trim().max(2000).optional()
 });
 
 const invoiceSettingsSchema = z.object({

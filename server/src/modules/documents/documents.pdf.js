@@ -518,6 +518,60 @@ function drawNotesAndTotals(doc, document) {
   doc.y = topY + blockHeight + 16;
 }
 
+function drawBrandFooter(doc, document) {
+  const footer = document.sections?.footer || {};
+  const text = (footer.invoiceFooter || "").trim();
+
+  if (!text) {
+    return;
+  }
+
+  const brandColor = parseHexColor(
+    document.sections?.branding?.company?.primaryBrandColor
+  );
+  const width = CONTENT_WIDTH;
+  const x = PAGE_MARGIN;
+  const padX = 14;
+  const padY = 12;
+  const innerWidth = width - padX * 2;
+  const textHeight = doc.heightOfString(text, {
+    width: innerWidth,
+    lineGap: 2,
+    align: "center"
+  });
+  const blockHeight = textHeight + padY * 2 + 4;
+
+  ensureSpace(doc, blockHeight + 8);
+  const topY = doc.y;
+
+  doc
+    .save()
+    .roundedRect(x, topY, width, blockHeight, 14)
+    .fillAndStroke(PANEL, LINE)
+    .restore();
+
+  doc
+    .save()
+    .moveTo(x, topY)
+    .lineTo(x + width, topY)
+    .strokeColor(brandColor)
+    .lineWidth(2)
+    .stroke()
+    .restore();
+
+  doc
+    .font("Helvetica")
+    .fontSize(10)
+    .fillColor(INK)
+    .text(text, x + padX, topY + padY + 2, {
+      width: innerWidth,
+      align: "center",
+      lineGap: 2
+    });
+
+  doc.y = topY + blockHeight + 12;
+}
+
 function renderStructuredDocumentPdf(document, options = {}) {
   return new Promise((resolve, reject) => {
     const pdf = new PDFDocument({
@@ -540,6 +594,7 @@ function renderStructuredDocumentPdf(document, options = {}) {
     drawInformationCards(pdf, document);
     drawItemsTable(pdf, document);
     drawNotesAndTotals(pdf, document);
+    drawBrandFooter(pdf, document);
 
     pdf
       .font("Helvetica")

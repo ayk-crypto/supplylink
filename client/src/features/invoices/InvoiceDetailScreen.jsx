@@ -745,6 +745,23 @@ function InvoiceDetailScreen({ id, navigate }) {
         <p className="muted">{invoice.notes || "No notes."}</p>
       </section>
 
+      {settings.company?.invoiceFooter ? (
+        <section
+          className="transaction-panel invoice-brand-footer"
+          style={
+            settings.company?.primaryBrandColor
+              ? { borderTopColor: settings.company.primaryBrandColor }
+              : undefined
+          }
+        >
+          <div className="panel-heading">
+            <h3>Footer note</h3>
+            <span>Shown on every invoice you issue.</span>
+          </div>
+          <p className="invoice-brand-footer-text">{settings.company.invoiceFooter}</p>
+        </section>
+      ) : null}
+
       <section className="transaction-panel">
         <PaymentForm invoice={invoice} onPaid={() => loadInvoice()} />
       </section>

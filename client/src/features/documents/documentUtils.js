@@ -12,11 +12,17 @@ function escapeHtml(value) {
 function getDocumentBranding(document, settings) {
   const branding = document?.sections?.branding || {};
   const company = branding.company || {};
+  const footer = document?.sections?.footer || {};
 
   return {
     brandColor: company.primaryBrandColor || settings?.company?.primaryBrandColor || "#0f7b63",
     logoUrl: company.logoUrl || settings?.company?.logoUrl || settings?.company?.logo?.url || "",
-    company
+    company,
+    invoiceFooter:
+      footer.invoiceFooter ||
+      company.invoiceFooter ||
+      settings?.company?.invoiceFooter ||
+      ""
   };
 }
 
@@ -63,7 +69,10 @@ function buildDocumentHtml(docPayload, settings) {
   const items = sections.items || [];
   const totals = sections.totals || {};
   const footer = sections.footer || {};
-  const { brandColor, logoUrl, company } = getDocumentBranding(docPayload, settings);
+  const { brandColor, logoUrl, company, invoiceFooter } = getDocumentBranding(
+    docPayload,
+    settings
+  );
   const docTypeLabel = docPayload?.documentType === "invoice" ? "Invoice" : "Quotation";
   const secondaryDateLabel =
     docPayload?.documentType === "invoice" ? "Due date" : "Expiry date";
@@ -293,6 +302,18 @@ function buildDocumentHtml(docPayload, settings) {
         white-space: pre-wrap;
         line-height: 1.55;
       }
+      .brand-footer {
+        margin-top: 22px;
+        padding: 14px 18px;
+        border-top: 2px solid var(--brand);
+        background: linear-gradient(180deg, rgba(15,123,99,0.06), rgba(15,123,99,0.01));
+        border-radius: 0 0 18px 18px;
+        color: var(--ink);
+        font-size: 0.92rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        text-align: center;
+      }
       @media print {
         body { padding: 0; background: white; }
         .page { width: 100%; border: 0; box-shadow: none; }
@@ -456,6 +477,12 @@ function buildDocumentHtml(docPayload, settings) {
               .join("")}
           </aside>
         </section>
+
+        ${
+          invoiceFooter
+            ? `<section class="brand-footer">${escapeHtml(invoiceFooter)}</section>`
+            : ""
+        }
       </div>
     </div>
   </body>

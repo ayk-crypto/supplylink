@@ -41,7 +41,8 @@ function mapBrandingBlock(settings = {}) {
       addressLine2: company.addressLine2 || "",
       logoUrl: company.logoUrl || company.logo?.downloadUrl || "",
       logo: company.logo || null,
-      primaryBrandColor: company.primaryBrandColor || ""
+      primaryBrandColor: company.primaryBrandColor || "",
+      invoiceFooter: company.invoiceFooter || ""
     },
     formatting: {
       currencyCode: currency.code || "USD",
@@ -134,7 +135,8 @@ function buildDocumentEnvelope({
       totals,
       footer: {
         notes: notes || null,
-        terms: terms || null
+        terms: terms || null,
+        invoiceFooter: branding?.company?.invoiceFooter || ""
       }
     }
   };
