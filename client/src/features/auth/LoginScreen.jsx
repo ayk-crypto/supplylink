@@ -158,6 +158,10 @@ function LoginScreen() {
             <button className="primary-button auth-submit" disabled={isSubmitting} type="submit">
               {isSubmitting ? "Signing in…" : "Sign in"}
             </button>
+
+            <p className="auth-trust-signal">
+              <span aria-hidden="true">🔒</span> Secure login · Your data is protected
+            </p>
           </form>
 
           <footer className="auth-footer-helper">
