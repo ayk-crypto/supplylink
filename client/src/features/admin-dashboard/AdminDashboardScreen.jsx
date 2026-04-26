@@ -638,11 +638,11 @@ function AdminDashboardScreen({ navigate }) {
           action={
             typeof navigate === "function" ? (
               <button
-                className="secondary-button compact admin-dashboard-manage-vendors"
+                className="secondary-button compact"
                 onClick={() => navigate("/admin/vendors")}
                 type="button"
               >
-                Manage vendors →
+                Manage vendors
               </button>
             ) : null
           }
