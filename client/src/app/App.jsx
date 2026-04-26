@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import AppShell from "../components/layout/AppShell.jsx";
 import { ToastProvider } from "../features/feedback/ToastProvider.jsx";
 import AdminBillingScreen from "../features/admin-billing/AdminBillingScreen.jsx";
+import AdminDashboardScreen from "../features/admin-dashboard/AdminDashboardScreen.jsx";
 import AdminVendorsScreen from "../features/admin-vendors/AdminVendorsScreen.jsx";
 import AuthProvider from "../features/auth/AuthProvider.jsx";
 import ProtectedRoute from "../features/auth/ProtectedRoute.jsx";
@@ -40,28 +41,6 @@ import TransactionListScreen from "../features/transactions/TransactionListScree
 import { appRoutes, findRoute } from "./routes.js";
 import { useBrowserRoute } from "./useBrowserRoute.js";
 import { useAuth } from "../features/auth/useAuth.js";
-
-function AdminDashboardScreen({ navigate }) {
-  return (
-    <div className="resource-page">
-      <section className="page-header">
-        <div>
-          <p className="eyebrow">Admin</p>
-          <h2>Platform Dashboard</h2>
-          <p>Use the platform tools to manage billing and vendor subscription access.</p>
-        </div>
-        <div className="page-header-action">
-          <button className="primary-button" onClick={() => navigate("/admin/vendors")} type="button">
-            Manage Vendors
-          </button>
-          <button className="secondary-button" onClick={() => navigate("/admin/billing")} type="button">
-            Open Admin Billing
-          </button>
-        </div>
-      </section>
-    </div>
-  );
-}
 
 function VendorWorkspaceOnlyScreen() {
   return (
