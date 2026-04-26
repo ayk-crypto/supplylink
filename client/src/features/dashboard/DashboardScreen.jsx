@@ -27,22 +27,10 @@ function KpiCard({ tone, label, value, hint, meta, icon }) {
 }
 
 const PLAN_LABELS = { free: "Free", basic: "Basic", pro: "Pro", custom: "Custom" };
-const PLAN_TONES = {
-  free: "neutral",
-  basic: "info",
-  pro: "violet",
-  custom: "success"
-};
 
 function planLabel(code) {
   if (!code) return "—";
   return PLAN_LABELS[code] || code.charAt(0).toUpperCase() + code.slice(1);
-}
-
-function billingCycleLabel(cycle) {
-  if (cycle === "annual") return "Annual";
-  if (cycle === "monthly") return "Monthly";
-  return cycle ? cycle.charAt(0).toUpperCase() + cycle.slice(1) : "—";
 }
 
 function planStatusLabel(status) {
@@ -183,7 +171,7 @@ function OverdueInvoices({ formatDate, formatMoney, items, navigate }) {
   if (!items?.length) {
     return (
       <EmptyState
-        title="Nothing overdue"
+        title="No overdue invoices"
         action={
           typeof navigate === "function" ? (
             <button
@@ -196,7 +184,7 @@ function OverdueInvoices({ formatDate, formatMoney, items, navigate }) {
           ) : null
         }
       >
-        All issued invoices are within their due date. Nice work staying on top of collections.
+        No overdue invoices. All customers are up to date.
       </EmptyState>
     );
   }
@@ -292,7 +280,7 @@ function TopCustomers({ formatDate, formatMoney, items, navigate }) {
                 onClick={() => navigate(`/customers/${customer.id}`)}
                 type="button"
               >
-                Open
+                Open customer
               </button>
             ) : null}
           </div>
@@ -377,17 +365,73 @@ function NotificationsList({ navigate, notifications }) {
     );
   }
   return (
-    <div className="dashboard-notification-list">
-      {notifications.latest.slice(0, 4).map((notification) => (
-        <article className="dashboard-notification-row" key={notification.id}>
+    <div className="dashboard-notification-list dashboard-notification-list-compact">
+      {notifications.latest.slice(0, 3).map((notification) => (
+        <article className="dashboard-notification-row dashboard-notification-row-compact" key={notification.id}>
           <span className={notification.isRead ? "read-dot read" : "read-dot"} />
           <div className="dashboard-notification-body">
             <strong>{notification.title}</strong>
-            <p>{notification.message}</p>
           </div>
         </article>
       ))}
     </div>
+  );
+}
+
+function TodaysFocus({ formatMoney, navigate, overdueCount, receivablesTotal, draftCount }) {
+  const isAllClear = !overdueCount && !receivablesTotal && !draftCount;
+
+  return (
+    <section className="panel-block dashboard-focus-panel" aria-label="Today's focus">
+      <SectionHeader
+        hint="What needs your attention now"
+        title="Today's focus"
+      />
+      {isAllClear ? (
+        <p className="dashboard-focus-empty">You're all caught up.</p>
+      ) : (
+        <div className="dashboard-focus-grid">
+          <button
+            className="dashboard-focus-tile"
+            data-tone={overdueCount ? "alert" : "calm"}
+            onClick={() =>
+              typeof navigate === "function" ? navigate("/reports/receivables") : null
+            }
+            type="button"
+          >
+            <span className="dashboard-focus-label">Overdue invoices</span>
+            <strong className="dashboard-focus-value">{overdueCount}</strong>
+            <span className="dashboard-focus-hint">
+              {overdueCount ? "Review and follow up" : "Nothing past due"}
+            </span>
+          </button>
+          <button
+            className="dashboard-focus-tile"
+            data-tone="info"
+            onClick={() =>
+              typeof navigate === "function" ? navigate("/reports/receivables") : null
+            }
+            type="button"
+          >
+            <span className="dashboard-focus-label">Total receivables</span>
+            <strong className="dashboard-focus-value">{formatMoney(receivablesTotal)}</strong>
+            <span className="dashboard-focus-hint">Open balance to collect</span>
+          </button>
+          <button
+            className="dashboard-focus-tile"
+            data-tone={draftCount ? "warn" : "calm"}
+            onClick={() => (typeof navigate === "function" ? navigate("/invoices") : null)}
+            type="button"
+          >
+            <span className="dashboard-focus-label">Draft invoices</span>
+            <strong className="dashboard-focus-value">{draftCount}</strong>
+            <span className="dashboard-focus-hint">
+              {draftCount ? "Send them when ready" : "No drafts pending"}
+            </span>
+          </button>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -449,14 +493,15 @@ function DashboardScreen({ navigate }) {
   const recentPayments = dashboard.insights?.recentPayments || [];
   const overdueCount = aggregates.receivables?.overdueInvoiceCount ?? overdueInvoices.length;
   const openInvoiceCount = aggregates.receivables?.openInvoiceCount ?? 0;
+  const receivablesTotal =
+    aggregates.receivables?.outstandingTotal ?? summary.outstandingReceivables ?? 0;
+  const draftInvoiceCount = aggregates.invoices?.byStatus?.draft ?? 0;
 
   const planCode =
     subscription?.plan || subscription?.currentPlan || subscription?.basePlan;
-  const planTone = PLAN_TONES[planCode] || "violet";
   const planValue = isSubscriptionLoading ? "…" : planLabel(planCode);
   const subscriptionStatus = subscription?.subscriptionStatus || subscription?.status;
   const planStatus = planStatusLabel(subscriptionStatus);
-  const planCycleText = subscription ? billingCycleLabel(subscription.billingCycle) : "";
   const isTrial = subscriptionStatus === "trial";
   const isEnded = subscriptionStatus === "cancelled" || subscriptionStatus === "canceled";
   const isPastDue = subscriptionStatus === "past_due";
@@ -496,11 +541,11 @@ function DashboardScreen({ navigate }) {
         <KpiCard
           tone="success"
           icon={ICONS.revenue}
-          label="Revenue"
+          label="Sales this month"
           value={formatMoney(summary.revenueCollected || 0)}
           hint={
             summary.outstandingReceivables > 0
-              ? `${formatMoney(summary.outstandingReceivables)} outstanding`
+              ? `${formatMoney(summary.outstandingReceivables)} to collect`
               : "Everything collected"
           }
         />
@@ -519,25 +564,33 @@ function DashboardScreen({ navigate }) {
           hint={`${openInvoiceCount} open · ${overdueCount} overdue`}
         />
         <KpiCard
-          tone={planTone}
+          tone="neutral"
           icon={ICONS.subscriptions}
           label="Plan"
           value={planValue}
           meta={
-            subscription ? (
+            planStatus ? (
               <span className="kpi-card-meta-row">
-                <span className="kpi-card-chip">{planCycleText}</span>
-                {planStatus ? (
-                  <span className="kpi-card-chip" data-status={subscription?.subscriptionStatus || subscription?.status}>
-                    {planStatus}
-                  </span>
-                ) : null}
+                <span
+                  className="kpi-card-chip"
+                  data-status={subscription?.subscriptionStatus || subscription?.status}
+                >
+                  {planStatus}
+                </span>
               </span>
             ) : null
           }
           hint={planRenewalLabel}
         />
       </section>
+
+      <TodaysFocus
+        draftCount={draftInvoiceCount}
+        formatMoney={formatMoney}
+        navigate={navigate}
+        overdueCount={overdueCount}
+        receivablesTotal={receivablesTotal}
+      />
 
       <section className="dashboard-insights-grid">
         <div className="panel-block dashboard-wide-panel">
@@ -550,7 +603,7 @@ function DashboardScreen({ navigate }) {
               ) : null
             }
             hint="Quotations, orders, invoices, and payments"
-            title="Recent activity"
+            title="Recent transactions"
           />
           <ActivityFeed
             formatDate={formatDate}

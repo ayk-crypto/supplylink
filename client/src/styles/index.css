@@ -7704,6 +7704,111 @@ body {
   .dashboard-header-actions .primary-button,
   .dashboard-header-actions .secondary-button { flex: 1; min-width: 120px; }
 }
+
+/* Today's Focus panel — quick glance at things needing action today.
+   Three tiles laid out in a row; each tile is a button so the entire
+   surface is clickable and routes to the relevant screen. Tone tints
+   the left-edge accent and value color without shouting visually. */
+.dashboard-page.dashboard-v2 .dashboard-focus-panel {
+  display: grid;
+  gap: 14px;
+}
+.dashboard-page.dashboard-v2 .dashboard-focus-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 720px) {
+  .dashboard-page.dashboard-v2 .dashboard-focus-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.dashboard-page.dashboard-v2 .dashboard-focus-tile {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  text-align: left;
+  background: var(--surface, #fff);
+  border: 1px solid rgba(15, 35, 28, 0.08);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+  --focus-tone: #4b5b56;
+  --focus-bg: rgba(75, 91, 86, 0.08);
+  overflow: hidden;
+}
+.dashboard-page.dashboard-v2 .dashboard-focus-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--focus-tone);
+  opacity: 0.85;
+}
+.dashboard-page.dashboard-v2 .dashboard-focus-tile:hover {
+  transform: translateY(-1px);
+  border-color: rgba(15, 35, 28, 0.16);
+  box-shadow: 0 1px 2px rgba(15, 35, 28, 0.04),
+              0 12px 24px -16px rgba(15, 35, 28, 0.22);
+}
+.dashboard-page.dashboard-v2 .dashboard-focus-tile[data-tone="alert"] {
+  --focus-tone: #a23535;
+  --focus-bg: rgba(162, 53, 53, 0.10);
+}
+.dashboard-page.dashboard-v2 .dashboard-focus-tile[data-tone="warn"] {
+  --focus-tone: #b35c1e;
+  --focus-bg: rgba(179, 92, 30, 0.10);
+}
+.dashboard-page.dashboard-v2 .dashboard-focus-tile[data-tone="info"] {
+  --focus-tone: #2557b7;
+  --focus-bg: rgba(37, 87, 183, 0.10);
+}
+.dashboard-page.dashboard-v2 .dashboard-focus-tile[data-tone="calm"] {
+  --focus-tone: #1d7a46;
+  --focus-bg: rgba(29, 122, 70, 0.08);
+}
+.dashboard-page.dashboard-v2 .dashboard-focus-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted, #5b6b66);
+}
+.dashboard-page.dashboard-v2 .dashboard-focus-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--focus-tone);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+.dashboard-page.dashboard-v2 .dashboard-focus-hint {
+  font-size: 0.78rem;
+  color: var(--muted, #5b6b66);
+}
+.dashboard-page.dashboard-v2 .dashboard-focus-empty {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(29, 122, 70, 0.08);
+  color: #1d7a46;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* Compact notifications variant — title only, tighter spacing */
+.dashboard-page.dashboard-v2 .dashboard-notification-list-compact {
+  gap: 4px;
+}
+.dashboard-page.dashboard-v2 .dashboard-notification-row-compact {
+  padding: 8px 0;
+}
+.dashboard-page.dashboard-v2 .dashboard-notification-row-compact .dashboard-notification-body strong {
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
 /* === end Module 27 ============================================== */
 
 /* === Module 28 — Admin Billing redesign ============================ */
