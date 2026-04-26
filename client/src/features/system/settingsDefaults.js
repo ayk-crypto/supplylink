@@ -21,7 +21,7 @@ const DEFAULT_SETTINGS = {
     defaultNotes: ""
   },
   currency: {
-    code: "USD",
+    code: "PKR",
     decimals: 2,
     thousandsSeparator: ","
   },
@@ -153,7 +153,7 @@ function buildInvoicePayload(invoice) {
 function buildCurrencyPayload(currency) {
   if (!currency || typeof currency !== "object") return null;
   const codeRaw = trimString(currency.code, 3);
-  const code = /^[A-Za-z]{3}$/.test(codeRaw) ? codeRaw.toUpperCase() : "USD";
+  const code = /^[A-Za-z]{3}$/.test(codeRaw) ? codeRaw.toUpperCase() : "PKR";
   const sepRaw = typeof currency.thousandsSeparator === "string"
     ? currency.thousandsSeparator
     : ",";

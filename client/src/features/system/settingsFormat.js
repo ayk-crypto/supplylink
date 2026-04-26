@@ -6,7 +6,7 @@ const CURRENCY_SYMBOLS = {
   GBP: "£",
   INR: "₹",
   AED: "د.إ",
-  PKR: "₨",
+  PKR: "Rs ",
   JPY: "¥"
 };
 
