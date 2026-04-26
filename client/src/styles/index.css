@@ -9097,30 +9097,51 @@ body {
   gap: 16px;
 }
 
-/* Anchor the "+ Create Vendor" action to the right of the header card,
-   vertically centered with the title block (avoids the small compact
-   button floating awkwardly in the very top-right corner). */
+/* Header layout — copy block grows to claim space, action pinned right
+   and vertically centered with the title. Overrides the global
+   `flex-wrap: wrap` on .page-header so items don't collapse oddly. */
 .admin-vendors-page .page-header {
   align-items: center;
   flex-wrap: nowrap;
+  gap: 24px;
+}
+
+.admin-vendors-page .page-header-copy {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .admin-vendors-page .page-header-action {
-  align-self: center;
   flex: 0 0 auto;
+  align-self: center;
+  margin-left: auto;
 }
 
-.admin-vendors-page .page-header-action .primary-button {
+.admin-vendors-page .admin-vendors-create-button {
   white-space: nowrap;
+  padding: 12px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(15, 123, 99, 0.18);
 }
 
-/* On narrow screens, let the header stack and the button span full width */
+.admin-vendors-page .admin-vendors-create-button:hover:not(:disabled) {
+  box-shadow: 0 8px 20px rgba(15, 123, 99, 0.24);
+  transform: translateY(-1px);
+}
+
+/* On narrow screens, stack action below the copy and span full width */
 @media (max-width: 720px) {
   .admin-vendors-page .page-header {
+    flex-wrap: wrap;
     align-items: stretch;
   }
-  .admin-vendors-page .page-header-action,
-  .admin-vendors-page .page-header-action .primary-button {
+  .admin-vendors-page .page-header-action {
+    margin-left: 0;
+    width: 100%;
+  }
+  .admin-vendors-page .admin-vendors-create-button {
     width: 100%;
   }
 }

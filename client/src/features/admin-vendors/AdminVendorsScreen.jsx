@@ -430,7 +430,11 @@ function AdminVendorsScreen() {
     <div className="resource-page admin-vendors-page">
       <PageHeader
         action={
-          <button className="primary-button compact" onClick={openCreateForm} type="button">
+          <button
+            className="primary-button admin-vendors-create-button"
+            onClick={openCreateForm}
+            type="button"
+          >
             + Create Vendor
           </button>
         }
