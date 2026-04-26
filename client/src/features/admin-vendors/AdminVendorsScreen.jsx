@@ -223,18 +223,39 @@ function AdminVendorsScreen() {
       const activeVendors = activeResponse.data?.pagination?.totalItems ?? 0;
 
       const subscriptions = subsResponse.data?.items || [];
+      const PAID_PLAN_CODES = new Set(["basic", "pro", "custom"]);
       let trialCount = 0;
       let paidCount = 0;
       const seenPaidVendors = new Set();
       const seenTrialVendors = new Set();
       subscriptions.forEach((subscription) => {
-        const status = subscription.status || subscription.subscriptionStatus;
+        const status = subscription.subscriptionStatus || subscription.status || null;
+        const planCode =
+          subscription.currentPlan ||
+          subscription.basePlan ||
+          subscription.planCode ||
+          subscription.plan ||
+          null;
         const vendorId = subscription.vendor?.id || subscription.vendorId;
         if (!vendorId) return;
-        if (status === "trialing" && !seenTrialVendors.has(vendorId)) {
+
+        const isPaidPlan = PAID_PLAN_CODES.has(planCode);
+        const isTrialStatus = status === "trial";
+        const isActiveStatus = status === "active";
+
+        // Trial Vendors → only subscriptions in "trial" status
+        if (isTrialStatus && !seenTrialVendors.has(vendorId)) {
           seenTrialVendors.add(vendorId);
           trialCount += 1;
-        } else if ((status === "active" || status === "past_due") && !seenPaidVendors.has(vendorId)) {
+        }
+
+        // Paid Vendors → must be on a paid plan (basic/pro/custom)
+        // AND have an active or trial subscription. Free plans never count.
+        if (
+          isPaidPlan &&
+          (isActiveStatus || isTrialStatus) &&
+          !seenPaidVendors.has(vendorId)
+        ) {
           seenPaidVendors.add(vendorId);
           paidCount += 1;
         }

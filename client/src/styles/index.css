@@ -9097,6 +9097,16 @@ body {
   gap: 16px;
 }
 
+/* Anchor the "+ Create Vendor" action to top-right of the header card */
+.admin-vendors-page .page-header {
+  align-items: flex-start;
+}
+
+.admin-vendors-page .page-header-action {
+  align-self: flex-start;
+  margin-left: auto;
+}
+
 /* KPI strip */
 .admin-vendors-page .admin-vendors-kpis {
   display: grid;
