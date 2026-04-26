@@ -152,14 +152,12 @@ function VendorDetailEngagement({ vendor }) {
   );
 }
 
-function VendorDetailModal({ vendor, onClose }) {
+function VendorDetailModal({ vendor, onClose, navigate }) {
   const { showToast } = useToast();
   const [tempPassword, setTempPassword] = useState(null);
-  const [isConfirmingSuspend, setIsConfirmingSuspend] = useState(false);
 
   if (!vendor) return null;
 
-  const vendorLabel = vendor.displayName || vendor.legalName || "this vendor";
   const planCode = vendor.plan || "free";
   const billingCycle = vendor.billingCycle || vendor.subscription?.billingCycle || null;
   const periodEnd = vendor.currentPeriodEnd || vendor.subscription?.currentPeriodEnd || null;
@@ -169,7 +167,7 @@ function VendorDetailModal({ vendor, onClose }) {
     vendor.subscription?.lastPaymentAt ||
     null;
 
-  const handleResetPassword = () => {
+  const handleGenerateTempPassword = () => {
     setTempPassword(generateTemporaryPassword(14));
   };
 
@@ -195,15 +193,12 @@ function VendorDetailModal({ vendor, onClose }) {
     }
   };
 
-  const handleLoginAsVendor = () => {
-    showToast({
-      title: "Coming soon",
-      message: `Impersonation for ${vendorLabel} will be available in a future release.`,
-      tone: "info"
-    });
-  };
-
   const handleManageBilling = () => {
+    if (typeof navigate === "function") {
+      navigate("/admin/billing");
+      onClose?.();
+      return;
+    }
     showToast({
       title: "Manage billing",
       message: "Open the Admin Billing page from the sidebar to manage subscriptions.",
@@ -211,14 +206,7 @@ function VendorDetailModal({ vendor, onClose }) {
     });
   };
 
-  const handleConfirmSuspend = () => {
-    setIsConfirmingSuspend(false);
-    showToast({
-      title: "Coming soon",
-      message: `Suspension for ${vendorLabel} will be available in a future release.`,
-      tone: "warning"
-    });
-  };
+  const vendorLabel = vendor.displayName || vendor.legalName || "Vendor";
 
   return (
     <div
@@ -236,18 +224,18 @@ function VendorDetailModal({ vendor, onClose }) {
         <header className="admin-vendors-detail-head">
           <div className="admin-vendors-detail-head-main">
             <div className="admin-vendors-detail-head-title">
-              <h2>{vendor.displayName || vendor.legalName || "Vendor"}</h2>
+              <h2>{vendorLabel}</h2>
               <StatusPill
                 label={formatToken(vendor.status)}
                 status={vendor.status}
                 tone={VENDOR_STATUS_TONES[vendor.status] || "neutral"}
               />
             </div>
-            <p>{vendor.slug || "—"}</p>
+            <p className="admin-vendors-detail-head-slug">{vendor.slug || "—"}</p>
           </div>
           <button
             aria-label="Close vendor details"
-            className="link-button"
+            className="admin-vendors-detail-close"
             onClick={onClose}
             type="button"
           >
@@ -262,14 +250,8 @@ function VendorDetailModal({ vendor, onClose }) {
             </h3>
             <dl className="admin-vendors-detail-grid">
               <div className="admin-vendors-detail-row">
-                <dt>Status</dt>
-                <dd>
-                  <StatusPill
-                    label={formatToken(vendor.status)}
-                    status={vendor.status}
-                    tone={VENDOR_STATUS_TONES[vendor.status] || "neutral"}
-                  />
-                </dd>
+                <dt>Display name</dt>
+                <dd>{vendor.displayName || "—"}</dd>
               </div>
               <div className="admin-vendors-detail-row">
                 <dt>Legal name</dt>
@@ -277,7 +259,7 @@ function VendorDetailModal({ vendor, onClose }) {
               </div>
               <div className="admin-vendors-detail-row">
                 <dt>Slug</dt>
-                <dd>{vendor.slug || "—"}</dd>
+                <dd className="admin-vendors-detail-mono">{vendor.slug || "—"}</dd>
               </div>
             </dl>
           </section>
@@ -381,7 +363,9 @@ function VendorDetailModal({ vendor, onClose }) {
                 role="status"
                 aria-live="polite"
               >
-                <div className="admin-vendors-detail-password-label">Temporary password</div>
+                <div className="admin-vendors-detail-password-label">
+                  Generated password (not applied)
+                </div>
                 <div className="admin-vendors-detail-password-value">
                   <code>{tempPassword}</code>
                   <button
@@ -393,78 +377,32 @@ function VendorDetailModal({ vendor, onClose }) {
                   </button>
                 </div>
                 <p className="admin-vendors-detail-password-hint">
-                  Share this with the vendor securely. It will not be shown again after you
-                  close this dialog.
+                  This is a suggested temporary password. It is not saved or applied to the
+                  vendor's account — set it through your normal password-reset flow.
                 </p>
-              </div>
-            ) : null}
-
-            {isConfirmingSuspend ? (
-              <div
-                className="admin-vendors-detail-confirm"
-                role="alertdialog"
-                aria-label="Confirm suspend vendor"
-              >
-                <p>
-                  Suspend <strong>{vendorLabel}</strong>? They will lose access until reactivated.
-                </p>
-                <div className="admin-vendors-detail-confirm-actions">
-                  <button
-                    className="secondary-button compact"
-                    onClick={() => setIsConfirmingSuspend(false)}
-                    type="button"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    className="admin-vendors-detail-danger-button"
-                    onClick={handleConfirmSuspend}
-                    type="button"
-                  >
-                    Yes, suspend
-                  </button>
-                </div>
               </div>
             ) : null}
 
             <div className="admin-vendors-detail-action-row">
               <button
                 className="primary-button compact"
-                onClick={handleLoginAsVendor}
-                type="button"
-              >
-                Login as Vendor
-              </button>
-              <button
-                className="secondary-button compact"
-                onClick={handleResetPassword}
-                type="button"
-              >
-                Reset Password
-              </button>
-              <button
-                className="secondary-button compact"
                 onClick={handleManageBilling}
                 type="button"
               >
                 Manage Billing
               </button>
-            </div>
-
-            <div className="admin-vendors-detail-danger-zone">
-              <div className="admin-vendors-detail-danger-zone-copy">
-                <strong>Danger zone</strong>
-                <p>Suspending blocks this vendor's access until reactivated.</p>
-              </div>
               <button
-                className="admin-vendors-detail-danger-button"
-                onClick={() => setIsConfirmingSuspend(true)}
+                className="secondary-button compact"
+                onClick={handleGenerateTempPassword}
                 type="button"
-                disabled={isConfirmingSuspend}
               >
-                Suspend Vendor
+                Generate Temporary Password
               </button>
             </div>
+
+            <p className="admin-vendors-detail-actions-note">
+              Support tools can be expanded later for impersonation and account suspension.
+            </p>
           </section>
         </div>
       </aside>
@@ -472,7 +410,7 @@ function VendorDetailModal({ vendor, onClose }) {
   );
 }
 
-function AdminVendorsScreen() {
+function AdminVendorsScreen({ navigate }) {
   const { showToast } = useToast();
   const [vendors, setVendors] = useState([]);
   const [pagination, setPagination] = useState(null);
@@ -897,6 +835,7 @@ function AdminVendorsScreen() {
           key={viewingVendor.id || viewingVendor.slug || "vendor-detail"}
           vendor={viewingVendor}
           onClose={() => setViewingVendor(null)}
+          navigate={navigate}
         />
       ) : null}
 
