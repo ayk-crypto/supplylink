@@ -15,6 +15,14 @@ import { createAdminVendor, listAdminVendors } from "../../services/adminVendors
 import { listAdminSubscriptions } from "../../services/adminBillingApi.js";
 import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage, isValidEmail } from "../master-data/resourceUtils.js";
+import {
+  ENGAGEMENT_FILTER_OPTIONS,
+  ENGAGEMENT_LABELS,
+  ENGAGEMENT_TONES,
+  classifyEngagement,
+  formatLastActivity,
+  getLastActivityDate
+} from "../../utils/engagement.js";
 
 const VENDOR_STATUS_TONES = {
   active: "success",
@@ -44,6 +52,19 @@ const INITIAL_KPIS = {
   paidCount: 0,
   loaded: false
 };
+
+function EngagementBadge({ engagement }) {
+  const key = engagement || "active";
+  return (
+    <span
+      className="admin-vendors-engagement-badge"
+      data-engagement={key}
+      data-tone={ENGAGEMENT_TONES[key] || "neutral"}
+    >
+      {ENGAGEMENT_LABELS[key] || "Active"}
+    </span>
+  );
+}
 
 function formatToken(value) {
   return String(value || "")
@@ -164,6 +185,15 @@ function VendorDetailModal({ vendor, onClose }) {
             <dt>Created</dt>
             <dd>{formatDateShort(vendor.createdAt)}</dd>
           </div>
+          <div className="admin-vendors-detail-row">
+            <dt>Last activity</dt>
+            <dd>
+              {formatLastActivity(getLastActivityDate(vendor))}
+              <span style={{ marginLeft: 8 }}>
+                <EngagementBadge engagement={classifyEngagement(vendor)} />
+              </span>
+            </dd>
+          </div>
         </dl>
       </aside>
     </div>
@@ -183,6 +213,7 @@ function AdminVendorsScreen() {
   const [page, setPage] = useState(1);
   const [searchDraft, setSearchDraft] = useState("");
   const [filters, setFilters] = useState({ search: "", status: "" });
+  const [engagementFilter, setEngagementFilter] = useState("all");
   const [form, setForm] = useState(INITIAL_FORM);
   const [kpis, setKpis] = useState(INITIAL_KPIS);
   const [viewingVendor, setViewingVendor] = useState(null);
@@ -195,6 +226,21 @@ function AdminVendorsScreen() {
     }),
     [filters, page]
   );
+
+  const decoratedVendors = useMemo(
+    () =>
+      vendors.map((vendor) => ({
+        ...vendor,
+        engagement: classifyEngagement(vendor),
+        lastActivityAt: getLastActivityDate(vendor)
+      })),
+    [vendors]
+  );
+
+  const visibleVendors = useMemo(() => {
+    if (engagementFilter === "all") return decoratedVendors;
+    return decoratedVendors.filter((vendor) => vendor.engagement === engagementFilter);
+  }, [decoratedVendors, engagementFilter]);
 
   const loadVendors = useCallback(async () => {
     setIsLoading(true);
@@ -429,6 +475,17 @@ function AdminVendorsScreen() {
               <option value="suspended">Suspended</option>
               <option value="archived">Archived</option>
             </select>
+            <select
+              aria-label="Filter by engagement"
+              onChange={(event) => setEngagementFilter(event.target.value)}
+              value={engagementFilter}
+            >
+              {ENGAGEMENT_FILTER_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </Toolbar>
 
           {!vendors.length ? (
@@ -444,7 +501,13 @@ function AdminVendorsScreen() {
             </EmptyState>
           ) : null}
 
-          {vendors.length ? (
+          {vendors.length && !visibleVendors.length ? (
+            <EmptyState title="No vendors match this filter">
+              Try a different engagement filter to see more vendors.
+            </EmptyState>
+          ) : null}
+
+          {visibleVendors.length ? (
             <>
               <TableScroll>
                 <div className="resource-table">
@@ -453,10 +516,15 @@ function AdminVendorsScreen() {
                     <span>Admin email</span>
                     <span>Status</span>
                     <span>Plan</span>
+                    <span>Last activity</span>
                     <span className="admin-vendors-actions-head">Actions</span>
                   </div>
-                  {vendors.map((vendor) => (
-                    <article className="resource-row admin-vendors-grid" key={vendor.id}>
+                  {visibleVendors.map((vendor) => (
+                    <article
+                      className="resource-row admin-vendors-grid"
+                      data-engagement={vendor.engagement}
+                      key={vendor.id}
+                    >
                       <div className="admin-vendors-name">
                         <strong>{vendor.displayName || vendor.legalName}</strong>
                         <small>{vendor.slug}</small>
@@ -474,6 +542,10 @@ function AdminVendorsScreen() {
                       </div>
                       <div>
                         <PlanBadge plan={vendor.plan} />
+                      </div>
+                      <div className="admin-vendors-activity">
+                        <strong>{formatLastActivity(vendor.lastActivityAt)}</strong>
+                        <EngagementBadge engagement={vendor.engagement} />
                       </div>
                       <div className="admin-vendors-actions-cell">
                         <button

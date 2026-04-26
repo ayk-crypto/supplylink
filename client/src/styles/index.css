@@ -9153,13 +9153,14 @@ body {
   }
 }
 
-/* Vendor table — 5 column grid with Actions */
+/* Vendor table — 6 column grid with Last Activity + Actions */
 .admin-vendors-page .admin-vendors-grid {
   grid-template-columns:
-    minmax(220px, 1.4fr)
-    minmax(220px, 1.3fr)
-    minmax(110px, 0.55fr)
+    minmax(200px, 1.3fr)
+    minmax(200px, 1.2fr)
     minmax(100px, 0.5fr)
+    minmax(90px, 0.45fr)
+    minmax(150px, 0.7fr)
     minmax(80px, 0.4fr);
 }
 
@@ -9269,14 +9270,15 @@ body {
   font-weight: 500;
 }
 
-/* Responsive table — stack on small */
-@media (max-width: 760px) {
+/* Responsive table — tighter columns on small */
+@media (max-width: 980px) {
   .admin-vendors-page .admin-vendors-grid {
     grid-template-columns:
-      minmax(180px, 1.2fr)
-      minmax(180px, 1.2fr)
-      minmax(100px, 0.55fr)
-      minmax(90px, 0.45fr)
+      minmax(160px, 1.2fr)
+      minmax(160px, 1.1fr)
+      minmax(90px, 0.5fr)
+      minmax(80px, 0.4fr)
+      minmax(130px, 0.6fr)
       minmax(70px, 0.35fr);
   }
 }
@@ -9354,3 +9356,114 @@ body {
   word-break: break-word;
 }
 /* === end Module 33 ============================================== */
+
+/* === Module 34 — Dormant Vendor System (admin only, scoped) ===== */
+
+/* Dashboard: ensure 5-col KPI grid even with Module 32 override */
+.admin-dashboard-page .admin-dashboard-kpi-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+}
+
+@media (max-width: 1280px) {
+  .admin-dashboard-page .admin-dashboard-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .admin-dashboard-page .admin-dashboard-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-dashboard-page .admin-dashboard-kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Danger-tone KPI card for Dormant */
+.admin-dashboard-page .kpi-card[data-tone="danger"] {
+  box-shadow: inset 3px 0 0 #b91c1c, 0 6px 18px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.admin-dashboard-page .kpi-card[data-tone="danger"] .kpi-card-icon {
+  color: #b91c1c;
+  background: rgba(185, 28, 28, 0.1);
+}
+
+/* Vendors page: Last Activity column layout */
+.admin-vendors-page .admin-vendors-activity {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.admin-vendors-page .admin-vendors-activity strong {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+/* Engagement badge — small pill (scoped to admin vendors surfaces) */
+.admin-vendors-page .admin-vendors-engagement-badge,
+.admin-vendors-detail-panel .admin-vendors-engagement-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  border: 1px solid transparent;
+}
+
+.admin-vendors-page .admin-vendors-engagement-badge[data-engagement="active"],
+.admin-vendors-detail-panel .admin-vendors-engagement-badge[data-engagement="active"] {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+  border-color: rgba(34, 197, 94, 0.25);
+}
+
+.admin-vendors-page .admin-vendors-engagement-badge[data-engagement="at_risk"],
+.admin-vendors-detail-panel .admin-vendors-engagement-badge[data-engagement="at_risk"] {
+  background: rgba(234, 179, 8, 0.16);
+  color: #a16207;
+  border-color: rgba(234, 179, 8, 0.3);
+}
+
+.admin-vendors-page .admin-vendors-engagement-badge[data-engagement="dormant"],
+.admin-vendors-detail-panel .admin-vendors-engagement-badge[data-engagement="dormant"] {
+  background: rgba(239, 68, 68, 0.14);
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* Row tinting by engagement */
+.admin-vendors-page .resource-row.admin-vendors-grid[data-engagement="at_risk"] {
+  background: rgba(254, 249, 195, 0.55);
+  box-shadow: inset 3px 0 0 #eab308;
+}
+
+.admin-vendors-page .resource-row.admin-vendors-grid[data-engagement="at_risk"]:hover {
+  background: rgba(254, 240, 138, 0.7);
+}
+
+.admin-vendors-page .resource-row.admin-vendors-grid[data-engagement="dormant"] {
+  background: rgba(254, 226, 226, 0.6);
+  box-shadow: inset 3px 0 0 #ef4444;
+}
+
+.admin-vendors-page .resource-row.admin-vendors-grid[data-engagement="dormant"]:hover {
+  background: rgba(254, 202, 202, 0.7);
+}
+
+/* Engagement filter dropdown — match status select sizing */
+.admin-vendors-page .resource-toolbar select[aria-label="Filter by engagement"] {
+  flex: 0 0 auto;
+}
+/* === end Module 34 ============================================== */

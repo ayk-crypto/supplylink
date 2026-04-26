@@ -8,6 +8,7 @@ import {
 } from "../../components/ui/ResourceScreens.jsx";
 import StatusPill from "../../components/ui/StatusPill.jsx";
 import { listAdminVendors } from "../../services/adminVendorsApi.js";
+import { classifyEngagement } from "../../utils/engagement.js";
 import {
   listAdminSubscriptions,
   listBillingPayments,
@@ -17,7 +18,7 @@ import { useAppSettings } from "../system/settingsContext.js";
 import { formatDateWith, formatMoneyWith } from "../system/settingsFormat.js";
 import { getApiErrorMessage } from "../master-data/resourceUtils.js";
 
-const VENDORS_PAGE_SIZE = 25;
+const VENDORS_PAGE_SIZE = 100;
 const SUBS_PAGE_SIZE = 100;
 const PAYMENTS_PAGE_SIZE = 100;
 
@@ -72,6 +73,14 @@ const ICONS = {
     <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M10 3v14" />
       <path d="M13.5 6.5c-.7-1-2.1-1.5-3.5-1.5s-3 .7-3 2.2c0 1.5 1.5 2 3.3 2.4 1.7.4 3.2 1 3.2 2.5 0 1.5-1.6 2.4-3.5 2.4-1.5 0-3-.6-3.5-1.7" />
+    </svg>
+  ),
+  dormant: (
+    <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="10" cy="10" r="7" />
+      <path d="M7.5 12c.8-1 1.7-1.5 2.5-1.5s1.7.5 2.5 1.5" />
+      <path d="M7.5 8h.01" />
+      <path d="M12.5 8h.01" />
     </svg>
   )
 };
@@ -414,6 +423,11 @@ function AdminDashboardScreen({ navigate }) {
       if (status === "active" || status === "past_due") paidCount += 1;
     });
 
+    let dormantCount = 0;
+    (data.vendors || []).forEach((vendor) => {
+      if (classifyEngagement(vendor) === "dormant") dormantCount += 1;
+    });
+
     const payments = data.payments || [];
     const totalPaymentsAmount = payments
       .filter((p) => p.paymentStatus === "received")
@@ -446,6 +460,7 @@ function AdminDashboardScreen({ navigate }) {
     return {
       trialCount,
       paidCount,
+      dormantCount,
       totalPaymentsAmount,
       vendorRows,
       subsTruncated,
@@ -486,6 +501,14 @@ function AdminDashboardScreen({ navigate }) {
     : derived.subsTruncated
       ? `${derived.paidCount}+ active subscriptions`
       : `${derived.paidCount} active subscription${derived.paidCount === 1 ? "" : "s"}`;
+
+  const vendorsLoadedCount = (data.vendors || []).length;
+  const vendorsTruncated = data.totalVendors > vendorsLoadedCount;
+  const dormantHint = derived.dormantCount === 0
+    ? "No dormant vendors"
+    : vendorsTruncated
+      ? `${derived.dormantCount} of ${vendorsLoadedCount} sampled`
+      : `${derived.dormantCount} inactive 30+ days`;
 
   const paymentsHintBase = derived.paymentsTruncated
     ? `${data.paymentsTotal} payments recorded`
@@ -543,6 +566,13 @@ function AdminDashboardScreen({ navigate }) {
           label="Paid subscriptions"
           value={String(derived.paidCount)}
           hint={paidHint}
+        />
+        <KpiCard
+          tone="danger"
+          icon={ICONS.dormant}
+          label="Dormant vendors"
+          value={String(derived.dormantCount)}
+          hint={dormantHint}
         />
       </section>
 
