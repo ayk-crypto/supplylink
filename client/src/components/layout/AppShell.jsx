@@ -64,7 +64,7 @@ function AppShell({
     (membership) => membership.vendorId === user.currentVendorId
   );
   const roleLabel = user?.roleCodes?.join(", ") || "Team member";
-  const vendorName = activeVendor?.vendorDisplayName || "Selected workspace";
+  const vendorName = activeVendor?.vendorDisplayName || "Platform overview";
   const vendorSlug = activeVendor?.vendorSlug || user?.currentVendorId || "No workspace selected";
   const userInitials = getInitials(user?.fullName, "SL");
   const navGroups = useMemo(() => groupNavItems(navItems), [navItems]);

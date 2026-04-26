@@ -478,20 +478,29 @@ function AdminDashboardScreen({ navigate }) {
   }
 
   const trialHint = derived.trialCount > 0
-    ? `${derived.trialCount} in trial phase`
+    ? `${derived.trialCount} currently in trial`
     : "No trials in progress";
 
-  const paidHint = derived.subsTruncated
-    ? `Active or past-due in the first ${data.subscriptions.length}`
-    : "Active or past-due subscriptions";
+  const paidHint = derived.paidCount === 0
+    ? "No paid subscriptions yet"
+    : derived.subsTruncated
+      ? `${derived.paidCount}+ paid subscriptions`
+      : `${derived.paidCount} paid subscription${derived.paidCount === 1 ? "" : "s"}`;
 
   const paymentsHintBase = derived.paymentsTruncated
-    ? `From the first ${data.payments.length} of ${data.paymentsTotal} payments`
+    ? `${data.paymentsTotal} payments recorded`
     : data.paymentsTotal === 0
       ? "No payments recorded yet"
-      : `Across ${data.paymentsTotal} payment${data.paymentsTotal === 1 ? "" : "s"}`;
+      : `${data.paymentsTotal} payment${data.paymentsTotal === 1 ? "" : "s"} recorded`;
 
   const paymentsValuePrefix = derived.paymentsTruncated ? "≈ " : "";
+
+  const lastPaymentRecord = (data.payments || []).reduce((latest, payment) => {
+    const candidate = payment.paidAt || payment.createdAt;
+    if (!candidate) return latest;
+    if (!latest) return candidate;
+    return new Date(candidate) > new Date(latest) ? candidate : latest;
+  }, null);
 
   const inactiveVendors = Math.max(0, data.totalVendors - data.activeVendors);
   const activeVendorHint = data.totalVendors > 0
@@ -548,7 +557,15 @@ function AdminDashboardScreen({ navigate }) {
             <strong className="admin-dashboard-highlight-value">
               {paymentsValuePrefix}{formatMoney(derived.totalPaymentsAmount)}
             </strong>
-            <small className="admin-dashboard-highlight-hint">{paymentsHintBase}</small>
+            <small className="admin-dashboard-highlight-hint">
+              {paymentsHintBase}
+              {lastPaymentRecord ? (
+                <>
+                  <span className="admin-dashboard-highlight-sep" aria-hidden="true">·</span>
+                  Last payment {formatDate(lastPaymentRecord)}
+                </>
+              ) : null}
+            </small>
           </div>
           {typeof navigate === "function" ? (
             <button
@@ -622,11 +639,11 @@ function AdminDashboardScreen({ navigate }) {
           action={
             typeof navigate === "function" ? (
               <button
-                className="link-button"
+                className="secondary-button compact admin-dashboard-manage-vendors"
                 onClick={() => navigate("/admin/vendors")}
                 type="button"
               >
-                Manage vendors
+                Manage vendors →
               </button>
             ) : null
           }
