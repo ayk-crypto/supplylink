@@ -534,9 +534,10 @@ function AdminDashboardScreen({ navigate }) {
 
   const paymentsValuePrefix = derived.paymentsTruncated ? "≈ " : "";
 
-  const activeVendorPercent = data.totalVendors > 0
-    ? Math.round((data.activeVendors / data.totalVendors) * 100)
-    : 0;
+  const inactiveVendors = Math.max(0, data.totalVendors - data.activeVendors);
+  const activeVendorHint = data.totalVendors > 0
+    ? `${data.activeVendors} active / ${inactiveVendors} inactive`
+    : "Onboard a vendor to begin";
 
   return (
     <div className="dashboard-page dashboard-v2 admin-dashboard-page">
@@ -560,11 +561,7 @@ function AdminDashboardScreen({ navigate }) {
           icon={ICONS.active}
           label="Active vendors"
           value={String(data.activeVendors)}
-          hint={
-            data.totalVendors > 0
-              ? `${activeVendorPercent}% of all vendors`
-              : "Onboard a vendor to begin"
-          }
+          hint={activeVendorHint}
         />
         <KpiCard
           tone="warning"
