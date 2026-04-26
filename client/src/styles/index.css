@@ -7187,9 +7187,14 @@ body {
   justify-content: center;
   border-radius: 999px;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
+  line-height: 1;
+  text-align: center;
+  text-indent: 0;
   flex-shrink: 0;
   user-select: none;
+  padding: 0;
+  overflow: hidden;
 }
 .avatar-sm { width: 28px; height: 28px; font-size: 0.7rem; }
 .avatar-md { width: 36px; height: 36px; font-size: 0.78rem; }
