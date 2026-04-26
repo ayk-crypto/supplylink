@@ -7627,3 +7627,357 @@ body {
   .dashboard-header-actions .secondary-button { flex: 1; min-width: 120px; }
 }
 /* === end Module 27 ============================================== */
+
+/* === Module 28 — Admin Billing redesign ============================ */
+.admin-billing-page {
+  max-width: 1320px;
+  margin: 0 auto;
+  display: grid;
+  gap: 28px;
+}
+
+.admin-billing-page .ab-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 14px 32px -22px rgba(15, 23, 42, 0.18);
+  display: grid;
+  gap: 18px;
+}
+
+.admin-billing-page .ab-panel .resource-table {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* ----- Plan configuration cards ----- */
+.admin-billing-page .ab-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-billing-page .ab-plan-card {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 8px 22px -18px rgba(15, 23, 42, 0.18);
+  transition: box-shadow 160ms ease, transform 160ms ease;
+}
+
+.admin-billing-page .ab-plan-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  border-radius: 14px 14px 0 0;
+  background: var(--ab-tone, #94a3b8);
+}
+
+.admin-billing-page .ab-plan-card:hover {
+  box-shadow: 0 16px 32px -20px rgba(15, 23, 42, 0.22);
+  transform: translateY(-1px);
+}
+
+.admin-billing-page .ab-plan-card[data-tone="neutral"] { --ab-tone: #94a3b8; }
+.admin-billing-page .ab-plan-card[data-tone="info"]    { --ab-tone: #2563eb; }
+.admin-billing-page .ab-plan-card[data-tone="violet"]  { --ab-tone: #7c3aed; }
+.admin-billing-page .ab-plan-card[data-tone="success"] { --ab-tone: #16a34a; }
+
+.admin-billing-page .ab-plan-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.admin-billing-page .ab-plan-status {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.admin-billing-page .ab-plan-status.is-active {
+  color: #15803d;
+  background: rgba(22, 163, 74, 0.10);
+  border-color: rgba(22, 163, 74, 0.25);
+}
+
+.admin-billing-page .ab-plan-status.is-inactive {
+  color: #64748b;
+  background: rgba(100, 116, 139, 0.10);
+  border-color: rgba(100, 116, 139, 0.22);
+}
+
+.admin-billing-page .ab-plan-prices {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-billing-page .ab-plan-price {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.admin-billing-page .ab-plan-price-amount {
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.admin-billing-page .ab-plan-price-cycle {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.admin-billing-page .ab-plan-price-secondary .ab-plan-price-amount {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.admin-billing-page .ab-plan-limits {
+  list-style: none;
+  margin: 0;
+  padding: 14px 14px;
+  display: grid;
+  gap: 10px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.admin-billing-page .ab-plan-limits li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.9rem;
+}
+
+.admin-billing-page .ab-plan-limit-label {
+  color: var(--muted);
+}
+
+.admin-billing-page .ab-plan-limits strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.admin-billing-page .ab-plan-note {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.admin-billing-page .ab-plan-card .secondary-button.compact {
+  align-self: start;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+}
+
+/* ----- Plan badge (tone-aware) ----- */
+.admin-billing-page .ab-plan-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.admin-billing-page .ab-plan-badge[data-tone="neutral"] {
+  color: #475569;
+  background: rgba(100, 116, 139, 0.10);
+  border-color: rgba(100, 116, 139, 0.22);
+}
+.admin-billing-page .ab-plan-badge[data-tone="info"] {
+  color: #1d4ed8;
+  background: rgba(37, 99, 235, 0.10);
+  border-color: rgba(37, 99, 235, 0.22);
+}
+.admin-billing-page .ab-plan-badge[data-tone="violet"] {
+  color: #6d28d9;
+  background: rgba(124, 58, 237, 0.10);
+  border-color: rgba(124, 58, 237, 0.22);
+}
+.admin-billing-page .ab-plan-badge[data-tone="success"] {
+  color: #15803d;
+  background: rgba(22, 163, 74, 0.10);
+  border-color: rgba(22, 163, 74, 0.25);
+}
+
+/* ----- Subscriptions table ----- */
+.admin-billing-page .ab-subscriptions-grid {
+  grid-template-columns:
+    minmax(190px, 1.5fr)
+    minmax(140px, 1fr)
+    minmax(110px, 0.9fr)
+    minmax(90px, 0.7fr)
+    minmax(120px, 1fr)
+    minmax(150px, 1.1fr)
+    minmax(120px, 0.8fr);
+}
+
+.admin-billing-page .ab-cell-vendor {
+  display: grid;
+  gap: 2px;
+}
+.admin-billing-page .ab-cell-vendor strong {
+  color: var(--text);
+  font-weight: 600;
+}
+.admin-billing-page .ab-cell-vendor small {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.admin-billing-page .ab-cell-plan {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+}
+.admin-billing-page .ab-cell-plan small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.admin-billing-page .ab-cell-text {
+  color: var(--text);
+  font-size: 0.9rem;
+  align-self: center;
+}
+
+.admin-billing-page .ab-cell-amount strong {
+  color: var(--text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-billing-page .ab-cell-recorded {
+  display: grid;
+  gap: 2px;
+}
+.admin-billing-page .ab-cell-recorded strong {
+  font-weight: 600;
+  color: var(--text);
+}
+.admin-billing-page .ab-cell-recorded small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.admin-billing-page .row-actions .primary-button.compact,
+.admin-billing-page .button-row .primary-button.compact {
+  padding: 6px 14px;
+  font-size: 0.85rem;
+}
+
+/* ----- Payments / billing history table ----- */
+.admin-billing-page .ab-payments-grid {
+  grid-template-columns:
+    minmax(170px, 1.4fr)
+    minmax(120px, 0.9fr)
+    minmax(120px, 0.9fr)
+    minmax(110px, 0.9fr)
+    minmax(110px, 0.8fr)
+    minmax(170px, 1.2fr)
+    minmax(160px, 1.1fr);
+}
+
+/* ----- Payment form sections (scoped to admin billing payment modal) ----- */
+.ab-payment-form {
+  display: grid;
+  gap: 14px;
+}
+
+.ab-payment-form .ab-form-section {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.ab-payment-form .ab-form-section-title {
+  margin: 0 0 2px 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.ab-payment-form .ab-form-helper {
+  margin: 0;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  border-radius: 10px;
+  border: 1px solid transparent;
+}
+
+.ab-payment-form .ab-form-helper[data-tone="info"] {
+  color: #1d4ed8;
+  background: rgba(37, 99, 235, 0.08);
+  border-color: rgba(37, 99, 235, 0.20);
+}
+
+.ab-payment-form .ab-form-helper[data-tone="muted"] {
+  color: var(--muted);
+  background: transparent;
+  border-color: var(--border);
+}
+
+.ab-payment-form .ab-amount-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+}
+
+.ab-payment-form .ab-amount-input {
+  font-size: 1.1rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 1100px) {
+  .admin-billing-page .ab-plan-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .admin-billing-page {
+    gap: 20px;
+  }
+  .admin-billing-page .ab-panel {
+    padding: 18px;
+    border-radius: 14px;
+  }
+  .admin-billing-page .ab-plan-grid {
+    grid-template-columns: 1fr;
+  }
+  .ab-payment-form .ab-amount-row {
+    grid-template-columns: 1fr;
+  }
+}
+/* === end Module 28 ============================================== */

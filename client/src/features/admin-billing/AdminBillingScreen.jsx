@@ -23,8 +23,27 @@ import {
 import { useToast } from "../feedback/toastContext.js";
 import { getApiErrorMessage, toMoney } from "../master-data/resourceUtils.js";
 
-const FALLBACK_PLAN_OPTIONS = ["free", "basic", "pro", "custom"];
+const PLAN_ORDER = ["free", "basic", "pro", "custom"];
+const FALLBACK_PLAN_OPTIONS = PLAN_ORDER;
+const PLAN_TONES = {
+  free: "neutral",
+  basic: "info",
+  pro: "violet",
+  custom: "success"
+};
 const STATUS_OPTIONS = ["trial", "active", "expired", "cancelled"];
+const SUBSCRIPTION_STATUS_TONES = {
+  trial: "info",
+  active: "success",
+  expired: "warning",
+  cancelled: "danger"
+};
+const PAYMENT_STATUS_TONES = {
+  received: "success",
+  pending: "warning",
+  failed: "danger",
+  refunded: "neutral"
+};
 const BILLING_CYCLE_OPTIONS = ["monthly", "annual"];
 const PAYMENT_METHOD_OPTIONS = [
   "bank_transfer",
@@ -137,12 +156,32 @@ function getPlanBillingAmount(plans, planCode, billingCycle) {
 }
 
 function getPlanOptions(plans) {
-  return plans.length ? plans.map((plan) => plan.code) : FALLBACK_PLAN_OPTIONS;
+  if (!plans.length) {
+    return FALLBACK_PLAN_OPTIONS;
+  }
+  const codes = plans.map((plan) => plan.code);
+  return [...codes].sort((a, b) => {
+    const ai = PLAN_ORDER.indexOf(a);
+    const bi = PLAN_ORDER.indexOf(b);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
 }
 
 function getPlanLabel(plans, planCode) {
   const plan = plans.find((item) => item.code === planCode);
   return plan?.displayName || formatToken(planCode);
+}
+
+function getPlanTone(planCode) {
+  return PLAN_TONES[planCode] || "neutral";
+}
+
+function sortPlans(plans) {
+  return [...plans].sort((a, b) => {
+    const ai = PLAN_ORDER.indexOf(a.code);
+    const bi = PLAN_ORDER.indexOf(b.code);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
 }
 
 function buildPaymentDraft(amount = "0") {
@@ -158,6 +197,64 @@ function buildPaymentDraft(amount = "0") {
     paidAt: toDatetimeInputValue(new Date().toISOString()),
     notes: ""
   };
+}
+
+function PlanBadge({ plans, planCode }) {
+  if (!planCode) return <span className="ab-plan-badge" data-tone="neutral">—</span>;
+  return (
+    <span className="ab-plan-badge" data-tone={getPlanTone(planCode)}>
+      {getPlanLabel(plans, planCode)}
+    </span>
+  );
+}
+
+function PlanCard({ plan, onEdit }) {
+  const tone = getPlanTone(plan.code);
+  return (
+    <article className="ab-plan-card" data-tone={tone}>
+      <header className="ab-plan-card-head">
+        <span className="ab-plan-badge" data-tone={tone}>
+          {plan.displayName || formatToken(plan.code)}
+        </span>
+        <span
+          className={`ab-plan-status ${plan.isActive ? "is-active" : "is-inactive"}`}
+        >
+          {plan.isActive ? "Active" : "Inactive"}
+        </span>
+      </header>
+
+      <div className="ab-plan-prices">
+        <div className="ab-plan-price">
+          <span className="ab-plan-price-amount">{toMoney(plan.monthlyPrice)}</span>
+          <span className="ab-plan-price-cycle">/ month</span>
+        </div>
+        <div className="ab-plan-price ab-plan-price-secondary">
+          <span className="ab-plan-price-amount">{toMoney(plan.annualPrice)}</span>
+          <span className="ab-plan-price-cycle">/ year</span>
+        </div>
+      </div>
+
+      <ul className="ab-plan-limits">
+        <li>
+          <span className="ab-plan-limit-label">Customers</span>
+          <strong>{formatLimit(plan.maxCustomers)}</strong>
+        </li>
+        <li>
+          <span className="ab-plan-limit-label">Invoices / month</span>
+          <strong>{formatLimit(plan.maxInvoicesPerMonth)}</strong>
+        </li>
+      </ul>
+
+      <p className="ab-plan-note">
+        {plan.annualBenefit?.label ||
+          `Annual billing includes ${plan.annualFreeMonths ?? 3} free months`}
+      </p>
+
+      <button className="secondary-button compact" onClick={() => onEdit(plan)} type="button">
+        Edit plan
+      </button>
+    </article>
+  );
 }
 
 function AdminBillingScreen() {
@@ -186,6 +283,7 @@ function AdminBillingScreen() {
   const [isPaymentFormOpen, setIsPaymentFormOpen] = useState(false);
   const [paymentDraft, setPaymentDraft] = useState(buildPaymentDraft);
   const planOptions = useMemo(() => getPlanOptions(plans), [plans]);
+  const orderedPlans = useMemo(() => sortPlans(plans), [plans]);
 
   const query = useMemo(
     () => ({
@@ -380,12 +478,25 @@ function AdminBillingScreen() {
     }
   }
 
+  const selectedPaymentPlan = plans.find((plan) => plan.code === paymentDraft.planCode);
+  const annualFreeMonths = selectedPaymentPlan?.annualFreeMonths ?? 3;
+  const annualHelperText =
+    selectedPaymentPlan?.annualBenefit?.label ||
+    `Annual billing includes ${annualFreeMonths} free months.`;
+
   return (
-    <div className="resource-page">
+    <div className="resource-page admin-billing-page">
       <PageHeader
         description="Manage plan limits, billing cycles, periods, and vendor subscription state without payment gateway integration."
         eyebrow="Admin"
         title="Billing Control Panel"
+        action={
+          <div className="button-row">
+            <button className="primary-button compact" onClick={openPaymentForm} type="button">
+              Record payment
+            </button>
+          </div>
+        }
       />
 
       {error ? <ErrorState message={error} onRetry={loadBilling} /> : null}
@@ -393,32 +504,23 @@ function AdminBillingScreen() {
 
       {!isLoading ? (
         <>
-          <section className="transaction-panel">
-            <SectionHeader title="Editable plans" hint="Null limits are treated as unlimited." />
-            <div className="admin-plan-grid">
-              {plans.map((plan) => (
-                <article className="subscription-stat" key={plan.code}>
-                  <span>{plan.code}</span>
-                  <strong>{plan.displayName}</strong>
-                  <small>
-                    {toMoney(plan.monthlyPrice)} monthly / {toMoney(plan.annualPrice)} annual
-                  </small>
-                  <small>
-                    Customers: {formatLimit(plan.maxCustomers)}; invoices/month:{" "}
-                    {formatLimit(plan.maxInvoicesPerMonth)}
-                  </small>
-                  <small>{plan.isActive ? "Active" : "Inactive"}</small>
-                  <small>{plan.annualBenefit?.label || `Annual includes ${plan.annualFreeMonths} free months`}</small>
-                  <button className="secondary-button" onClick={() => openPlanEditor(plan)} type="button">
-                    Edit plan
-                  </button>
-                </article>
+          <section className="ab-panel">
+            <SectionHeader
+              title="Plan configuration"
+              hint="Pricing, limits, and trial benefits applied across all vendor workspaces."
+            />
+            <div className="ab-plan-grid">
+              {orderedPlans.map((plan) => (
+                <PlanCard key={plan.code} onEdit={openPlanEditor} plan={plan} />
               ))}
             </div>
           </section>
 
-          <section className="transaction-panel">
-            <SectionHeader title="Vendor subscriptions" hint="Search by vendor name, slug, or email." />
+          <section className="ab-panel">
+            <SectionHeader
+              title="Vendor subscriptions"
+              hint="Search by vendor name, slug, or email."
+            />
             <Toolbar onSubmit={submitFilters}>
               <input
                 onChange={(event) => setSearchDraft(event.target.value)}
@@ -450,7 +552,7 @@ function AdminBillingScreen() {
                 <option value="">All statuses</option>
                 {STATUS_OPTIONS.map((status) => (
                   <option key={status} value={status}>
-                    {status}
+                    {formatToken(status)}
                   </option>
                 ))}
               </select>
@@ -464,7 +566,7 @@ function AdminBillingScreen() {
                 <option value="">All cycles</option>
                 {BILLING_CYCLE_OPTIONS.map((cycle) => (
                   <option key={cycle} value={cycle}>
-                    {cycle}
+                    {formatToken(cycle)}
                   </option>
                 ))}
               </select>
@@ -473,12 +575,16 @@ function AdminBillingScreen() {
               </button>
             </Toolbar>
 
-            {!subscriptions.length ? <EmptyState>No vendor subscriptions match the current filters.</EmptyState> : null}
+            {!subscriptions.length ? (
+              <EmptyState title="No matching subscriptions">
+                Try clearing the filters to see all vendor subscriptions.
+              </EmptyState>
+            ) : null}
             {subscriptions.length ? (
               <>
                 <TableScroll>
                   <div className="resource-table">
-                    <div className="resource-table-head admin-billing-grid">
+                    <div className="resource-table-head ab-subscriptions-grid">
                       <span>Vendor</span>
                       <span>Plan</span>
                       <span>Status</span>
@@ -488,28 +594,47 @@ function AdminBillingScreen() {
                       <span className="actions-col">Actions</span>
                     </div>
                     {subscriptions.map((subscription) => (
-                      <article className="resource-row admin-billing-grid" key={subscription.vendor.id}>
-                        <div>
+                      <article
+                        className="resource-row ab-subscriptions-grid"
+                        key={subscription.vendor.id}
+                      >
+                        <div className="ab-cell-vendor">
                           <strong>{subscription.vendor.displayName}</strong>
                           <small>{subscription.vendor.slug}</small>
                         </div>
-                        <div>
-                          <strong>{getPlanLabel(plans, subscription.currentPlan)}</strong>
-                          <small>Access: {getPlanLabel(plans, subscription.effectiveAccess)}</small>
+                        <div className="ab-cell-plan">
+                          <PlanBadge plans={plans} planCode={subscription.currentPlan} />
+                          {subscription.effectiveAccess &&
+                          subscription.effectiveAccess !== subscription.currentPlan ? (
+                            <small>
+                              Access: {getPlanLabel(plans, subscription.effectiveAccess)}
+                            </small>
+                          ) : null}
                         </div>
-                        <StatusPill status={subscription.status} />
-                        <span>{subscription.billingCycle}</span>
-                        <span>{formatDate(subscription.currentPeriodEnd)}</span>
-                        <span>
-                          {subscription.usage.customers}/{formatLimit(subscription.limits.maxCustomers)} customers
+                        <div>
+                          <StatusPill
+                            status={subscription.status}
+                            tone={SUBSCRIPTION_STATUS_TONES[subscription.status]}
+                            label={formatToken(subscription.status)}
+                          />
+                        </div>
+                        <span className="ab-cell-text">
+                          {formatToken(subscription.billingCycle)}
+                        </span>
+                        <span className="ab-cell-text">
+                          {formatDate(subscription.currentPeriodEnd)}
+                        </span>
+                        <span className="ab-cell-text">
+                          {subscription.usage.customers}/
+                          {formatLimit(subscription.limits.maxCustomers)} customers
                         </span>
                         <div className="row-actions">
                           <button
-                            className="secondary-button"
+                            className="primary-button compact"
                             onClick={() => openSubscriptionEditor(subscription)}
                             type="button"
                           >
-                            Edit
+                            Update
                           </button>
                         </div>
                       </article>
@@ -521,11 +646,11 @@ function AdminBillingScreen() {
             ) : null}
           </section>
 
-          <section className="transaction-panel">
+          <section className="ab-panel">
             <SectionHeader
               action={
                 <button
-                  className="primary-button"
+                  className="primary-button compact"
                   onClick={openPaymentForm}
                   type="button"
                 >
@@ -535,39 +660,68 @@ function AdminBillingScreen() {
               title="Billing history"
               hint="Manual subscription payments recorded by platform admins."
             />
-            {!payments.length ? <EmptyState>No billing payments have been recorded yet.</EmptyState> : null}
+            {!payments.length ? (
+              <EmptyState
+                title="No billing payments yet"
+                action={
+                  <button
+                    className="primary-button compact"
+                    onClick={openPaymentForm}
+                    type="button"
+                  >
+                    Record first payment
+                  </button>
+                }
+              >
+                Once you record a manual subscription payment, it will appear here with vendor,
+                plan, method, status, and billing period details.
+              </EmptyState>
+            ) : null}
             {payments.length ? (
               <>
                 <TableScroll>
                   <div className="resource-table">
-                    <div className="resource-table-head admin-payments-grid">
+                    <div className="resource-table-head ab-payments-grid">
                       <span>Vendor</span>
                       <span>Plan</span>
                       <span>Amount</span>
                       <span>Method</span>
                       <span>Status</span>
                       <span>Period</span>
-                      <span>Recorded by</span>
+                      <span>Recorded</span>
                     </div>
                     {payments.map((payment) => (
-                      <article className="resource-row admin-payments-grid" key={payment.id}>
-                        <div>
+                      <article
+                        className="resource-row ab-payments-grid"
+                        key={payment.id}
+                      >
+                        <div className="ab-cell-vendor">
                           <strong>{payment.vendor?.displayName || "Vendor"}</strong>
                           <small>{payment.vendor?.slug}</small>
                         </div>
-                        <div>
-                          <strong>{payment.planCode}</strong>
-                          <small>{payment.billingCycle}</small>
+                        <div className="ab-cell-plan">
+                          <PlanBadge plans={plans} planCode={payment.planCode} />
+                          <small>{formatToken(payment.billingCycle)}</small>
                         </div>
-                        <span>
-                          {payment.currency} {Number(payment.amount).toLocaleString()}
-                        </span>
-                        <span>{formatToken(payment.paymentMethod)}</span>
-                        <StatusPill status={payment.paymentStatus} />
-                        <span>
-                          {formatDate(payment.periodStart)} - {formatDate(payment.periodEnd)}
+                        <div className="ab-cell-amount">
+                          <strong>
+                            {payment.currency} {Number(payment.amount).toLocaleString()}
+                          </strong>
+                        </div>
+                        <span className="ab-cell-text">
+                          {formatToken(payment.paymentMethod)}
                         </span>
                         <div>
+                          <StatusPill
+                            status={payment.paymentStatus}
+                            tone={PAYMENT_STATUS_TONES[payment.paymentStatus]}
+                            label={formatToken(payment.paymentStatus)}
+                          />
+                        </div>
+                        <span className="ab-cell-text">
+                          {formatDate(payment.periodStart)} – {formatDate(payment.periodEnd)}
+                        </span>
+                        <div className="ab-cell-recorded">
                           <strong>{payment.recordedBy?.display || "System"}</strong>
                           <small>{formatDateTime(payment.createdAt)}</small>
                         </div>
@@ -613,7 +767,7 @@ function AdminBillingScreen() {
             >
               {STATUS_OPTIONS.map((status) => (
                 <option key={status} value={status}>
-                  {status}
+                  {formatToken(status)}
                 </option>
               ))}
             </select>
@@ -627,7 +781,7 @@ function AdminBillingScreen() {
             >
               {BILLING_CYCLE_OPTIONS.map((cycle) => (
                 <option key={cycle} value={cycle}>
-                  {cycle}
+                  {formatToken(cycle)}
                 </option>
               ))}
             </select>
@@ -753,131 +907,149 @@ function AdminBillingScreen() {
           submitLabel="Record payment"
           title="Record manual payment"
         >
-          <Field label="Vendor">
-            <select
-              onChange={(event) =>
-                setPaymentDraft((current) => ({ ...current, vendorId: event.target.value }))
-              }
-              required
-              value={paymentDraft.vendorId}
-            >
-              <option value="">Select vendor</option>
-              {subscriptions.map((subscription) => (
-                <option key={subscription.vendor.id} value={subscription.vendor.id}>
-                  {subscription.vendor.displayName} ({subscription.vendor.slug})
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Plan">
-            <select
-              onChange={(event) => updatePaymentPlan(event.target.value)}
-              value={paymentDraft.planCode}
-            >
-              {planOptions.map((plan) => (
-                <option key={plan} value={plan}>
-                  {getPlanLabel(plans, plan)}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Billing cycle">
-            <select
-              onChange={(event) => updatePaymentBillingCycle(event.target.value)}
-              value={paymentDraft.billingCycle}
-            >
-              {BILLING_CYCLE_OPTIONS.map((cycle) => (
-                <option key={cycle} value={cycle}>
-                  {cycle}
-                </option>
-              ))}
-            </select>
+          <div className="ab-payment-form">
+          <div className="ab-form-section" data-section="vendor">
+            <h4 className="ab-form-section-title">Vendor &amp; plan</h4>
+            <Field label="Vendor">
+              <select
+                onChange={(event) =>
+                  setPaymentDraft((current) => ({ ...current, vendorId: event.target.value }))
+                }
+                required
+                value={paymentDraft.vendorId}
+              >
+                <option value="">Select vendor</option>
+                {subscriptions.map((subscription) => (
+                  <option key={subscription.vendor.id} value={subscription.vendor.id}>
+                    {subscription.vendor.displayName} ({subscription.vendor.slug})
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Plan">
+              <select
+                onChange={(event) => updatePaymentPlan(event.target.value)}
+                value={paymentDraft.planCode}
+              >
+                {planOptions.map((plan) => (
+                  <option key={plan} value={plan}>
+                    {getPlanLabel(plans, plan)}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Billing cycle">
+              <select
+                onChange={(event) => updatePaymentBillingCycle(event.target.value)}
+                value={paymentDraft.billingCycle}
+              >
+                {BILLING_CYCLE_OPTIONS.map((cycle) => (
+                  <option key={cycle} value={cycle}>
+                    {formatToken(cycle)}
+                  </option>
+                ))}
+              </select>
+            </Field>
             {paymentDraft.billingCycle === "annual" ? (
-              <small>
-                {plans.find((plan) => plan.code === paymentDraft.planCode)?.annualBenefit?.label ||
-                  "Annual billing follows the selected plan configuration."}
-              </small>
+              <p className="ab-form-helper" data-tone="info">
+                <strong>Annual benefit:</strong> {annualHelperText}
+              </p>
             ) : null}
-          </Field>
-          <Field
-            hint="Auto-filled from the selected plan. You can adjust it for discounts or custom billing."
-            label="Amount"
-          >
-            <input
-              min="0"
-              onChange={(event) =>
-                setPaymentDraft((current) => ({ ...current, amount: event.target.value }))
-              }
-              required
-              step="0.01"
-              type="number"
-              value={paymentDraft.amount}
-            />
-          </Field>
-          <Field label="Currency">
-            <input
-              maxLength="10"
-              onChange={(event) =>
-                setPaymentDraft((current) => ({ ...current, currency: event.target.value.toUpperCase() }))
-              }
-              required
-              value={paymentDraft.currency}
-            />
-          </Field>
-          <Field label="Payment method">
-            <select
-              onChange={(event) =>
-                setPaymentDraft((current) => ({ ...current, paymentMethod: event.target.value }))
-              }
-              value={paymentDraft.paymentMethod}
-            >
-              {PAYMENT_METHOD_OPTIONS.map((method) => (
-                <option key={method} value={method}>
-                  {formatToken(method)}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Status">
-            <select
-              onChange={(event) =>
-                setPaymentDraft((current) => ({ ...current, paymentStatus: event.target.value }))
-              }
-              value={paymentDraft.paymentStatus}
-            >
-              {PAYMENT_STATUS_OPTIONS.map((status) => (
-                <option key={status} value={status}>
-                  {formatToken(status)}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Paid at">
-            <input
-              onChange={(event) =>
-                setPaymentDraft((current) => ({ ...current, paidAt: event.target.value }))
-              }
-              type="datetime-local"
-              value={paymentDraft.paidAt}
-            />
-          </Field>
-          <Field label="Reference">
-            <input
-              onChange={(event) =>
-                setPaymentDraft((current) => ({ ...current, paymentReference: event.target.value }))
-              }
-              value={paymentDraft.paymentReference}
-            />
-          </Field>
-          <Field label="Notes">
-            <textarea
-              onChange={(event) =>
-                setPaymentDraft((current) => ({ ...current, notes: event.target.value }))
-              }
-              rows="4"
-              value={paymentDraft.notes}
-            />
-          </Field>
+          </div>
+
+          <div className="ab-form-section" data-section="amount">
+            <h4 className="ab-form-section-title">Amount</h4>
+            <p className="ab-form-helper" data-tone="muted">
+              Auto-filled from the selected plan. Adjust for discounts or custom billing.
+            </p>
+            <div className="ab-amount-row">
+              <Field label="Amount">
+                <input
+                  className="ab-amount-input"
+                  min="0"
+                  onChange={(event) =>
+                    setPaymentDraft((current) => ({ ...current, amount: event.target.value }))
+                  }
+                  required
+                  step="0.01"
+                  type="number"
+                  value={paymentDraft.amount}
+                />
+              </Field>
+              <Field label="Currency">
+                <input
+                  maxLength="10"
+                  onChange={(event) =>
+                    setPaymentDraft((current) => ({
+                      ...current,
+                      currency: event.target.value.toUpperCase()
+                    }))
+                  }
+                  required
+                  value={paymentDraft.currency}
+                />
+              </Field>
+            </div>
+          </div>
+
+          <div className="ab-form-section" data-section="payment">
+            <h4 className="ab-form-section-title">Payment details</h4>
+            <Field label="Payment method">
+              <select
+                onChange={(event) =>
+                  setPaymentDraft((current) => ({ ...current, paymentMethod: event.target.value }))
+                }
+                value={paymentDraft.paymentMethod}
+              >
+                {PAYMENT_METHOD_OPTIONS.map((method) => (
+                  <option key={method} value={method}>
+                    {formatToken(method)}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Status">
+              <select
+                onChange={(event) =>
+                  setPaymentDraft((current) => ({ ...current, paymentStatus: event.target.value }))
+                }
+                value={paymentDraft.paymentStatus}
+              >
+                {PAYMENT_STATUS_OPTIONS.map((status) => (
+                  <option key={status} value={status}>
+                    {formatToken(status)}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Paid at">
+              <input
+                onChange={(event) =>
+                  setPaymentDraft((current) => ({ ...current, paidAt: event.target.value }))
+                }
+                type="datetime-local"
+                value={paymentDraft.paidAt}
+              />
+            </Field>
+            <Field label="Reference" hint="Bank reference, transaction ID, or cheque number.">
+              <input
+                onChange={(event) =>
+                  setPaymentDraft((current) => ({ ...current, paymentReference: event.target.value }))
+                }
+                value={paymentDraft.paymentReference}
+              />
+            </Field>
+            <Field label="Notes">
+              <textarea
+                onChange={(event) =>
+                  setPaymentDraft((current) => ({ ...current, notes: event.target.value }))
+                }
+                rows="3"
+                value={paymentDraft.notes}
+              />
+            </Field>
+          </div>
+          </div>
         </FormPanel>
       ) : null}
     </div>
