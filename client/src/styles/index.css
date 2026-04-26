@@ -8322,10 +8322,9 @@ body {
 
 .auth-page-v2 .auth-visual::after {
   background: linear-gradient(
-    180deg,
-    rgba(31, 38, 33, 0.10) 0%,
-    rgba(15, 47, 28, 0.55) 60%,
-    rgba(15, 47, 28, 0.85) 100%
+    90deg,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.15) 100%
   );
 }
 
