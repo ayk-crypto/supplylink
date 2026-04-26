@@ -9096,55 +9096,10 @@ body {
   gap: 16px;
 }
 
-/* Header layout — mirrors the Admin Billing page header so the
-   "+ Create Vendor" button sits pinned to the top-right of the
-   card with comfortable breathing room from the title. The copy
-   block reserves a 360px basis (≥ the title's intrinsic width)
-   so the heading stays on a single line, and `margin-left: auto`
-   on the action consumes all remaining free space to push the
-   button flush right. Width: auto overrides on the action and
-   inner button defeat the global @media (max-width: 768px) rule
-   that would otherwise force them full-width in the 721–767 band.
-   On phones (≤720px) we restore full-width for a tappable target. */
-.admin-vendors-page .page-header {
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px 24px;
-  row-gap: 16px;
-}
-
-.admin-vendors-page .page-header-copy {
-  flex: 1 1 360px;
-  min-width: min(360px, 100%);
-}
-
-.admin-vendors-page .page-header-action {
-  margin-left: auto;
-  display: flex;
-  justify-content: flex-end;
-  width: auto;
-}
-
-.admin-vendors-page .page-header-action .button-row {
-  width: auto;
-}
-
-.admin-vendors-page .page-header-action .button-row .primary-button.compact {
-  width: auto;
-}
-
-@media (max-width: 720px) {
-  .admin-vendors-page .page-header-action {
-    width: 100%;
-    margin-left: 0;
-  }
-  .admin-vendors-page .page-header-action .button-row {
-    width: 100%;
-  }
-  .admin-vendors-page .page-header-action .button-row .primary-button.compact {
-    width: 100%;
-  }
-}
+/* Header layout — match the Admin Billing page header exactly.
+   Admin Billing uses no page-specific overrides, so we drop the
+   prior bespoke flex rules here and let the base `.page-header`
+   styles render identically across both pages. */
 
 /* KPI strip */
 .admin-vendors-page .admin-vendors-kpis {
@@ -9529,38 +9484,46 @@ body {
 /* === end Module 34 ============================================== */
 
 /* === Module 36: Admin Billing page refinements ================== */
-/* All rules scoped under .admin-billing-page so nothing leaks to
-   other surfaces. Mirrors the wrap-based header layout used on the
-   admin vendors page so the action stays top-right and gracefully
-   stacks on narrow cards. */
+/* Page-header layout shared by Admin Billing and Admin Vendors so
+   the primary action ("Record payment" / "+ Create Vendor") sits
+   pinned to the top-right of the hero card, vertically centered
+   with the title block, and gracefully stacks on narrow viewports.
+   Selectors comma-list both pages so they stay perpetually in sync —
+   if one page drifts, both do, by design. */
 
-.admin-billing-page .page-header {
+.admin-billing-page .page-header,
+.admin-vendors-page .page-header {
   align-items: center;
   flex-wrap: wrap;
   gap: 16px 24px;
   row-gap: 16px;
 }
 
-.admin-billing-page .page-header-copy {
+.admin-billing-page .page-header-copy,
+.admin-vendors-page .page-header-copy {
   flex: 1 1 360px;
   min-width: min(360px, 100%);
 }
 
-.admin-billing-page .page-header-action {
+.admin-billing-page .page-header-action,
+.admin-vendors-page .page-header-action {
   margin-left: auto;
   display: flex;
   justify-content: flex-end;
 }
 
 @media (max-width: 720px) {
-  .admin-billing-page .page-header-action {
+  .admin-billing-page .page-header-action,
+  .admin-vendors-page .page-header-action {
     width: 100%;
     margin-left: 0;
   }
-  .admin-billing-page .page-header-action .button-row {
+  .admin-billing-page .page-header-action .button-row,
+  .admin-vendors-page .page-header-action .button-row {
     width: 100%;
   }
-  .admin-billing-page .page-header-action .button-row .primary-button.compact {
+  .admin-billing-page .page-header-action .button-row .primary-button.compact,
+  .admin-vendors-page .page-header-action .button-row .primary-button.compact {
     width: 100%;
   }
 }
