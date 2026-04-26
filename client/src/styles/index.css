@@ -9097,18 +9097,19 @@ body {
   gap: 16px;
 }
 
-/* Header layout — copy block grows to claim space, action pinned right
-   and vertically centered with the title. Overrides the global
-   `flex-wrap: wrap` on .page-header so items don't collapse oddly. */
+/* Header layout — copy block claims at least ~360px so the title can
+   stay on one line; if the card is too narrow to fit both copy and
+   action side-by-side, the action wraps onto its own row below. */
 .admin-vendors-page .page-header {
   align-items: center;
-  flex-wrap: nowrap;
-  gap: 24px;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  row-gap: 16px;
 }
 
 .admin-vendors-page .page-header-copy {
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 1 1 360px;
+  min-width: min(360px, 100%);
 }
 
 .admin-vendors-page .page-header-action {
@@ -9131,15 +9132,12 @@ body {
   transform: translateY(-1px);
 }
 
-/* On narrow screens, stack action below the copy and span full width */
+/* When the action has wrapped to its own row, keep it neatly right-
+   aligned. On phones, stretch it full-width for a tappable target. */
 @media (max-width: 720px) {
-  .admin-vendors-page .page-header {
-    flex-wrap: wrap;
-    align-items: stretch;
-  }
   .admin-vendors-page .page-header-action {
-    margin-left: 0;
     width: 100%;
+    margin-left: 0;
   }
   .admin-vendors-page .admin-vendors-create-button {
     width: 100%;
